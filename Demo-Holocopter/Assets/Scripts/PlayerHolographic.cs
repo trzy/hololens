@@ -6,13 +6,13 @@ using System.Linq;
 
 public class PlayerHolographic : MonoBehaviour
 {
-  public Helicopter         g_helicopter;
-  public GameObject         g_waypoints;
-  public GameObject         g_waypoint_prefab;
-  public Material           g_reticle_material;
+  public Helicopter         m_helicopter;
+  public GameObject         m_waypoints;
+  public GameObject         m_waypoint_prefab;
+  public Material           m_reticle_material;
 
   private GestureRecognizer m_gesture_recognizer = null;
-  private List<GameObject>  m_waypoints = new List<GameObject>();
+  private List<GameObject>  m_waypoint_list = new List<GameObject>();
   private bool              m_music_played = false;
   private GameObject        m_gaze_target = null;
   private Reticle           m_reticle;
@@ -40,17 +40,17 @@ public class PlayerHolographic : MonoBehaviour
   {
     if (m_gaze_target == null)
     {
-      GameObject waypoint = Instantiate(g_waypoint_prefab, transform.position + transform.forward * 1, Quaternion.identity) as GameObject;
-      m_waypoints.Add(waypoint);
+      GameObject waypoint = Instantiate(m_waypoint_prefab, transform.position + transform.forward * 1, Quaternion.identity) as GameObject;
+      m_waypoint_list.Add(waypoint);
     }
-    else if (m_gaze_target == g_helicopter.gameObject)
+    else if (m_gaze_target == m_helicopter.gameObject)
     {
-      if (!m_music_played && m_waypoints.Any())
+      if (!m_music_played && m_waypoint_list.Any())
       {
         GetComponent<AudioSource>().Play();
         m_music_played = true;
       }
-      g_helicopter.TraverseWaypoints(m_waypoints);
+      m_helicopter.TraverseWaypoints(m_waypoint_list);
     }
   }
 
@@ -60,7 +60,7 @@ public class PlayerHolographic : MonoBehaviour
     m_gesture_recognizer.SetRecognizableGestures(GestureSettings.Tap);
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
-    m_reticle = new Reticle(g_reticle_material);
+    m_reticle = new Reticle(m_reticle_material);
     //StartCoroutine(BlinkGazeTargetCoroutine());
   }
 

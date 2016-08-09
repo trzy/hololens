@@ -5,8 +5,8 @@ using System.Collections.Generic;
 
 public class Helicopter : MonoBehaviour
 {
-  public Text         g_ui_inputs = null;
-  public Text         g_ui_control_program = null;
+  public Text         m_ui_inputs = null;
+  public Text         m_ui_control_program = null;
 
   private IEnumerator m_rotor_speed_coroutine = null;
 
