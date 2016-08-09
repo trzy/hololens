@@ -3,12 +3,12 @@ using System.Collections;
 
 public class Waypoint: MonoBehaviour
 {
-	void Start ()
+  void Start()
   {
-	}
+  }
 
-	void Update ()
+  void Update()
   {
     transform.Rotate(new Vector3(0, 180.0F * Time.deltaTime, 0));
-	}
+  }
 }
