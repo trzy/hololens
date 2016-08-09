@@ -5,11 +5,18 @@ using System.Collections.Generic;
 
 public class Helicopter : MonoBehaviour
 {
-  public Text g_ui_inputs = null;
-  public Text g_ui_control_program = null;
+  public Text         g_ui_inputs = null;
+  public Text         g_ui_control_program = null;
+
+  private IEnumerator m_rotor_speed_coroutine = null;
 
   private const float SCALE = .06f;
-  private IEnumerator m_rotor_speed_coroutine = null;
+  private const float MAX_TILT_DEGREES = 30;
+  private const float MAX_TORQUE = 25000 * SCALE; //TODO: reformulate in terms of mass?
+  private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_TORQUE / 5.0f;
+  private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
+  private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
+  private const float ACCEPTABLE_HEADING_ERROR = 10;
 
   public float heading
   {
@@ -73,8 +80,6 @@ public class Helicopter : MonoBehaviour
 
   private bool GoToWaypoint(GameObject waypoint)
   {
-    const float ACCEPTABLE_DISTANCE = 5 * SCALE;
-    const float ACCEPTABLE_HEADING_ERROR = 10;
     Vector3 to_waypoint = waypoint.transform.position - transform.position;
     float distance = Vector3.Magnitude(to_waypoint);
     float heading_error = HeadingError(waypoint.transform.position);
@@ -104,14 +109,6 @@ public class Helicopter : MonoBehaviour
       while (GoToWaypoint(waypoint))
         yield return null;
     }
-    /*
-    foreach (Transform t in waypoints.transform)
-    {
-      GameObject waypoint = t.gameObject;
-      while (GoToWaypoint(waypoint))
-        yield return null;
-    }
-    */
     m_program_controls.Clear();
   }
 
@@ -237,17 +234,15 @@ public class Helicopter : MonoBehaviour
     Vector3 translational_input = new Vector3(controls.lateral, 0, controls.longitudinal);
     Vector3 translational_force = Quaternion.Euler(new Vector3(0, current_heading_deg, 0)) * translational_input * SCALE * rb.mass * Mathf.Abs(Physics.gravity.y);
 
-    const float MAX_TILT_DEGREES = 30;
     float target_pitch_deg = Mathf.Sign(controls.longitudinal) * Mathf.Lerp(0, MAX_TILT_DEGREES, Mathf.Abs(controls.longitudinal));
     float current_pitch_deg = Mathf.Sign(-transform.forward.y) * Vector3.Angle(transform.forward, ProjectXZ(transform.forward));
     float target_roll_deg = Mathf.Sign(-controls.lateral) * Mathf.Lerp(0, MAX_TILT_DEGREES, Mathf.Abs(controls.lateral));
     float current_roll_deg = Mathf.Sign(transform.right.y) * Vector3.Angle(transform.right, ProjectXZ(transform.right));
 
-    const float MAX_TORQUE = 25000 * SCALE;                                                 // TODO: in terms of mass?
     float pitch_error_deg = target_pitch_deg - current_pitch_deg;
     float roll_error_deg = target_roll_deg - current_roll_deg;
-    torque += SCALE * MAX_TORQUE * new Vector3(pitch_error_deg / 5, 0, roll_error_deg / 5); // TODO: 5 -> param
-    torque += SCALE * 4 * MAX_TORQUE * controls.rotational * Vector3.up;                     // TODO: 4 -> param
+    torque += SCALE * PITCH_ROLL_CORRECTIVE_TORQUE * new Vector3(pitch_error_deg, 0, roll_error_deg);
+    torque += SCALE * YAW_CORRECTIVE_TORQUE * controls.rotational * Vector3.up;
 
     float up_world_local_deg = Vector3.Angle(Vector3.up, transform.up); // angle between world and local up
     float hover_force = Mathf.Abs(rb.mass * Physics.gravity.y / Mathf.Cos(up_world_local_deg * Mathf.Deg2Rad));
@@ -255,7 +250,6 @@ public class Helicopter : MonoBehaviour
 
     hover_force = Mathf.Abs(rb.mass * Physics.gravity.y);
     rotor_force = SCALE * controls.altitude * rb.mass * Mathf.Abs(Physics.gravity.y);
-
 
     // Apply all forces
     rb.AddRelativeForce(Vector3.up * rotor_force);
@@ -310,22 +304,6 @@ public class Helicopter : MonoBehaviour
     {
       SetControlMode(ControlMode.Player);
       m_player_controls.altitude = Mathf.Clamp(m_player_controls.altitude + Input.GetAxis("Mouse ScrollWheel"), -1, 1);
-    }
-
-    if (g_ui_inputs)
-    {
-      g_ui_inputs.text =
-        (m_control_mode == ControlMode.Player ? "P" : "A") +
-        "  Lo: " + m_player_controls.longitudinal.ToString("n1") +
-        "  La: " + m_player_controls.lateral.ToString("n1") +
-        "  R: " + m_player_controls.rotational.ToString("n1") +
-        "  A: " + m_player_controls.altitude.ToString("n1");
-      g_ui_inputs.text = GetComponent<Rigidbody>().velocity.ToString("n2");
-
-
-      Vector3 x = Camera.main.WorldToViewportPoint(new Vector3(0f, 0f, Camera.main.nearClipPlane));
-      Vector3 y = Camera.main.ViewportToWorldPoint(new Vector3(0.25f, 0.25f, 0.2f));
-      g_ui_inputs.text = x.ToString("n2") + " " + y.ToString("n2");
     }
   }
   
