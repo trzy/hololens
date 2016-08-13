@@ -66,6 +66,7 @@ public class PlayerHolographic : MonoBehaviour
 
   void Update()
   {
+    UnityEngine.VR.WSA.HolographicSettings.SetFocusPointForFrame(m_helicopter.transform.position, -Camera.main.transform.forward);
     /*
     GameObject old_gaze_target = m_gaze_target;
     m_gaze_target = null;
