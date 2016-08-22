@@ -6,16 +6,24 @@ using System.Linq;
 
 public class PlayerHolographic : MonoBehaviour
 {
-  public Helicopter         m_helicopter;
-  public GameObject         m_waypoints;
-  public GameObject         m_waypoint_prefab;
-  public Material           m_reticle_material;
+  public Helicopter m_helicopter;
+  public Material   m_reticle_material;
+  public GameObject m_waypoints;
+  public GameObject m_waypoint_prefab;
+  public SpatialMap m_spatial_map;
+
+  enum State
+  {
+    Scanning,
+    Playing
+  };
 
   private GestureRecognizer m_gesture_recognizer = null;
   private List<GameObject>  m_waypoint_list = new List<GameObject>();
   private bool              m_music_played = false;
   private GameObject        m_gaze_target = null;
   private Reticle           m_reticle;
+  private State             m_state;
 
   private void SetRenderEnable(GameObject obj, bool on)
   {
@@ -38,19 +46,41 @@ public class PlayerHolographic : MonoBehaviour
 
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
   {
-    if (m_gaze_target == null)
+    switch (m_state)
     {
-      GameObject waypoint = Instantiate(m_waypoint_prefab, transform.position + transform.forward * 1, Quaternion.identity) as GameObject;
-      m_waypoint_list.Add(waypoint);
-    }
-    else if (m_gaze_target == m_helicopter.gameObject)
-    {
-      if (!m_music_played && m_waypoint_list.Any())
+    case State.Scanning:
+      SetState(State.Playing);
+      break;
+    case State.Playing:
+      if (m_gaze_target == null)
       {
-        GetComponent<AudioSource>().Play();
-        m_music_played = true;
+        GameObject waypoint = Instantiate(m_waypoint_prefab, transform.position + transform.forward * 1, Quaternion.identity) as GameObject;
+        m_waypoint_list.Add(waypoint);
       }
-      m_helicopter.TraverseWaypoints(m_waypoint_list);
+      else if (m_gaze_target == m_helicopter.gameObject)
+      {
+        if (!m_music_played && m_waypoint_list.Any())
+        {
+          GetComponent<AudioSource>().Play();
+          m_music_played = true;
+        }
+        m_helicopter.TraverseWaypoints(m_waypoint_list);
+      }
+      break;
+    }
+  }
+
+  void SetState(State state)
+  {
+    m_state = state;
+    switch (state)
+    {
+    case State.Scanning:
+      m_spatial_map.Scan();
+      break;
+    case State.Playing:
+      m_spatial_map.Occlude();
+      break;
     }
   }
 
@@ -61,6 +91,7 @@ public class PlayerHolographic : MonoBehaviour
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
     m_reticle = new Reticle(m_reticle_material);
+    SetState(State.Scanning);
     //StartCoroutine(BlinkGazeTargetCoroutine());
   }
 
