@@ -10,7 +10,8 @@ public class PlayerHolographic : MonoBehaviour
   public Material   m_reticle_material;
   public GameObject m_waypoints;
   public GameObject m_waypoint_prefab;
-  public PlayspaceManager m_playspace;
+  public PlayspaceManager m_playspace_manager;
+  public LevelManager m_level_manager;
 
   enum State
   {
@@ -50,6 +51,7 @@ public class PlayerHolographic : MonoBehaviour
     switch (m_state)
     {
     case State.Scanning:
+      m_playspace_manager.SetMakePlanesCompleteCallback(m_level_manager.GenerateLevel);
       SetState(State.Playing);
       break;
     case State.Playing:
@@ -77,10 +79,10 @@ public class PlayerHolographic : MonoBehaviour
     switch (state)
     {
     case State.Scanning:
-      m_playspace.StartScanning();
+      m_playspace_manager.StartScanning();
       break;
     case State.Playing:
-      m_playspace.StopScanning();
+      m_playspace_manager.StopScanning();
       break;
     }
   }
@@ -99,7 +101,7 @@ public class PlayerHolographic : MonoBehaviour
 
   void Update()
   {
-    UnityEngine.VR.WSA.HolographicSettings.SetFocusPointForFrame(m_helicopter.transform.position, -Camera.main.transform.forward);
+    //UnityEngine.VR.WSA.HolographicSettings.SetFocusPointForFrame(m_helicopter.transform.position, -Camera.main.transform.forward);
     /*
     GameObject old_gaze_target = m_gaze_target;
     m_gaze_target = null;
@@ -122,10 +124,60 @@ public class PlayerHolographic : MonoBehaviour
     }
     else
       m_gaze_target = null;
+    UnityEngineUpdate();
   }
 
   void OnPostRender()
   {
     m_reticle.Draw(m_gaze_target);
+  }
+
+#if UNITY_EDITOR
+  private Vector3 m_euler = new Vector3();
+#endif
+
+  private void UnityEngineUpdate()
+  {
+#if UNITY_EDITOR
+    // Simulate air tap
+    if (Input.GetKeyDown(KeyCode.Return))
+    {
+      Ray head_ray = new Ray(transform.position, transform.forward);
+      OnTapEvent(InteractionSourceKind.Hand, 1, head_ray);
+    }
+
+    // Rotate by maintaining Euler angles relative to world
+    if (Input.GetKey("left"))
+      m_euler.y -= 30 * Time.deltaTime;
+    if (Input.GetKey("right"))
+      m_euler.y += 30 * Time.deltaTime;
+    if (Input.GetKey("up"))
+      m_euler.x -= 30 * Time.deltaTime;
+    if (Input.GetKey("down"))
+      m_euler.x += 30 * Time.deltaTime;
+    if (Input.GetKey("o"))
+      m_euler.x = 0;
+    transform.rotation = Quaternion.Euler(m_euler);
+
+    // Motion relative to XZ plane
+    float move_speed = 5.0F * Time.deltaTime;
+    Vector3 forward = transform.forward;
+    forward.y = 0.0F;
+    forward.Normalize();  // even if we're looking up or down, will continue to move in XZ
+    if (Input.GetKey("w"))
+      transform.Translate(forward * move_speed, Space.World);
+    if (Input.GetKey("s"))
+      transform.Translate(-forward * move_speed, Space.World);
+    if (Input.GetKey("a"))
+      transform.Translate(-transform.right * move_speed, Space.World);
+    if (Input.GetKey("d"))
+      transform.Translate(transform.right * move_speed, Space.World);
+
+    // Vertical motion
+    if (Input.GetKey(KeyCode.KeypadMinus))  // up
+      transform.Translate(new Vector3(0.0F, 1.0F, 0.0F) * move_speed, Space.World);
+    if (Input.GetKey(KeyCode.KeypadPlus))   // down
+      transform.Translate(new Vector3(0.0F, -1.0F, 0.0F) * move_speed, Space.World);
+#endif
   }
 }

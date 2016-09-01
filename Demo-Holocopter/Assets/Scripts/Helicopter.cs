@@ -261,6 +261,19 @@ public class Helicopter : MonoBehaviour
   // Update is called once per frame
   void Update()
   {
+    UnityEditorUpdate();
+  }
+  
+  // Use this for initialization
+  void Start()
+  {
+    SetControlMode(ControlMode.Program);
+    ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
+  }
+
+  private void UnityEditorUpdate()
+  {
+#if UNITY_EDITOR
     if (Input.GetKey("1"))
       ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 5);
     if (Input.GetKey("2"))
@@ -305,12 +318,6 @@ public class Helicopter : MonoBehaviour
       SetControlMode(ControlMode.Player);
       m_player_controls.altitude = Mathf.Clamp(m_player_controls.altitude + Input.GetAxis("Mouse ScrollWheel"), -1, 1);
     }
-  }
-  
-  // Use this for initialization
-  void Start()
-  {
-    SetControlMode(ControlMode.Program);
-    ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
+#endif
   }
 }
