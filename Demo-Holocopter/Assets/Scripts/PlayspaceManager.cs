@@ -17,7 +17,16 @@ public class PlayspaceManager : MonoBehaviour
 
   public List<GameObject> GetFloors()
   {
-    return SurfaceMeshesToPlanes.Instance.GetActivePlanes(PlaneTypes.Table);
+    //return SurfaceMeshesToPlanes.Instance.GetActivePlanes(PlaneTypes.Table);
+    PlaneTypes desired_types = PlaneTypes.Table;
+    List<GameObject> planes = new List<GameObject>();
+    foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
+    {
+      SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0)
+        planes.Add(plane);
+    }
+    return planes;
   }
 
   public void SetMakePlanesCompleteCallback(MakePlanesCompleteDelegate cb)
