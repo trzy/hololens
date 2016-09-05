@@ -4,12 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class PlayerHolographic : MonoBehaviour
+public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
   public Material   m_reticle_material;
-  public GameObject m_waypoints;
-  public GameObject m_waypoint_prefab;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
 
@@ -20,31 +18,9 @@ public class PlayerHolographic : MonoBehaviour
   };
 
   private GestureRecognizer m_gesture_recognizer = null;
-  private List<GameObject>  m_waypoint_list = new List<GameObject>();
-  private bool              m_music_played = false;
   private GameObject        m_gaze_target = null;
   private int               m_object_layer = 0;
-  private Reticle           m_reticle;
   private State             m_state;
-
-  private void SetRenderEnable(GameObject obj, bool on)
-  {
-    Component[] renderers = obj.GetComponentsInChildren<Renderer>();
-    foreach (Component renderer in renderers)
-      renderer.GetComponent<Renderer>().enabled = on;
-  }
-
-  private IEnumerator BlinkGazeTargetCoroutine()
-  {
-    bool on = true;
-    while (true)
-    {
-      on = !on;
-      if (m_gaze_target)
-        SetRenderEnable(m_gaze_target, on);
-      yield return new WaitForSeconds(0.2f);
-    }
-  }
 
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
   {
@@ -57,17 +33,9 @@ public class PlayerHolographic : MonoBehaviour
     case State.Playing:
       if (m_gaze_target == null)
       {
-        GameObject waypoint = Instantiate(m_waypoint_prefab, transform.position + transform.forward * 1, Quaternion.identity) as GameObject;
-        m_waypoint_list.Add(waypoint);
       }
       else if (m_gaze_target == m_helicopter.gameObject)
       {
-        if (!m_music_played && m_waypoint_list.Any())
-        {
-          GetComponent<AudioSource>().Play();
-          m_music_played = true;
-        }
-        m_helicopter.TraverseWaypoints(m_waypoint_list);
       }
       break;
     }
@@ -94,29 +62,14 @@ public class PlayerHolographic : MonoBehaviour
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
     m_object_layer = 1 << LayerMask.NameToLayer("Default");
-    m_reticle = new Reticle(m_reticle_material);
     SetState(State.Scanning);
-    //StartCoroutine(BlinkGazeTargetCoroutine());
   }
 
   void Update()
   {
-    //UnityEngine.VR.WSA.HolographicSettings.SetFocusPointForFrame(m_helicopter.transform.position, -Camera.main.transform.forward);
     /*
-    GameObject old_gaze_target = m_gaze_target;
-    m_gaze_target = null;
     RaycastHit hit;
-    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, Physics.DefaultRaycastLayers))
-    {
-      GameObject gaze_target = hit.collider.transform.parent.gameObject;
-      if (gaze_target.activeSelf)
-        m_gaze_target = gaze_target;
-    }
-    if (old_gaze_target && old_gaze_target != m_gaze_target)
-      SetRenderEnable(old_gaze_target, true);
-    */
-    RaycastHit hit;
-    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, m_object_layer))//Physics.DefaultRaycastLayers))
+    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, m_object_layer))
     {
       GameObject gaze_target = hit.collider.transform.parent.gameObject;
       if (gaze_target.activeSelf)
@@ -124,12 +77,8 @@ public class PlayerHolographic : MonoBehaviour
     }
     else
       m_gaze_target = null;
+    */
     UnityEngineUpdate();
-  }
-
-  void OnPostRender()
-  {
-    m_reticle.Draw(m_gaze_target);
   }
 
 #if UNITY_EDITOR
