@@ -10,6 +10,8 @@ public class PlayerGazeControlled: MonoBehaviour
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
+  public GameObject m_cursor1;
+  public GameObject m_cursor2;
 
   enum State
   {
@@ -20,6 +22,7 @@ public class PlayerGazeControlled: MonoBehaviour
   private GestureRecognizer m_gesture_recognizer = null;
   private GameObject        m_gaze_target = null;
   private int               m_object_layer = 0;
+  private int               m_surface_mesh_layer = 0;
   private State             m_state;
 
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
@@ -62,22 +65,47 @@ public class PlayerGazeControlled: MonoBehaviour
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
     m_object_layer = 1 << LayerMask.NameToLayer("Default");
+    m_surface_mesh_layer = m_playspace_manager.GetPhysicsLayerBitmask();
     SetState(State.Scanning);
+  }
+
+  private GameObject FindGazeTarget(out RaycastHit hit, float distance, int layer_mask)
+  {
+    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
+    {
+      GameObject target = hit.collider.transform.parent.gameObject;
+      if (target == null)
+      {
+        Debug.Log("ERROR: CANNOT IDENTIFY RAYCAST OBJECT");
+        return null;
+      }
+      m_cursor1.transform.position = hit.point + hit.normal * 0.01f;
+      m_cursor1.transform.forward = hit.normal;
+      return target.activeSelf ? target : null;
+    }
+    return null;
   }
 
   void Update()
   {
-    /*
+    int layer_mask = m_object_layer | m_surface_mesh_layer;
     RaycastHit hit;
-    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, m_object_layer))
+    GameObject target = FindGazeTarget(out hit, 5.0f, layer_mask);
+    if (target != null && target != m_helicopter.gameObject)
     {
-      GameObject gaze_target = hit.collider.transform.parent.gameObject;
-      if (gaze_target.activeSelf)
-        m_gaze_target = gaze_target;
+      int target_layer_mask = 1 << target.layer;
+      if ((target_layer_mask & layer_mask) != 0)
+      {
+        m_cursor2.transform.position = hit.point + hit.normal * 0.5f;
+        m_cursor2.transform.forward = -transform.forward;
+        m_helicopter.FlyToPosition(hit.point + hit.normal * 0.5f);
+      }
     }
-    else
-      m_gaze_target = null;
-    */
+    else if (target == null)
+    {
+      // Hit nothing -- move toward point on ray, 2m out
+      m_helicopter.FlyToPosition(transform.position + transform.forward * 2.0f);
+    }
     UnityEngineUpdate();
   }
 
