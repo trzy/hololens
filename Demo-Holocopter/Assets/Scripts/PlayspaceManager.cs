@@ -15,15 +15,22 @@ public class PlayspaceManager : MonoBehaviour
   private bool m_scanning_complete = false;
   private MakePlanesCompleteDelegate m_make_planes_complete_cb = null;
 
-  public List<GameObject> GetFloors()
+  public int GetPhysicsLayerBitmask()
   {
-    //return SurfaceMeshesToPlanes.Instance.GetActivePlanes(PlaneTypes.Table);
+    return 1 << SpatialMappingManager.Instance.PhysicsLayer;
+  }
+
+  public List<GameObject> GetTables()
+  {
     PlaneTypes desired_types = PlaneTypes.Table;
     List<GameObject> planes = new List<GameObject>();
     foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
     {
       SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0)
+      // Only tables below eye level. SurfacePlane has the unfortunate problem
+      // that it creates tables with planes oriented downwards. We ignore these
+      // (but maybe we should rotate?).
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.transform.up.y > 0)
         planes.Add(plane);
     }
     return planes;

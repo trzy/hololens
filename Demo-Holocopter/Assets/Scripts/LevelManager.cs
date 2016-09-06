@@ -25,9 +25,9 @@ public class LevelManager : MonoBehaviour
   //
   private Quaternion m_rotate_to_plane_basis = Quaternion.FromToRotation(new Vector3(0, 1, 0), new Vector3(0, 0, -1));
 
-  private List<GameObject> GetFloorsInDescendingAreaOrder()
+  private List<GameObject> GetTablesInDescendingAreaOrder()
   {
-    List<GameObject> floors = m_playspace_manager.GetFloors();
+    List<GameObject> floors = m_playspace_manager.GetTables();
     floors.Sort((plane1, plane2) =>
     {
       HoloToolkit.Unity.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
@@ -54,7 +54,7 @@ public class LevelManager : MonoBehaviour
 
   public void GenerateLevel()
   {
-    List<GameObject> floors = GetFloorsInDescendingAreaOrder();
+    List<GameObject> floors = GetTablesInDescendingAreaOrder();
     Debug.Log("GenerateLevel(): number of floors=" + floors.Capacity.ToString());
     //TODO: check if empty and take corrective action
     if (floors.Capacity == 0)
