@@ -78,11 +78,11 @@ public class Helicopter : MonoBehaviour
     return -Mathf.Sign(CrossY(forward, to_point)) * Vector3.Angle(forward, to_point);
   }
 
-  private bool GoToWaypoint(GameObject waypoint)
+  private bool GoTo(Vector3 target_position)
   {
-    Vector3 to_waypoint = waypoint.transform.position - transform.position;
-    float distance = Vector3.Magnitude(to_waypoint);
-    float heading_error = HeadingError(waypoint.transform.position);
+    Vector3 to_target = target_position - transform.position;
+    float distance = Vector3.Magnitude(to_target);
+    float heading_error = HeadingError(target_position);
     float abs_heading_error = Mathf.Abs(heading_error);
     if (abs_heading_error > ACCEPTABLE_HEADING_ERROR)
       m_program_controls.rotational = -Mathf.Sign(heading_error) * Mathf.Lerp(0.5F, 1.0F, Mathf.Abs(heading_error) / 360.0F);
@@ -91,10 +91,10 @@ public class Helicopter : MonoBehaviour
     if (distance > ACCEPTABLE_DISTANCE)
     {
       //TODO: reduce intensity once closer? Gradual roll-off within some event horizon.
-      Vector3 to_waypoint_norm = to_waypoint / distance;
-      m_program_controls.longitudinal = Vector3.Dot(to_waypoint_norm, transform.forward);
-      m_program_controls.lateral = Vector3.Dot(to_waypoint_norm, transform.right);
-      m_program_controls.altitude = to_waypoint_norm.y;
+      Vector3 to_target_norm = to_target / distance;
+      m_program_controls.longitudinal = Vector3.Dot(to_target_norm, transform.forward);
+      m_program_controls.lateral = Vector3.Dot(to_target_norm, transform.right);
+      m_program_controls.altitude = to_target_norm.y;
     }
     else
       return false;
@@ -106,15 +106,27 @@ public class Helicopter : MonoBehaviour
     List<GameObject> waypoints = new List<GameObject>(waypoints_param);
     foreach (GameObject waypoint in waypoints)
     {
-      while (GoToWaypoint(waypoint))
+      while (GoTo(waypoint.transform.position))
         yield return null;
     }
+    m_program_controls.Clear();
+  }
+
+  private IEnumerator FlyToPositionCoroutine(Vector3 target_position)
+  {
+    while (GoTo(target_position))
+      yield return null;
     m_program_controls.Clear();
   }
 
   public void TraverseWaypoints(List<GameObject> waypoints)
   {
     SetControlMode(ControlMode.Program, TraverseWaypointsCoroutine(waypoints));
+  }
+
+  public void FlyToPosition(Vector3 target_position)
+  {
+    SetControlMode(ControlMode.Program, FlyToPositionCoroutine(target_position));
   }
 
   private IEnumerator ChangeRotorSpeedCoroutine(string rps_param_name, float target_rps, float ramp_time)
