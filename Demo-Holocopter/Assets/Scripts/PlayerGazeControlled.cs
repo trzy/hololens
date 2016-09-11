@@ -8,6 +8,7 @@ public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
   public Explosion m_explosion_prefab;
+  public GroundFlash m_ground_flash_prefab;
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
@@ -22,6 +23,7 @@ public class PlayerGazeControlled: MonoBehaviour
 
   private GestureRecognizer m_gesture_recognizer = null;
   private GameObject        m_gaze_target = null;
+  private RaycastHit        m_hit;
   private int               m_object_layer = 0;
   private int               m_surface_mesh_layer = 0;
   private State             m_state;
@@ -37,14 +39,15 @@ public class PlayerGazeControlled: MonoBehaviour
     case State.Playing:
       if (m_gaze_target == null)
       {
-        Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
-        explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
+          //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
+          //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
       }
       else if (m_gaze_target == m_helicopter.gameObject)
       {
       }
       else
       {
+        GroundFlash flash = Instantiate(m_ground_flash_prefab, m_hit.point + m_hit.normal * 0.01f, Quaternion.LookRotation(m_hit.normal)) as GroundFlash;
       }
       break;
     }
@@ -80,6 +83,7 @@ public class PlayerGazeControlled: MonoBehaviour
     if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
     {
       GameObject target = hit.collider.transform.parent.gameObject;
+      m_gaze_target = target;
       if (target == null)
       {
         Debug.Log("ERROR: CANNOT IDENTIFY RAYCAST OBJECT");
@@ -95,16 +99,15 @@ public class PlayerGazeControlled: MonoBehaviour
   void Update()
   {
     int layer_mask = m_object_layer | m_surface_mesh_layer;
-    RaycastHit hit;
-    GameObject target = FindGazeTarget(out hit, 5.0f, layer_mask);
+    GameObject target = FindGazeTarget(out m_hit, 5.0f, layer_mask);
     if (target != null && target != m_helicopter.gameObject)
     {
       int target_layer_mask = 1 << target.layer;
       if ((target_layer_mask & layer_mask) != 0)
       {
-        m_cursor2.transform.position = hit.point + hit.normal * 0.5f;
+        m_cursor2.transform.position = m_hit.point + m_hit.normal * 0.5f;
         m_cursor2.transform.forward = -transform.forward;
-        m_helicopter.FlyToPosition(hit.point + hit.normal * 0.5f);
+        m_helicopter.FlyToPosition(m_hit.point + m_hit.normal * 0.5f);
       }
     }
     else if (target == null)
