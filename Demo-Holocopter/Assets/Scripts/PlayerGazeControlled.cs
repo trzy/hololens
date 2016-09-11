@@ -7,6 +7,7 @@ using System.Linq;
 public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
+  public Explosion m_explosion_prefab;
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
@@ -36,8 +37,13 @@ public class PlayerGazeControlled: MonoBehaviour
     case State.Playing:
       if (m_gaze_target == null)
       {
+        Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
+        explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
       }
       else if (m_gaze_target == m_helicopter.gameObject)
+      {
+      }
+      else
       {
       }
       break;
