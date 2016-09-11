@@ -64,8 +64,8 @@ float4 frag(v2f i) : SV_Target
     #endif
 
     // Discard transparent pixels
-    //if (c.a < .01)
-    //  discard;
+    if (c.a < .01)
+      discard;
         
     UNITY_APPLY_FOG(i.fogCoord, c);
 
