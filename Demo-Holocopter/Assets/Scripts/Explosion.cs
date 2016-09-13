@@ -76,7 +76,7 @@ public class Explosion: MonoBehaviour
 
   void Start()
   {
-    CreateCloud(new Vector3(0, 0, 0), 2, 8);
+    //CreateCloud(new Vector3(0, 0, 0), 2, 8);
   }
 
 	void Update()
