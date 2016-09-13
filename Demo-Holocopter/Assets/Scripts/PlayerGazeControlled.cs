@@ -48,6 +48,8 @@ public class PlayerGazeControlled: MonoBehaviour
       else
       {
         GroundFlash flash = Instantiate(m_ground_flash_prefab, m_hit.point + m_hit.normal * 0.01f, Quaternion.LookRotation(m_hit.normal)) as GroundFlash;
+        //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
+        //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
       }
       break;
     }
