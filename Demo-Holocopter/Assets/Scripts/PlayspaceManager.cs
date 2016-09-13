@@ -30,7 +30,9 @@ public class PlayspaceManager : MonoBehaviour
       // Only tables below eye level. SurfacePlane has the unfortunate problem
       // that it creates tables with planes oriented downwards. We ignore these
       // (but maybe we should rotate?).
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.transform.up.y > 0)
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType)
+        Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
         planes.Add(plane);
     }
     return planes;
