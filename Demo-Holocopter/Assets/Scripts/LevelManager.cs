@@ -10,21 +10,6 @@ public class LevelManager : MonoBehaviour
   [Tooltip("Flat-shaded material.")]
   public Material m_flat_material = null;
 
-  //
-  // SurfacePlane local coordinate system is perpendicular to Z axis (surface
-  // face is in XY plane with up being -Z). We want our local coordinate 
-  // system for object placement to lie in XZ plane (i.e., the floor of the
-  // plane with up being +Y in world space). To rotate our local system onto
-  // the surface plane in world space, we first rotate into the SurfacePlane
-  // local system and then apply SurfacePlane's transformation.
-  //
-  // Unfortunately, after plane transform, it's unclear where +X and +Z are
-  // because of rotation about the Y axis, so we cannot be quite sure using
-  // the simple scheme here how objects will be oriented, except that they
-  // will be in a local coordinate system lined up with plane edges.
-  //
-  private Quaternion m_rotate_to_plane_basis = Quaternion.FromToRotation(new Vector3(0, 1, 0), new Vector3(0, 0, -1));
-
   private List<GameObject> GetTablesInDescendingAreaOrder()
   {
     List<GameObject> floors = m_playspace_manager.GetTables();
@@ -40,12 +25,33 @@ public class LevelManager : MonoBehaviour
 
   private void PlaceCube(float width, float height, float depth, Material material, Color color, HoloToolkit.Unity.SurfacePlane plane, float local_x, float local_z)
   {
+    //
+    // Plane coordinate system is different from Unity world convention:
+    //  x,y (right,up) -> plane surface
+    //  z (forward)    -> perpendicular to plane surface
+    // To further add to confusion, the forward direction is not necessarily
+    // the same as the normal, and can be its inverse. We must test for this
+    // situation and rotate 180 degrees about (local) x, y.
+    //
+
+    // World xz -> plane xy
+    float x = local_x;
+    float y = local_z;
+    float size_x = width;
+    float size_y = depth;
+    float size_z = height;
+
+    // Construct rotation from plane to world space
     Vector3 origin = plane.transform.position;
-    Quaternion rotation = plane.transform.rotation * m_rotate_to_plane_basis; // 1) rotate into plane-local basis, then 2) rotate into world orientation
+    Quaternion rotation = plane.transform.rotation;
+    if (plane.transform.forward.y < 0)  // plane is oriented upside down 
+      rotation = Quaternion.LookRotation(-plane.transform.forward, plane.transform.up);
+
+    // Place object in plane-local coordinate system; rotate to world system
     GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
     cube.transform.parent = gameObject.transform; // level manager will be parent
-    cube.transform.localScale = new Vector3(width, height, depth);
-    cube.transform.position = origin + rotation * new Vector3(local_x, 0.5f * height, local_z);
+    cube.transform.localScale = new Vector3(size_x, size_y, size_z);
+    cube.transform.position = origin + rotation * new Vector3(x, y, 0.5f * size_z);
     cube.transform.transform.rotation = rotation;
     cube.GetComponent<Renderer>().material = material;
     cube.GetComponent<Renderer>().material.color = color; // equivalent to SetColor("_Color", color)
@@ -54,13 +60,27 @@ public class LevelManager : MonoBehaviour
 
   public void GenerateLevel()
   {
-    List<GameObject> floors = GetTablesInDescendingAreaOrder();
-    Debug.Log("GenerateLevel(): number of floors=" + floors.Capacity.ToString());
+    List<GameObject> tables = GetTablesInDescendingAreaOrder();
+    Debug.Log("GenerateLevel(): number of tables=" + tables.Capacity.ToString());
     //TODO: check if empty and take corrective action
-    if (floors.Capacity == 0)
+    if (tables.Capacity == 0)
+    {
+      // For now, place a big ugly gray cube if no tables found
+      GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+      cube.transform.parent = gameObject.transform; // level manager will be parent
+      cube.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+      cube.transform.position = new Vector3(0, 0, 2);
+      cube.GetComponent<Renderer>().material = m_flat_material;
+      cube.GetComponent<Renderer>().material.color = Color.grey;
+      cube.SetActive(true);
       return;
+    }
     // Until we develop some real assets, just place cubes :)
-    HoloToolkit.Unity.SurfacePlane city_plane = floors[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    HoloToolkit.Unity.SurfacePlane city_plane = tables[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    Debug.Log("up=" + city_plane.transform.up.ToString("F2"));
+    Debug.Log("forward=" + city_plane.transform.forward.ToString("F2"));
+    Debug.Log("right=" + city_plane.transform.right.ToString("F2"));
+    Debug.Log("normal=" + city_plane.Plane.Plane.normal.ToString("F2"));
     PlaceCube(0.25f, 0.75f, 0.25f, m_flat_material, Color.red, city_plane, -0.25f + 0.0f, 0.1f);
     PlaceCube(0.25f, 0.30f, 0.25f, m_flat_material, Color.green, city_plane, -0.50f - 0.1f, 0.1f);
     PlaceCube(0.25f, 0.40f, 0.25f, m_flat_material, Color.blue, city_plane, 0.0f + 0.1f, 0.25f + 0.1f);
