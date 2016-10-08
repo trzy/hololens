@@ -14,14 +14,14 @@ public class GroundFlash: MonoBehaviour
 
   void Awake()
   {
-    m_max_scale = transform.localScale; // use local scale from editor as max size
-    transform.localScale = Vector3.zero;
   }
 
   void Start()
   {
     m_t0 = Time.time;
-	}
+    m_max_scale = transform.localScale; // use local scale from editor as max size
+    transform.localScale = Vector3.zero;
+  }
 	
 	void Update()
   {

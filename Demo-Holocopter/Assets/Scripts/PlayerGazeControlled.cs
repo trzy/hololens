@@ -8,12 +8,13 @@ public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
   public Explosion m_explosion_prefab;
-  public GroundFlash m_ground_flash_prefab;
+  public BulletFXManager m_bullet_fx;
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
   public GameObject m_cursor1;
   public GameObject m_cursor2;
+  public Bullet m_bullet_prefab;
 
   enum State
   {
@@ -24,8 +25,6 @@ public class PlayerGazeControlled: MonoBehaviour
   private GestureRecognizer m_gesture_recognizer = null;
   private GameObject        m_gaze_target = null;
   private RaycastHit        m_hit;
-  private int               m_object_layer = 0;
-  private int               m_surface_mesh_layer = 0;
   private State             m_state;
 
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
@@ -47,9 +46,10 @@ public class PlayerGazeControlled: MonoBehaviour
       }
       else
       {
-        GroundFlash flash = Instantiate(m_ground_flash_prefab, m_hit.point + m_hit.normal * 0.01f, Quaternion.LookRotation(m_hit.normal)) as GroundFlash;
-        //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
-        //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
+          //GroundFlash flash = Instantiate(m_ground_flash_prefab, m_hit.point + m_hit.normal * 0.01f, Quaternion.LookRotation(m_hit.normal)) as GroundFlash;
+          //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
+          //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
+          //m_bullet_fx.CreateSurfaceHitFX(m_hit.point, m_hit.normal);
       }
       break;
     }
@@ -65,6 +65,7 @@ public class PlayerGazeControlled: MonoBehaviour
       break;
     case State.Playing:
       m_playspace_manager.StopScanning();
+      m_helicopter.SetControlMode(Helicopter.ControlMode.Player);
       break;
     }
   }
@@ -75,8 +76,6 @@ public class PlayerGazeControlled: MonoBehaviour
     m_gesture_recognizer.SetRecognizableGestures(GestureSettings.Tap);
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
-    m_object_layer = 1 << LayerMask.NameToLayer("Default");
-    m_surface_mesh_layer = m_playspace_manager.GetPhysicsLayerBitmask();
     SetState(State.Scanning);
   }
 
@@ -100,31 +99,34 @@ public class PlayerGazeControlled: MonoBehaviour
 
   void Update()
   {
-    int layer_mask = m_object_layer | m_surface_mesh_layer;
-    GameObject target = FindGazeTarget(out m_hit, 5.0f, layer_mask);
-    if (target != null && target != m_helicopter.gameObject)
+    if (m_state == State.Playing)
     {
-      int target_layer_mask = 1 << target.layer;
-      if ((target_layer_mask & layer_mask) != 0)
+      int layer_mask = Layers.Instance.collidable_layers_mask;
+      GameObject target = FindGazeTarget(out m_hit, 5.0f, layer_mask);
+      if (target != null && target != m_helicopter.gameObject)
       {
-        m_cursor2.transform.position = m_hit.point + m_hit.normal * 0.5f;
-        m_cursor2.transform.forward = -transform.forward;
-        m_helicopter.FlyToPosition(m_hit.point + m_hit.normal * 0.5f);
+        int target_layer_mask = 1 << target.layer;
+        if ((target_layer_mask & layer_mask) != 0)
+        {
+          m_cursor2.transform.position = m_hit.point + m_hit.normal * 0.5f;
+          m_cursor2.transform.forward = -transform.forward;
+          //m_helicopter.FlyToPosition(m_hit.point + m_hit.normal * 0.5f);
+        }
+      }
+      else if (target == null)
+      {
+        // Hit nothing -- move toward point on ray, 2m out
+        //m_helicopter.FlyToPosition(transform.position + transform.forward * 2.0f);
       }
     }
-    else if (target == null)
-    {
-      // Hit nothing -- move toward point on ray, 2m out
-      m_helicopter.FlyToPosition(transform.position + transform.forward * 2.0f);
-    }
-    UnityEngineUpdate();
+    UnityEditorUpdate();
   }
 
 #if UNITY_EDITOR
   private Vector3 m_euler = new Vector3();
 #endif
 
-  private void UnityEngineUpdate()
+  private void UnityEditorUpdate()
   {
 #if UNITY_EDITOR
     // Simulate air tap

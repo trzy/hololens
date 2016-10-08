@@ -3,20 +3,18 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Helicopter : MonoBehaviour
+public class Helicopter: MonoBehaviour
 {
   public Text         m_ui_inputs = null;
   public Text         m_ui_control_program = null;
 
-  private IEnumerator m_rotor_speed_coroutine = null;
+  public Bullet       m_bullet_prefab = null;
 
-  private const float SCALE = .06f;
-  private const float MAX_TILT_DEGREES = 30;
-  private const float MAX_TORQUE = 25000 * SCALE; //TODO: reformulate in terms of mass?
-  private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_TORQUE / 5.0f;
-  private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
-  private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
-  private const float ACCEPTABLE_HEADING_ERROR = 10;
+  public enum ControlMode
+  {
+    Player,
+    Program
+  };
 
   public float heading
   {
@@ -38,27 +36,35 @@ public class Helicopter : MonoBehaviour
     }
   }
 
-  enum ControlMode
-  {
-    Player,
-    Program
-  };
-
+  private IEnumerator m_control_coroutine = null;
+  private IEnumerator m_rotor_speed_coroutine = null;
   private ControlMode m_control_mode = ControlMode.Player;
   private Controls m_player_controls = new Controls();
   private Controls m_program_controls = new Controls();
-  private IEnumerator m_control_coroutine = null;
+  private bool m_joypad_axes_pressed_last_frame = false;
+  private Vector3 m_joypad_lateral_axis;
+  private Vector3 m_joypad_longitudinal_axis;
+  private float m_gun_last_fired;
+
+  private const float SCALE = .06f;
+  private const float MAX_TILT_DEGREES = 30;
+  private const float MAX_TORQUE = 25000 * SCALE; //TODO: reformulate in terms of mass?
+  private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_TORQUE / 5.0f;
+  private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
+  private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
+  private const float ACCEPTABLE_HEADING_ERROR = 10;
+  private const float GUN_FIRE_PERIOD = 1f / 5f;
 
   private void SetControlProgram(IEnumerator coroutine)
   {
-    if (m_control_coroutine != null)
+    if (m_control_coroutine != coroutine)
       StopCoroutine(m_control_coroutine);
     m_control_coroutine = coroutine;
     if (m_control_coroutine != null)
       StartCoroutine(m_control_coroutine);
   }
 
-  private void SetControlMode(ControlMode control_mode, IEnumerator coroutine = null)
+  public void SetControlMode(ControlMode control_mode, IEnumerator coroutine = null)
   {
     m_control_mode = control_mode;
     SetControlProgram(coroutine);
@@ -127,6 +133,13 @@ public class Helicopter : MonoBehaviour
   public void FlyToPosition(Vector3 target_position)
   {
     SetControlMode(ControlMode.Program, FlyToPositionCoroutine(target_position));
+  }
+
+  public void FireGun()
+  {
+    Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.forward * 0.5f, Quaternion.identity) as Bullet;
+    bullet.transform.forward = transform.forward;
+    m_gun_last_fired = Time.time;
   }
 
   private IEnumerator ChangeRotorSpeedCoroutine(string rps_param_name, float target_rps, float ramp_time)
@@ -270,9 +283,93 @@ public class Helicopter : MonoBehaviour
     rb.AddRelativeTorque(torque);
   }
 
+  private void UpdateControls()
+  {
+    /*
+    if (Input.GetKey(KeyCode.Joystick1Button0))
+      Debug.Log("Joy A");
+    if (Input.GetKey(KeyCode.Joystick1Button1))
+      Debug.Log("Joy B");
+    if (Input.GetKey(KeyCode.Joystick1Button2))
+      Debug.Log("Joy X");
+    if (Input.GetKey(KeyCode.Joystick1Button3))
+      Debug.Log("Joy Y");
+    if (Input.GetKey(KeyCode.Joystick1Button4))
+      Debug.Log("Joy LB");
+    if (Input.GetKey(KeyCode.Joystick1Button5))
+      Debug.Log("Joy RB");
+    if (Input.GetKey(KeyCode.Joystick1Button6))
+      Debug.Log("Joy View");
+    if (Input.GetKey(KeyCode.Joystick1Button7))
+      Debug.Log("Joy Menu");
+    if (Input.GetKey(KeyCode.Joystick1Button8))
+      Debug.Log("Joy LeftStick");
+    if (Input.GetKey(KeyCode.Joystick1Button9))
+      Debug.Log("Joy RightStick");
+
+    float val = 0;
+    if ((val = Input.GetAxis("Horizontal")) != 0) // left stick
+      Debug.Log("Horizontal: " + val.ToString());
+    if ((val = Input.GetAxis("Vertical")) != 0)   // left stick
+      Debug.Log("Vertical: " + val.ToString());
+    if ((val = Input.GetAxis("Horizontal2")) != 0) // right stick (4th axis)
+      Debug.Log("Horizontal2: " + val.ToString());
+    if ((val = Input.GetAxis("Vertical2")) != 0) // right stick (5th axis)
+      Debug.Log("Vertical2: " + val.ToString());
+    if ((val = Input.GetAxis("LeftTrigger")) != 0)
+      Debug.Log("LeftTrigger: " + val.ToString());
+    if ((val = Input.GetAxis("RightTrigger")) != 0)
+      Debug.Log("RightTrigger: " + val.ToString());
+
+    m_player_controls.lateral = Input.GetAxis("Horizontal");
+    m_player_controls.longitudinal = Input.GetAxis("Vertical");
+    m_player_controls.rotational = Input.GetAxis("Horizontal2");
+    m_player_controls.altitude = -Input.GetAxis("Vertical2");
+    */
+
+    // Get current joypad axis values
+    float hor = Input.GetAxis("Horizontal");
+    float ver = Input.GetAxis("Vertical");
+    float lt = Input.GetAxis("LeftTrigger");
+    float rt = Input.GetAxis("RightTrigger");
+
+    // Any of the main axes (which are relative to orientation) pressed?
+    bool pressed = (hor != 0) || (ver != 0);
+    if (pressed && !m_joypad_axes_pressed_last_frame)
+    {
+      // Joypad was not pressed last frame, reorient based on current view position
+      m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
+      m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
+    }
+    m_joypad_axes_pressed_last_frame = pressed;
+
+    // Apply correction for heading
+    //TODO: do we want this behavior?
+
+    // Apply longitudinal and lateral controls. Compute projection of joypad
+    // lateral/longitudinal axes onto helicopter's.
+    float joypad_longitudinal_to_heli_longitudinal = Vector3.Dot(m_joypad_longitudinal_axis, transform.forward);
+    float joypad_longitudinal_to_heli_lateral = Vector3.Dot(m_joypad_longitudinal_axis, transform.right);
+    float joypad_lateral_to_heli_longitudinal = Vector3.Dot(m_joypad_lateral_axis, transform.forward);
+    float joypad_lateral_to_heli_lateral = Vector3.Dot(m_joypad_lateral_axis, transform.right);
+    m_player_controls.longitudinal = joypad_longitudinal_to_heli_longitudinal * ver + joypad_lateral_to_heli_longitudinal * hor;
+    m_player_controls.lateral = joypad_longitudinal_to_heli_lateral * ver + joypad_lateral_to_heli_lateral * hor;
+
+    // Altitude control (trigger axes each range from 0 to 1)
+    m_player_controls.altitude = -lt + rt;
+
+    // Gun
+    if (Input.GetKey(KeyCode.Joystick1Button0))
+    {
+      if (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD)
+        FireGun();
+    }
+  }
+
   // Update is called once per frame
   void Update()
   {
+    UpdateControls();
     UnityEditorUpdate();
   }
   
@@ -281,6 +378,7 @@ public class Helicopter : MonoBehaviour
   {
     SetControlMode(ControlMode.Program);
     ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
+    m_gun_last_fired = Time.time;
   }
 
   private void UnityEditorUpdate()
