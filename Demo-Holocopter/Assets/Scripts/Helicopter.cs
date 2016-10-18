@@ -137,8 +137,8 @@ public class Helicopter: MonoBehaviour
 
   public void FireGun()
   {
-    Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.forward * 0.5f, Quaternion.identity) as Bullet;
-    bullet.transform.forward = transform.forward;
+    Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.up * -0.05f + transform.forward * 0.25f, Quaternion.identity) as Bullet;
+    bullet.transform.forward = transform.forward; 
     m_gun_last_fired = Time.time;
   }
 
