@@ -86,6 +86,7 @@ public class PlayspaceManager : MonoBehaviour
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
+    //SetPlanesVisible(true);
   }
 
   private void CreatePlanes()

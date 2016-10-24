@@ -10,8 +10,7 @@ using System.Collections;
 
 public class Bullet: MonoBehaviour
 {
-  public GroundFlash m_ground_flash_prefab;
-  public GroundBlast m_ground_blast_prefab;
+  public ParticleEffectsManager m_particle_fx_manager;
   public float m_velocity = 6f;
   public float m_max_lifetime = 5f;
 
@@ -20,9 +19,14 @@ public class Bullet: MonoBehaviour
 
   private void CreateSurfaceHitFX(Vector3 hit_point, Vector3 hit_normal)
   {
-    GroundFlash flash = Instantiate(m_ground_flash_prefab, hit_point + hit_normal * 0.01f, Quaternion.LookRotation(hit_normal)) as GroundFlash;
-    GroundBlast blast = Instantiate(m_ground_blast_prefab, hit_point + hit_normal * 0.02f, Quaternion.LookRotation(hit_normal)) as GroundBlast;
-    blast.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);  // scale down to real world size
+    // Always create flash and blast
+    m_particle_fx_manager.CreateBulletImpact(hit_point, hit_normal);
+    // Lingering fireball only when hitting the ground
+    if (Vector3.Angle(hit_normal, Vector3.up) < 10)
+      m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, .1f, 4, 0);
+      //m_particle_fx_manager.CreateLingeringFireball(hit_point, hit_normal, 0);
+      //else if (Mathf.Abs(90 - Vector3.Angle(hit_normal, Vector3.up)) < 10)
+      //  m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal);
   }
 
   void OnCollisionEnter(Collision collision)

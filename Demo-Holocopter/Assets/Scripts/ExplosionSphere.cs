@@ -6,6 +6,9 @@ public class ExplosionSphere : MonoBehaviour
   [Tooltip("If non-zero, object's render queue value is offset from the shader's default. Higher values are rendered later. Use this (sparingly) to enforce draw order.")]
   public int m_render_queue_offset = 0;
 
+  [Tooltip("Time in seconds to delay appearance.")]
+  public float delayTime = 0;
+
   [Tooltip("Time in seconds over which to ramp to maximum size using S-curve.")]
   public float m_ramp_up_time = 0.4f;
 
@@ -16,20 +19,19 @@ public class ExplosionSphere : MonoBehaviour
   public float m_texture_scroll_time = 5;
 
   private Vector3 m_max_scale;
-  private Material m_material;
+  private Renderer m_renderer;
   private int m_v_offset;
   private float m_t0 = 0;
 
 	void Awake()
   {
-    Debug.Log("Awake");
+    //Debug.Log("Awake");
     m_max_scale = transform.localScale; // use local scale from editor as max size
     transform.localScale = Vector3.zero;
-    m_material = GetComponent<Renderer>().material;
+    m_renderer = GetComponent<Renderer>();
     m_v_offset = Shader.PropertyToID("_VOffset");
     if (m_render_queue_offset != 0)
-      m_material.renderQueue = m_material.shader.renderQueue + m_render_queue_offset;
-    this.gameObject.SetActive(false); // we require explicit activation
+      m_renderer.material.renderQueue = m_renderer.material.shader.renderQueue + m_render_queue_offset;
   }
 
   void Start()
@@ -44,14 +46,22 @@ public class ExplosionSphere : MonoBehaviour
 
 	void Update()
   {
+    // Wait until after delay period to begin
     float delta = Time.time - m_t0;
+    if (delta < delayTime)
+      return;
+    delta -= delayTime;
+    if (!m_renderer.enabled)
+      m_renderer.enabled = true;
+
+    // Animate
     if (delta > m_ramp_up_time + m_fade_out_time)
       Destroy(this.gameObject);
     float size = Sigmoid1(delta / m_ramp_up_time);
     transform.localScale = size * m_max_scale;
-    Color color = new Color(m_material.color.r, m_material.color.g, m_material.color.b, 1);
+    Color color = new Color(m_renderer.material.color.r, m_renderer.material.color.g, m_renderer.material.color.b, m_renderer.material.color.a);
     color.a *= Mathf.Clamp(1 - (delta - m_ramp_up_time) / m_fade_out_time, 0, 1);
-    m_material.color = color;
-    m_material.SetFloat(m_v_offset, delta / m_texture_scroll_time);
+    m_renderer.material.color = color;
+    m_renderer.material.SetFloat(m_v_offset, delta / m_texture_scroll_time);
   }
 }

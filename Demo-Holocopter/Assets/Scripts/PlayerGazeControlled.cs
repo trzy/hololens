@@ -7,8 +7,7 @@ using System.Linq;
 public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
-  public Explosion m_explosion_prefab;
-  public BulletFXManager m_bullet_fx;
+  public ParticleEffectsManager m_particle_fx_manager;
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
@@ -38,18 +37,12 @@ public class PlayerGazeControlled: MonoBehaviour
     case State.Playing:
       if (m_gaze_target == null)
       {
-          //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
-          //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
       }
       else if (m_gaze_target == m_helicopter.gameObject)
       {
       }
       else
       {
-          //GroundFlash flash = Instantiate(m_ground_flash_prefab, m_hit.point + m_hit.normal * 0.01f, Quaternion.LookRotation(m_hit.normal)) as GroundFlash;
-          //Explosion explosion = Instantiate(m_explosion_prefab) as Explosion;
-          //explosion.CreateCloud(head_ray.origin + head_ray.direction * 3, 0.2f, 5, 0.1f);
-          //m_bullet_fx.CreateSurfaceHitFX(m_hit.point, m_hit.normal);
       }
       break;
     }

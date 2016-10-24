@@ -5,10 +5,11 @@ using System.Collections.Generic;
 
 public class Helicopter: MonoBehaviour
 {
-  public Text         m_ui_inputs = null;
-  public Text         m_ui_control_program = null;
+  public Text                   m_ui_inputs = null;
+  public Text                   m_ui_control_program = null;
 
-  public Bullet       m_bullet_prefab = null;
+  public Bullet                 m_bullet_prefab = null;
+  public ParticleEffectsManager m_particle_fx_manager = null;
 
   public enum ControlMode
   {
@@ -44,6 +45,7 @@ public class Helicopter: MonoBehaviour
   private bool m_joypad_axes_pressed_last_frame = false;
   private Vector3 m_joypad_lateral_axis;
   private Vector3 m_joypad_longitudinal_axis;
+  private Vector3 m_target_forward;
   private float m_gun_last_fired;
 
   private const float SCALE = .06f;
@@ -52,7 +54,7 @@ public class Helicopter: MonoBehaviour
   private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_TORQUE / 5.0f;
   private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
   private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
-  private const float ACCEPTABLE_HEADING_ERROR = 10;
+  private const float ACCEPTABLE_HEADING_ERROR = 5; // in degrees
   private const float GUN_FIRE_PERIOD = 1f / 5f;
 
   private void SetControlProgram(IEnumerator coroutine)
@@ -75,20 +77,25 @@ public class Helicopter: MonoBehaviour
     return -(a.x * b.z - a.z * b.x);
   }
 
-  private float HeadingError(Vector3 target_point)
+  private float HeadingError(Vector3 target_forward)
   {
-    Vector3 to_point = ProjectXZ(target_point - transform.position);
+    Vector3 target = ProjectXZ(target_forward);
     Vector3 forward = ProjectXZ(transform.forward);
     // Minus sign because error defined as how much we have overshot and need
     // to subtract, assuming positive rotation is clockwise.
-    return -Mathf.Sign(CrossY(forward, to_point)) * Vector3.Angle(forward, to_point);
+    return -Mathf.Sign(CrossY(forward, target)) * Vector3.Angle(forward, target);
+  }
+
+  private float HeadingErrorTo(Vector3 target_point)
+  {
+    return HeadingError(target_point - transform.position);
   }
 
   private bool GoTo(Vector3 target_position)
   {
     Vector3 to_target = target_position - transform.position;
     float distance = Vector3.Magnitude(to_target);
-    float heading_error = HeadingError(target_position);
+    float heading_error = HeadingErrorTo(target_position);
     float abs_heading_error = Mathf.Abs(heading_error);
     if (abs_heading_error > ACCEPTABLE_HEADING_ERROR)
       m_program_controls.rotational = -Mathf.Sign(heading_error) * Mathf.Lerp(0.5F, 1.0F, Mathf.Abs(heading_error) / 360.0F);
@@ -327,11 +334,23 @@ public class Helicopter: MonoBehaviour
     m_player_controls.altitude = -Input.GetAxis("Vertical2");
     */
 
+    // Determine angle between user gaze vector and helicopter forward, in xz
+    // plane
+    Vector3 view = new Vector3(Camera.main.transform.forward.x, 0, Camera.main.transform.forward.z);
+    Vector3 forward = new Vector3(transform.forward.x, 0, transform.forward.z);
+    float angle = Vector3.Angle(view, forward);
+
     // Get current joypad axis values
     float hor = Input.GetAxis("Horizontal");
     float ver = Input.GetAxis("Vertical");
-    float lt = Input.GetAxis("LeftTrigger");
-    float rt = Input.GetAxis("RightTrigger");
+#if UNITY_EDITOR
+    float lt = Input.GetAxis("Axis9");
+    float rt = Input.GetAxis("Axis10");
+#else
+    float axis3 = Input.GetAxis("Axis3");
+    float lt = Mathf.Max(axis3, 0);
+    float rt = -Mathf.Min(axis3, 0);
+#endif
 
     // Any of the main axes (which are relative to orientation) pressed?
     bool pressed = (hor != 0) || (ver != 0);
@@ -340,11 +359,38 @@ public class Helicopter: MonoBehaviour
       // Joypad was not pressed last frame, reorient based on current view position
       m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
       m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
+
+      // Compute desired orientation vector. Vector3.Angle() returns [0,180),
+      // so to determine left vs. right relative to camera, dot with camera's
+      // right vector.
+      if (angle >= 45 && angle <= (90 + 45))
+      {
+        // Helicopter orientation is closer to being sideways
+        m_target_forward = Camera.main.transform.right;
+        if (Vector3.Dot(transform.forward, Camera.main.transform.right) < 0)
+          m_target_forward *= -1;
+      }
+      else
+      {
+        // Helicopter orientation is closer to being along view vector
+        m_target_forward = Camera.main.transform.forward;
+      }
     }
     m_joypad_axes_pressed_last_frame = pressed;
 
-    // Apply correction for heading
-    //TODO: do we want this behavior?
+    // Apply correction for heading (rotate toward desired orientation)
+    if (pressed)
+    {
+      // Only perform update when user is applying input
+      float heading_error = HeadingError(m_target_forward);
+      float heading_error_magnitude = Mathf.Abs(heading_error);
+      if (heading_error_magnitude > ACCEPTABLE_HEADING_ERROR)
+        m_player_controls.rotational = -Mathf.Sign(heading_error) * Mathf.Lerp(0.8F, 1.0F, heading_error_magnitude / 360.0F);
+      else
+        m_player_controls.rotational = 0;
+    }
+    else
+      m_player_controls.rotational = 0;
 
     // Apply longitudinal and lateral controls. Compute projection of joypad
     // lateral/longitudinal axes onto helicopter's.
@@ -362,7 +408,14 @@ public class Helicopter: MonoBehaviour
     if (Input.GetKey(KeyCode.Joystick1Button0))
     {
       if (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD)
+      {
         FireGun();
+        //m_particle_fx_manager.CreateCloud(transform.position + transform.forward, 0.5f, 5);
+      }
+    }
+    if (Input.GetButtonDown("Fire2"))
+    {
+      m_particle_fx_manager.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
     }
   }
 
@@ -379,6 +432,7 @@ public class Helicopter: MonoBehaviour
     SetControlMode(ControlMode.Program);
     ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
     m_gun_last_fired = Time.time;
+    m_target_forward = transform.forward;
   }
 
   private void UnityEditorUpdate()

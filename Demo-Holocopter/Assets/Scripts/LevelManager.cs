@@ -66,6 +66,7 @@ public class LevelManager : MonoBehaviour
     if (tables.Capacity == 0)
     {
       // For now, place a big ugly gray cube if no tables found
+      /*
       GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
       cube.transform.parent = gameObject.transform; // level manager will be parent
       cube.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
@@ -73,6 +74,7 @@ public class LevelManager : MonoBehaviour
       cube.GetComponent<Renderer>().material = m_flat_material;
       cube.GetComponent<Renderer>().material.color = Color.grey;
       cube.SetActive(true);
+      */
       return;
     }
     // Until we develop some real assets, just place cubes :)
