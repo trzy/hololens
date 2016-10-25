@@ -19,14 +19,17 @@ public class Bullet: MonoBehaviour
 
   private void CreateSurfaceHitFX(Vector3 hit_point, Vector3 hit_normal)
   {
-    // Always create flash and blast
     m_particle_fx_manager.CreateBulletImpact(hit_point, hit_normal);
-    // Lingering fireball only when hitting the ground
     if (Vector3.Angle(hit_normal, Vector3.up) < 10)
-      m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, .1f, 4, 0);
-      //m_particle_fx_manager.CreateLingeringFireball(hit_point, hit_normal, 0);
-      //else if (Mathf.Abs(90 - Vector3.Angle(hit_normal, Vector3.up)) < 10)
-      //  m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal);
+    {
+      // Lingering fireball only when hitting the ground
+      m_particle_fx_manager.CreateLingeringFireball(hit_point, hit_normal, 0);
+    }
+    else if (Mathf.Abs(90 - Vector3.Angle(hit_normal, Vector3.up)) < 10)
+    {
+      // Debris when hitting walls
+      m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 5, 0);
+    }
   }
 
   void OnCollisionEnter(Collision collision)

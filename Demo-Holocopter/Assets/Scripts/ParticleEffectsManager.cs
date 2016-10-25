@@ -53,7 +53,7 @@ public class ParticleEffectsManager: MonoBehaviour
     hemisphere.delayTime = start_time_in_seconds;
   }
 
-  public void CreateBulletImpactDebris(Vector3 position, Vector3 normal, float radius, int count, float start_time_in_seconds)
+  public void CreateBulletImpactDebris(Vector3 origin, Vector3 normal, float radius, int count, float start_time_in_seconds)
   {
     /*
      * Generate random points on the plane described by the impact position and
@@ -63,7 +63,7 @@ public class ParticleEffectsManager: MonoBehaviour
      * is just the cross product of plane normal and first vector. The first
      * vector is any arbitrary vector parallel to plane. Equation of plane is:
      *
-     *  (P-O).N = 0 -> nx*x + ny*y + nz*z - (nx*ox+ny*oy+nz*oz)
+     *  (P-O).N = 0 -> nx*x + ny*y + nz*z - (nx*ox+ny*oy+nz*oz) = 0
      *
      * Where P = (x,y,z) is some arbitrary point on plane, O is a known point,
      * and N is the plane normal vector. Therefore:
@@ -82,38 +82,41 @@ public class ParticleEffectsManager: MonoBehaviour
      * 
      *  y = -(a*x + c*z + d) / b
      *  x = 1, z = 2, y = -(a + 2*c + d) / b
+     *
+     * Remember that this solves for the *point*, P. To get the axis, subtract
+     * O.
      */
 
     float a = normal.x;
     float b = normal.y;
     float c = normal.z;
-    float d = -Vector3.Dot(normal, position);
+    float d = -Vector3.Dot(normal, origin);
     Vector3 plane_x_axis;
     Vector3 plane_y_axis;
-    if (normal.z < 1e-6)
+    if (Mathf.Abs(normal.z) < 1e-6)
     {
-      if (normal.y < 1e-6)
+      if (Mathf.Abs(normal.y) < 1e-6)
       {
         // Normal along x axis, trivial to pick perpendicular axes
         plane_x_axis = new Vector3(0, 0, 1);
       }
       else
       {
-        plane_x_axis = new Vector3(1, -(a + 2 * c + d) / b, 2);
+        plane_x_axis = new Vector3(1, -(a + 2 * c + d) / b, 2) - origin;
       }
     }
     else
-      plane_x_axis = Vector3.Normalize(new Vector3(1, 2, -(a + 2 * b + d) / c));
+      plane_x_axis = new Vector3(1, 2, -(a + 2 * b + d) / c) - origin;
     plane_x_axis = Vector3.Normalize(plane_x_axis);
     plane_y_axis = Vector3.Normalize(Vector3.Cross(plane_x_axis, normal));
-    
+
     const float delay_time = 0;
     float start_time = start_time_in_seconds;
     while (count-- > 0)
     {
       Vector2 pos2d = RandomPosition2D(radius);
-      Vector3 pos = position + pos2d.x * plane_x_axis + pos2d.y * plane_y_axis;
-      ExplosionSphere hemisphere = Instantiate(m_dust_hemisphere_prefab, pos, m_dust_hemisphere_prefab.transform.rotation) as ExplosionSphere;
+      Vector3 pos = origin + pos2d.x * plane_x_axis + pos2d.y * plane_y_axis;
+      ExplosionSphere hemisphere = Instantiate(m_dust_hemisphere_prefab, pos, Quaternion.LookRotation(normal)) as ExplosionSphere;
       hemisphere.delayTime = start_time;
       start_time += delay_time;
     }
