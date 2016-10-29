@@ -22,11 +22,26 @@ public class ParticleEffectsManager: MonoBehaviour
   [Tooltip("Prefab for lingering bullet impact dust cloud.")]
   public ExplosionSphere m_dust_hemisphere_prefab;
 
+  [Tooltip("Prefabs for a solid debris fragments (chosen at random).")]
+  public TimeLimited[] m_debris_fragment_prefabs;
+
   private Vector3 RandomPosition(float radius)
   {
-    // Random position within a spherical zone
+    // Random position within a spherical region
     float r = Random.Range(0, radius);
     float theta = Random.Range(0, 180) * Mathf.Deg2Rad;
+    float phi = Random.Range(0, 360) * Mathf.Deg2Rad;
+    float sin_theta = Mathf.Sin(theta);
+    return new Vector3(r * sin_theta * Mathf.Cos(phi), r * sin_theta * Mathf.Sin(phi), r * Mathf.Cos(theta));
+  }
+
+  private Vector3 RandomPositionHemisphere(float radius, float theta_max = 90)
+  {
+    // Random position within a hemispherical region, with +z pointing up, base
+    // resting on xy plane. A maximum theta (angle from +z) can be specified.
+    // For example, theta_max=10 would restrict points to a narrow cone.
+    float r = Random.Range(0, radius);
+    float theta = Random.Range(0, Mathf.Clamp(theta_max, 0, 90)) * Mathf.Deg2Rad;
     float phi = Random.Range(0, 360) * Mathf.Deg2Rad;
     float sin_theta = Mathf.Sin(theta);
     return new Vector3(r * sin_theta * Mathf.Cos(phi), r * sin_theta * Mathf.Sin(phi), r * Mathf.Cos(theta));
@@ -114,11 +129,23 @@ public class ParticleEffectsManager: MonoBehaviour
     float start_time = start_time_in_seconds;
     while (count-- > 0)
     {
+      // Spawn cloud at a random location within a circular region
       Vector2 pos2d = RandomPosition2D(radius);
       Vector3 pos = origin + pos2d.x * plane_x_axis + pos2d.y * plane_y_axis;
       ExplosionSphere hemisphere = Instantiate(m_dust_hemisphere_prefab, pos, Quaternion.LookRotation(normal)) as ExplosionSphere;
       hemisphere.delayTime = start_time;
       start_time += delay_time;
+
+      // Launch pieces of flying debris in random directions along an outward-
+      // facing hemisphere. Note that RandomPositionHemisphere() places a point
+      // in a hemisphere with base in xy and axis along z (forward).
+      Vector3 fly_towards = Quaternion.FromToRotation(Vector3.forward, normal) * Vector3.Normalize(RandomPositionHemisphere(radius));
+      int which = Random.Range(0, m_debris_fragment_prefabs.Length);
+      TimeLimited debris = Instantiate(m_debris_fragment_prefabs[which], pos, Quaternion.identity) as TimeLimited;
+      Rigidbody rb = debris.GetComponent<Rigidbody>();
+      rb.maxAngularVelocity = 30;
+      rb.AddForce(rb.mass * (Vector3.up + fly_towards), ForceMode.Impulse);  // slightly biased toward flying upward
+      rb.AddRelativeTorque(10f * rb.mass * Vector3.right, ForceMode.Impulse);
     }
   }
 

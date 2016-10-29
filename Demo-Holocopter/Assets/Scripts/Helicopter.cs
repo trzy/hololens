@@ -55,7 +55,7 @@ public class Helicopter: MonoBehaviour
   private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
   private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
   private const float ACCEPTABLE_HEADING_ERROR = 5; // in degrees
-  private const float GUN_FIRE_PERIOD = 1f / 5f;
+  private const float GUN_FIRE_PERIOD = 1f / 8f;//1f / 5f;
 
   private void SetControlProgram(IEnumerator coroutine)
   {
@@ -147,6 +147,7 @@ public class Helicopter: MonoBehaviour
     Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.up * -0.05f + transform.forward * 0.25f, Quaternion.identity) as Bullet;
     bullet.transform.forward = transform.forward; 
     m_gun_last_fired = Time.time;
+    GetComponent<AudioSource>().Play();
   }
 
   private IEnumerator ChangeRotorSpeedCoroutine(string rps_param_name, float target_rps, float ramp_time)

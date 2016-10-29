@@ -28,7 +28,8 @@ public class Bullet: MonoBehaviour
     else if (Mathf.Abs(90 - Vector3.Angle(hit_normal, Vector3.up)) < 10)
     {
       // Debris when hitting walls
-      m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 5, 0);
+      //TODO: wall detection should actually involve testing against detected wall planes
+      m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
     }
   }
 

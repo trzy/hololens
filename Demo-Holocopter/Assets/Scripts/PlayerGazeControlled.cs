@@ -74,8 +74,11 @@ public class PlayerGazeControlled: MonoBehaviour
 
   private GameObject FindGazeTarget(out RaycastHit hit, float distance, int layer_mask)
   {
+    //TODO: This code assumes that the collider is in a child object. If this is not the case,
+    //      the code fails.
     if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
     {
+      /*
       GameObject target = hit.collider.transform.parent.gameObject;
       m_gaze_target = target;
       if (target == null)
@@ -86,6 +89,7 @@ public class PlayerGazeControlled: MonoBehaviour
       m_cursor1.transform.position = hit.point + hit.normal * 0.01f;
       m_cursor1.transform.forward = hit.normal;
       return target.activeSelf ? target : null;
+      */
     }
     return null;
   }
