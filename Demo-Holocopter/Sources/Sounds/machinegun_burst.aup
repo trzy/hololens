@@ -1,0 +1,48 @@
+<?xml version="1.0" standalone="no" ?>
+<!DOCTYPE project PUBLIC "-//audacityproject-1.3.0//DTD//EN" "http://audacity.sourceforge.net/xml/audacityproject-1.3.0.dtd" >
+<project xmlns="http://audacity.sourceforge.net/xml/" projname="machinegun_burst_data" version="1.3.0" audacityversion="2.1.2" sel0="0.0000000000" sel1="1.2691408181" vpos="0" h="0.0000000000" zoom="329.3918918919" rate="32000.0" snapto="off" selectionformat="hh:mm:ss + milliseconds" frequencyformat="Hz" bandwidthformat="octaves">
+	<tags>
+		<tag name="Interpreted, remixed, or otherwise modified by" value="Violet (Jeffery&apos;s iMac)"/>
+		<tag name="YEAR" value="2016-06-14T12:42"/>
+	</tags>
+	<wavetrack name="jg-032316-sfx-machine-gun-fire-short-spurt" channel="0" linked="1" mute="1" solo="0" height="150" minimized="0" isSelected="0" rate="32000" gain="1.0" pan="0.0">
+		<waveclip offset="0.00000000">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="170496">
+				<waveblock start="0">
+					<simpleblockfile filename="e0000feb.au" len="170496" min="-0.824827" max="0.85611" rms="0.089651"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="jg-032316-sfx-machine-gun-fire-short-spurt" channel="1" linked="0" mute="1" solo="0" height="150" minimized="0" isSelected="0" rate="32000" gain="1.0" pan="0.0">
+		<waveclip offset="0.00000000">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="170496">
+				<waveblock start="0">
+					<simpleblockfile filename="e0000a7d.au" len="170496" min="-0.916041" max="0.891967" rms="0.091864"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" channel="0" linked="1" mute="0" solo="0" height="150" minimized="0" isSelected="1" rate="32000" gain="1.0" pan="0.0">
+		<waveclip offset="0.00000000">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="40613">
+				<waveblock start="0">
+					<simpleblockfile filename="e00002c5.au" len="40613" min="-0.749567" max="0.794382" rms="0.038011"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+	<wavetrack name="Audio Track" channel="1" linked="0" mute="0" solo="0" height="150" minimized="0" isSelected="1" rate="32000" gain="1.0" pan="0.0">
+		<waveclip offset="0.00000000">
+			<sequence maxsamples="262144" sampleformat="262159" numsamples="40613">
+				<waveblock start="0">
+					<simpleblockfile filename="e0000ecd.au" len="40613" min="-0.795849" max="0.854415" rms="0.039339"/>
+				</waveblock>
+			</sequence>
+			<envelope numpoints="0"/>
+		</waveclip>
+	</wavetrack>
+</project>

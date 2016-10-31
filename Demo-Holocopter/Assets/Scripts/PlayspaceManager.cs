@@ -69,6 +69,15 @@ public class PlayspaceManager : MonoBehaviour
     }
   }
 
+  private void SetPlaneTags(string tag)
+  {
+    foreach (GameObject obj in SurfaceMeshesToPlanes.Instance.ActivePlanes)
+    {
+      SurfacePlane plane = obj.GetComponent<SurfacePlane>();
+      plane.tag = tag;
+    }
+  }
+
   private void Update()
   {
     if (m_scanning_complete)
@@ -86,7 +95,8 @@ public class PlayspaceManager : MonoBehaviour
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
-    //SetPlanesVisible(true);
+    SetPlanesVisible(true);
+    SetPlaneTags(Layers.Instance.surfacePlaneTag);
   }
 
   private void CreatePlanes()

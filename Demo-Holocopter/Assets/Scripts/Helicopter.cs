@@ -416,7 +416,7 @@ public class Helicopter: MonoBehaviour
     }
     if (Input.GetButtonDown("Fire2"))
     {
-      m_particle_fx_manager.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
+      //m_particle_fx_manager.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
     }
   }
 

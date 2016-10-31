@@ -1,11 +1,13 @@
-﻿//TODO: explosions and other FX should not be assigned to their own layer, apart
-//      from physical objects
+﻿// Manages both layers *and* tags
 
 using UnityEngine;
 using System.Collections;
 
 public class Layers : HoloToolkit.Unity.Singleton<Layers>
 {
+  [Tooltip("Tag to apply to each SurfacePlane. Must be a tag predefined in project.")]
+  public string surfacePlaneTag = "SurfacePlane";
+
   // Spatial meshes and surface planes
   public int spatial_mesh_layer
   {

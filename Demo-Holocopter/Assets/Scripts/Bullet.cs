@@ -12,12 +12,12 @@ public class Bullet: MonoBehaviour
 {
   public ParticleEffectsManager m_particle_fx_manager;
   public float m_velocity = 6f;
-  public float m_max_lifetime = 5f;
+  public float m_max_lifetime = 3f;
 
   private float m_t0;
   private bool m_collided = false;
 
-  private void CreateSurfaceHitFX(Vector3 hit_point, Vector3 hit_normal)
+  private void CreateSurfaceHitFX(GameObject hit_object, Vector3 hit_point, Vector3 hit_normal)
   {
     m_particle_fx_manager.CreateBulletImpact(hit_point, hit_normal);
     if (Vector3.Angle(hit_normal, Vector3.up) < 10)
@@ -40,7 +40,7 @@ public class Bullet: MonoBehaviour
     // directly.
     GameObject target = collision.collider.gameObject;
 
-    // We are responsible for collisions with the spatial mesh
+    // We are responsible for collisions with the spatial mesh (which includes SurfacePlanes)
     if (Layers.Instance.IsSpatialMeshLayer(target.layer))
     {
       // Sphere collider can collide with spatial mesh at multiple points
@@ -50,7 +50,7 @@ public class Bullet: MonoBehaviour
 
       // Create a blast effect
       ContactPoint contact = collision.contacts[0];
-      CreateSurfaceHitFX(contact.point, contact.normal);
+      CreateSurfaceHitFX(target, contact.point, contact.normal);
     }
 
     // If we hit a collidable object, the bullet should be destroyed

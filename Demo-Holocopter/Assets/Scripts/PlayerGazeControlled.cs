@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.VR.WSA;
 using UnityEngine.VR.WSA.Input;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ public class PlayerGazeControlled: MonoBehaviour
   public GameObject m_cursor1;
   public GameObject m_cursor2;
   public Bullet m_bullet_prefab;
+  public GameObject testHole;
 
   enum State
   {
@@ -78,6 +80,16 @@ public class PlayerGazeControlled: MonoBehaviour
     //      the code fails.
     if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
     {
+      if (hit.collider.gameObject.CompareTag(Layers.Instance.surfacePlaneTag))
+      {
+        HoloToolkit.Unity.SurfacePlane p = hit.collider.gameObject.GetComponent<HoloToolkit.Unity.SurfacePlane>();
+        if (p.PlaneType == HoloToolkit.Unity.PlaneTypes.Wall && Input.GetButtonDown("Fire2"))
+        {
+          Debug.Log("hit point=" + hit.point);
+          GameObject hole = Instantiate(testHole, hit.point + 0 * hit.normal * 0.01f, Quaternion.LookRotation(hit.normal)) as GameObject;
+          hole.AddComponent<WorldAnchor>();
+        }
+      }
       /*
       GameObject target = hit.collider.transform.parent.gameObject;
       m_gaze_target = target;
