@@ -20,6 +20,23 @@ public class Bullet: MonoBehaviour
   private void CreateSurfaceHitFX(GameObject hit_object, Vector3 hit_point, Vector3 hit_normal)
   {
     m_particle_fx_manager.CreateBulletImpact(hit_point, hit_normal);
+    if (hit_object.CompareTag(Layers.Instance.surfacePlaneTag))
+    {
+      HoloToolkit.Unity.SurfacePlane plane = hit_object.GetComponent<HoloToolkit.Unity.SurfacePlane>();
+      switch (plane.PlaneType)
+      {
+      case HoloToolkit.Unity.PlaneTypes.Wall:
+        m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
+        m_particle_fx_manager.CreateBulletHole(hit_point, hit_normal);
+        break;
+      case HoloToolkit.Unity.PlaneTypes.Floor:
+        m_particle_fx_manager.CreateLingeringFireball(hit_point, hit_normal, 0);
+        break;
+      default:
+        break;
+      }
+    }
+    /*
     if (Vector3.Angle(hit_normal, Vector3.up) < 10)
     {
       // Lingering fireball only when hitting the ground
@@ -31,6 +48,7 @@ public class Bullet: MonoBehaviour
       //TODO: wall detection should actually involve testing against detected wall planes
       m_particle_fx_manager.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
     }
+    */
   }
 
   void OnCollisionEnter(Collision collision)
@@ -70,8 +88,8 @@ public class Bullet: MonoBehaviour
   }
 
   void FixedUpdate()
-  {
-    if (Time.time - m_t0 >= m_max_lifetime)
-      Destroy(gameObject);
-  }
-}
+    {
+          if (Time.time - m_t0 >= m_max_lifetime)
+            Destroy(gameObject);
+        }
+      }

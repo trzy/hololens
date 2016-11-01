@@ -95,7 +95,9 @@ public class PlayspaceManager : MonoBehaviour
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
+#if UNITY_EDITOR
     SetPlanesVisible(true);
+#endif
     SetPlaneTags(Layers.Instance.surfacePlaneTag);
   }
 

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.VR.WSA;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,6 +19,9 @@ public class ParticleEffectsManager: MonoBehaviour
 
   [Tooltip("Prefab for the lingering bullet impact fireball.")]
   public ExplosionSphere m_flame_hemisphere_prefab;
+
+  [Tooltip("Prefab for bullet hole decal.")]
+  public GameObject m_bullet_hole_prefab;
 
   [Tooltip("Prefab for lingering bullet impact dust cloud.")]
   public ExplosionSphere m_dust_hemisphere_prefab;
@@ -60,6 +64,12 @@ public class ParticleEffectsManager: MonoBehaviour
     GroundFlash flash = Instantiate(m_ground_flash_prefab, position + normal * 0.01f, Quaternion.LookRotation(normal)) as GroundFlash;
     GroundBlast blast = Instantiate(m_ground_blast_prefab, position + normal * 0.02f, Quaternion.LookRotation(normal)) as GroundBlast;
     blast.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);  // scale down to real world size
+  }
+
+  public void CreateBulletHole(Vector3 position, Vector3 normal)
+  {
+    GameObject hole = Instantiate(m_bullet_hole_prefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
+    hole.AddComponent<WorldAnchor>();
   }
 
   public void CreateLingeringFireball(Vector3 position, Vector3 normal, float start_time_in_seconds)
