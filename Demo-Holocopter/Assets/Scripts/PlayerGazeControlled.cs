@@ -8,13 +8,11 @@ using System.Linq;
 public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
-  public ParticleEffectsManager m_particle_fx_manager;
   public Material   m_reticle_material;
   public PlayspaceManager m_playspace_manager;
   public LevelManager m_level_manager;
   public GameObject m_cursor1;
   public GameObject m_cursor2;
-  public Bullet m_bullet_prefab;
   public GameObject testHole;
 
   enum State
@@ -87,6 +85,17 @@ public class PlayerGazeControlled: MonoBehaviour
         {
           Debug.Log("hit point=" + hit.point);
           GameObject hole = Instantiate(testHole, hit.point + 0 * hit.normal * 0.01f, Quaternion.LookRotation(hit.normal)) as GameObject;
+          Renderer renderer = hole.GetComponent<Renderer>();
+          // Remap render queues to a progressively increasing sequence from 1000 (background) onwards
+          List<Material> materials = renderer.materials.OrderBy(element => element.renderQueue).ToList();
+          int new_queue = 1000 - 1;
+          int last_queue = -1;
+          foreach (Material material in materials)
+          {
+            new_queue += (material.renderQueue != last_queue ? 1 : 0);
+            last_queue = material.renderQueue;
+            material.renderQueue = new_queue;
+          }
           hole.AddComponent<WorldAnchor>();
         }
       }

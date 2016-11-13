@@ -111,7 +111,8 @@ public class PlayspaceManager : MonoBehaviour
 
   private void RemoveVertices(IEnumerable<GameObject> boundingObjects)
   {
-    RemoveSurfaceVertices removeVerts = RemoveSurfaceVertices.Instance;
+    TriangleRemoval removeVerts = TriangleRemoval.Instance;
+    //RemoveSurfaceVertices removeVerts = RemoveSurfaceVertices.Instance;
     if (removeVerts != null && removeVerts.enabled)
       removeVerts.RemoveSurfaceVerticesWithinBounds(boundingObjects);
   }

@@ -9,7 +9,6 @@ public class Helicopter: MonoBehaviour
   public Text                   m_ui_control_program = null;
 
   public Bullet                 m_bullet_prefab = null;
-  public ParticleEffectsManager m_particle_fx_manager = null;
 
   public enum ControlMode
   {
@@ -411,12 +410,12 @@ public class Helicopter: MonoBehaviour
       if (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD)
       {
         FireGun();
-        //m_particle_fx_manager.CreateCloud(transform.position + transform.forward, 0.5f, 5);
+        //ParticleEffectsManager.Instance.CreateCloud(transform.position + transform.forward, 0.5f, 5);
       }
     }
     if (Input.GetButtonDown("Fire2"))
     {
-      //m_particle_fx_manager.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
+      //ParticleEffectsManager.Instance.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
     }
   }
 
