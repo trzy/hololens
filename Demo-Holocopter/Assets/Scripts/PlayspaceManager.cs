@@ -8,6 +8,12 @@ public class PlayspaceManager : MonoBehaviour
 {
   public delegate void MakePlanesCompleteDelegate();
 
+  [Tooltip("Draw surface planes when running in Unity editor")]
+  public bool planesVisibleInEditor = true;
+
+  [Tooltip("Remove triangles that are inside of surfaces detected by plane finding algo")]
+  public bool removeSurfaceTriangles = false;
+
   public Material m_occlusion_material;
   public Material m_rendering_material;
 
@@ -91,12 +97,14 @@ public class PlayspaceManager : MonoBehaviour
   // Handler for the SurfaceMeshesToPlanes MakePlanesComplete event
   private void SurfaceMeshesToPlanes_MakePlanesComplete(object source, System.EventArgs args)
   {
-    //RemoveVertices(SurfaceMeshesToPlanes.Instance.ActivePlanes);
+    if (removeSurfaceTriangles)
+      RemoveVertices(SurfaceMeshesToPlanes.Instance.ActivePlanes);
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
 #if UNITY_EDITOR
-    SetPlanesVisible(true);
+    if (planesVisibleInEditor)
+      SetPlanesVisible(true);
 #endif
     SetPlaneTags(Layers.Instance.surfacePlaneTag);
   }
