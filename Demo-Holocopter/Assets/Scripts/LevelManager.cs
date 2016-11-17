@@ -10,6 +10,9 @@ public class LevelManager : MonoBehaviour
   [Tooltip("Flat-shaded material.")]
   public Material m_flat_material = null;
 
+  [Tooltip("Tank enemy prefab.")]
+  public GameObject m_tank_prefab = null;
+
   private List<GameObject> GetTablesInDescendingAreaOrder()
   {
     List<GameObject> floors = m_playspace_manager.GetTables();
@@ -58,6 +61,22 @@ public class LevelManager : MonoBehaviour
     cube.SetActive(true);
   }
 
+  private void SpawnObject(GameObject prefab, HoloToolkit.Unity.SurfacePlane plane, float local_x, float local_z)
+  {
+    // World xz -> Plane xy
+    float x = local_x;
+    float y = local_z;
+    Vector3 origin = plane.transform.position;
+    Quaternion rotation = plane.transform.rotation;
+    if (plane.transform.forward.y < 0)  // plane is oriented upside down
+      rotation = Quaternion.LookRotation(-plane.transform.forward, plane.transform.up);
+    // Spawn object in plane-local coordinate system (rotation brings it into world system)
+    GameObject obj = Instantiate(prefab) as GameObject;
+    obj.transform.parent = gameObject.transform;
+    obj.transform.position = origin + rotation * new Vector3(0, 0, 0);
+    obj.SetActive(true);
+  }
+
   public void GenerateLevel()
   {
     List<GameObject> tables = GetTablesInDescendingAreaOrder();
@@ -86,6 +105,13 @@ public class LevelManager : MonoBehaviour
     PlaceCube(0.25f, 0.75f, 0.25f, m_flat_material, Color.red, city_plane, -0.25f + 0.0f, 0.1f);
     PlaceCube(0.25f, 0.30f, 0.25f, m_flat_material, Color.green, city_plane, -0.50f - 0.1f, 0.1f);
     PlaceCube(0.25f, 0.40f, 0.25f, m_flat_material, Color.blue, city_plane, 0.0f + 0.1f, 0.25f + 0.1f);
+
+    // Place tank
+    if (tables.Count >= 2)
+    {
+      HoloToolkit.Unity.SurfacePlane plane = tables[1].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+      SpawnObject(m_tank_prefab, plane, 0, -1);
+    }
   }
 
   void Start()
