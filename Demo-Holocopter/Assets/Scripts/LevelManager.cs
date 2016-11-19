@@ -2,7 +2,32 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class LevelManager : MonoBehaviour
+public interface IMissionHandler
+{
+  void OnEnemyHitByPlayer(MonoBehaviour enemy);
+  void Update();
+}
+
+class Mission1: IMissionHandler
+{
+  private int m_num_hits_until_armor_hint = 2;
+  public void OnEnemyHitByPlayer(MonoBehaviour enemy)
+  {
+    if (m_num_hits_until_armor_hint > 0)
+    {
+      if (enemy is Tank)
+      {
+        if (0 == --m_num_hits_until_armor_hint)
+          VoiceManager.Instance.Play(VoiceManager.Voice.ArmorHint);
+      }
+    }
+  }
+  public void Update()
+  {
+  }
+}
+
+public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 {
   [Tooltip("Used to obtain surface meshes.")]
   public PlayspaceManager m_playspace_manager;
@@ -12,6 +37,10 @@ public class LevelManager : MonoBehaviour
 
   [Tooltip("Tank enemy prefab.")]
   public GameObject m_tank_prefab = null;
+
+  public IMissionHandler currentMission { get { return this.m_current_mission;} }
+
+  private IMissionHandler m_current_mission = null;
 
   private List<GameObject> GetTablesInDescendingAreaOrder()
   {
@@ -73,7 +102,7 @@ public class LevelManager : MonoBehaviour
     // Spawn object in plane-local coordinate system (rotation brings it into world system)
     GameObject obj = Instantiate(prefab) as GameObject;
     obj.transform.parent = gameObject.transform;
-    obj.transform.position = origin + rotation * new Vector3(0, 0, 0);
+    obj.transform.position = origin + rotation * new Vector3(x, y, -0.06f);
     obj.SetActive(true);
   }
 
@@ -110,12 +139,13 @@ public class LevelManager : MonoBehaviour
     if (tables.Count >= 2)
     {
       HoloToolkit.Unity.SurfacePlane plane = tables[1].GetComponent<HoloToolkit.Unity.SurfacePlane>();
-      SpawnObject(m_tank_prefab, plane, 0, -1);
+      SpawnObject(m_tank_prefab, plane, 0, 0.1f);
     }
   }
 
   void Start()
   {
+    m_current_mission = new Mission1();
     //
     // Single-color, flat-shaded material. HoloToolkit/Vertex Lit Configurable
     // appears optimized to compile down to only the variant defined by
@@ -133,5 +163,7 @@ public class LevelManager : MonoBehaviour
 	
 	void Update()
   {
+    if (m_current_mission != null)
+      m_current_mission.Update();
   }
 }

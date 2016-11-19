@@ -18,6 +18,11 @@ public class Tank : MonoBehaviour
   [Tooltip("Distance from player in meters at which to track.")]
   public float playerTrackingDistance = 1.5f;
 
+  [Tooltip("Bullet ricochet sound.")]
+  public AudioClip soundRicochet;
+
+  private AudioSource m_audio_source;
+  private IMissionHandler m_current_mission;
   private Transform m_turret = null;
   private Transform m_gun = null;
   private Quaternion m_turret_zero_rotation;
@@ -45,10 +50,9 @@ public class Tank : MonoBehaviour
 
   void Awake()
   {
-    // Angles cannot be negative
-    if (maxGunAngle < 0)
-      maxGunAngle += 360;
-    maxGunAngle %= 360;
+    m_audio_source = GetComponent<AudioSource>();
+    m_current_mission = LevelManager.Instance.currentMission;
+        
     // Find bones
     Transform[] transforms = GetComponentsInChildren<Transform>();
     foreach (Transform xform in transforms)
@@ -131,22 +135,25 @@ public class Tank : MonoBehaviour
           // Construct a rotation that places turret in current position, then
           // rotates to face the player
           to_player.y = 0;  // Want to rotate in xz plane only
-          Quaternion target = Quaternion.FromToRotation(turret_forward_axis, to_player) * m_turret.rotation;
+          Quaternion target_direction = Quaternion.FromToRotation(turret_forward_axis, to_player) * m_turret.rotation;
           float angle_to_player = Vector3.Angle(turret_forward_axis, to_player);
           if (angle_to_player > 2)
           {
             // Turn toward player
             float time = angle_to_player / turretTrackingSpeed;
-            m_turret.rotation = Quaternion.Slerp(m_turret.rotation, target, Time.deltaTime / time);
+            m_turret.rotation = Quaternion.Slerp(m_turret.rotation, target_direction, Time.deltaTime / time);
           }
           else
           {
             // Raise gun
-            Vector3 current_angles = m_gun.rotation.eulerAngles;
-            Vector3 target_angles = current_angles;
-            target_angles.z = maxGunAngle;
-            float time = Mathf.Abs(target_angles.z - current_angles.z) / turretScanSpeed;
-            m_gun.rotation = Quaternion.Lerp(m_gun.rotation, Quaternion.Euler(target_angles), Time.deltaTime / time);
+            Vector3 target_angles = m_gun.localRotation.eulerAngles;
+            target_angles.z = maxGunAngle;  // bone -- and gun -- axis is along x, so rotate about z
+            Quaternion target_elevation = Quaternion.Euler(target_angles);
+            Vector3 current_gun_vector = m_gun.localRotation * Vector3.right;
+            Vector3 target_gun_vector = target_elevation * Vector3.right;
+            float angle_to_target = Mathf.Abs(Vector3.Angle(current_gun_vector, target_gun_vector));
+            float time = angle_to_target / turretScanSpeed;
+            m_gun.localRotation = Quaternion.Lerp(m_gun.localRotation, target_elevation, Time.deltaTime / time);
           }
         }
         break;
@@ -160,6 +167,18 @@ public class Tank : MonoBehaviour
           m_state = TurretState.ScanningSleep;
         }
         break;
+    }
+  }
+
+  void OnCollisionEnter(Collision collision)
+  {
+    GameObject target = collision.collider.gameObject;
+    Debug.Log("Collided with: " + target.tag);
+    if (target.CompareTag("Bullet"))
+    {
+      m_audio_source.Stop();
+      m_audio_source.PlayOneShot(soundRicochet);
+      m_current_mission.OnEnemyHitByPlayer(this);
     }
   }
 }
