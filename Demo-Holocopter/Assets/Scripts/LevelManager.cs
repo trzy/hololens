@@ -29,22 +29,36 @@ class Mission1: IMissionHandler
 
 public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 {
-  [Tooltip("Used to obtain surface meshes.")]
-  public PlayspaceManager m_playspace_manager;
-
   [Tooltip("Flat-shaded material.")]
-  public Material m_flat_material = null;
+  public Material flatMaterial = null;
+
+  [Tooltip("Factory complex prefab.")]
+  public GameObject factoryComplexPrefab = null;
 
   [Tooltip("Tank enemy prefab.")]
-  public GameObject m_tank_prefab = null;
+  public GameObject tankPrefab = null;
 
   public IMissionHandler currentMission { get { return this.m_current_mission;} }
 
   private IMissionHandler m_current_mission = null;
 
+  //TODO: refactor. too much duplication
+  private List<GameObject> GetFloorsInDescendingAreaOrder()
+  {
+    List<GameObject> floors = PlayspaceManager.Instance.GetFloors();
+    floors.Sort((plane1, plane2) =>
+    {
+      HoloToolkit.Unity.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
+      HoloToolkit.Unity.BoundedPlane bp2 = plane2.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
+      // Sort descending
+      return bp2.Area.CompareTo(bp1.Area);
+    });
+    return floors;
+  }
+
   private List<GameObject> GetTablesInDescendingAreaOrder()
   {
-    List<GameObject> floors = m_playspace_manager.GetTables();
+    List<GameObject> floors = PlayspaceManager.Instance.GetTables();
     floors.Sort((plane1, plane2) =>
     {
       HoloToolkit.Unity.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
@@ -92,26 +106,111 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 
   private void SpawnObject(GameObject prefab, HoloToolkit.Unity.SurfacePlane plane, float local_x, float local_z)
   {
+    // Rotation from a coordinate system where y is up into one where z is up.
+    // This is used to orient objects in a plane-local system before applying
+    // the plane's own transform. Without this, objects end up aligned along
+    // the world's xz axes, not the plane's local xy axes.
+    Quaternion to_plane_orientation = Quaternion.FromToRotation(Vector3.up, Vector3.forward);
     // World xz -> Plane xy
     float x = local_x;
     float y = local_z;
     Vector3 origin = plane.transform.position;
     Quaternion rotation = plane.transform.rotation;
     if (plane.transform.forward.y < 0)  // plane is oriented upside down
-      rotation = Quaternion.LookRotation(-plane.transform.forward, plane.transform.up);
+      rotation = rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward);
     // Spawn object in plane-local coordinate system (rotation brings it into world system)
     GameObject obj = Instantiate(prefab) as GameObject;
     obj.transform.parent = gameObject.transform;
-    obj.transform.position = origin + rotation * new Vector3(x, y, -0.06f);
+    obj.transform.rotation = rotation * to_plane_orientation;
+    obj.transform.position = origin + rotation * new Vector3(x, y, 0);
     obj.SetActive(true);
+  }
+
+  private List<Vector2> FindFloorSpawnPoints(Vector3 required_size, Vector2 step_size, float clearance, HoloToolkit.Unity.SurfacePlane plane)
+  {
+    List<Vector2> places = new List<Vector2>();
+    HoloToolkit.Unity.OrientedBoundingBox bb = plane.Plane.Bounds;
+    Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
+    // Note that xy in local plane coordinate system correspond to what would be xz in global space
+    Vector3 half_extents = new Vector3(required_size.x, required_size.z, required_size.y) * 0.5f;
+    // We step over the plane in step size increments but check for the
+    // required size, which ought to be larger (thereby creating overlapping points)
+    for (float y = -bb.Extents.y + half_extents.y; y <= bb.Extents.y - half_extents.y; y += step_size.y)
+    {
+      for (float x = -bb.Extents.x + half_extents.x; x <= bb.Extents.x - half_extents.x; x += step_size.x)
+      {
+        Vector3 center = plane.transform.position + orientation * new Vector3(x, y, half_extents.z + clearance);
+        Collider[] colliders = Physics.OverlapBox(center, half_extents, orientation, Layers.Instance.spatial_mesh_layer_mask);
+        if (colliders.Length == 0)
+        {
+          /*
+          GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+          cube.transform.parent = gameObject.transform; // level manager will be parent
+          cube.transform.localScale = 2 * half_extents;
+          cube.transform.position = center;
+          cube.transform.transform.rotation = orientation;
+          cube.GetComponent<Renderer>().material = flatMaterial;
+          cube.GetComponent<Renderer>().material.color = Color.green;
+          cube.SetActive(true);
+          */
+          places.Add(new Vector2(x, y));
+        }
+      }
+    }
+    return places;
+  }
+
+  private void DrawFloorSpawnPoints(Vector3 required_size, float clearance, HoloToolkit.Unity.SurfacePlane plane)
+  {
+    HoloToolkit.Unity.OrientedBoundingBox bb = plane.Plane.Bounds;
+    Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
+    // Note that xy in local plane coordinate system correspond to what would be xz in global space
+    Vector3 half_extents = new Vector3(required_size.x, required_size.z, required_size.y) * 0.5f;
+    for (float y = -bb.Extents.y + half_extents.y; y <= bb.Extents.y - half_extents.y; y += 2 * half_extents.y)
+    {
+      for (float x = -bb.Extents.x + half_extents.x; x <= bb.Extents.x - half_extents.x; x += 2 * half_extents.x)
+      {
+        Vector3 center = plane.transform.position + orientation * new Vector3(x, y, half_extents.z + clearance);
+        Collider[] colliders = Physics.OverlapBox(center, half_extents, orientation, Layers.Instance.spatial_mesh_layer_mask);
+        if (colliders.Length == 0)
+        {
+          GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+          cube.transform.parent = gameObject.transform; // level manager will be parent
+          cube.transform.localScale = 2 * half_extents;
+          cube.transform.position = center;
+          cube.transform.transform.rotation = orientation;
+          cube.GetComponent<Renderer>().material = flatMaterial;
+          cube.GetComponent<Renderer>().material.color = Color.green;
+          cube.SetActive(true);
+        }
+      }
+    }
+  }
+
+  private Vector2 FindNearestToPlayer(List<Vector2> places)
+  {
+    Vector2 player_position = new Vector2(Camera.main.transform.position.x, Camera.main.transform.position.z);
+    Vector2 best_candidate = Vector2.zero;
+    float best_distance = float.PositiveInfinity;
+    foreach (Vector2 place in places)
+    {
+      float distance = Vector2.SqrMagnitude(player_position - place);
+      if (distance < best_distance)
+      {
+        best_distance = distance;
+        best_candidate = place;
+      }
+    }
+    return best_candidate;
   }
 
   public void GenerateLevel()
   {
     List<GameObject> tables = GetTablesInDescendingAreaOrder();
+    List<GameObject> floors = GetFloorsInDescendingAreaOrder();
     Debug.Log("GenerateLevel(): number of tables=" + tables.Capacity.ToString());
     //TODO: check if empty and take corrective action
-    if (tables.Capacity == 0)
+    if (tables.Capacity == 0 || floors.Capacity == 0)
     {
       // For now, place a big ugly gray cube if no tables found
       /*
@@ -119,27 +218,46 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
       cube.transform.parent = gameObject.transform; // level manager will be parent
       cube.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
       cube.transform.position = new Vector3(0, 0, 2);
-      cube.GetComponent<Renderer>().material = m_flat_material;
+      cube.GetComponent<Renderer>().material = flatMaterial;
       cube.GetComponent<Renderer>().material.color = Color.grey;
       cube.SetActive(true);
       */
       return;
     }
     // Until we develop some real assets, just place cubes :)
-    HoloToolkit.Unity.SurfacePlane city_plane = tables[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    HoloToolkit.Unity.SurfacePlane city_plane = floors[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    /*
     Debug.Log("up=" + city_plane.transform.up.ToString("F2"));
     Debug.Log("forward=" + city_plane.transform.forward.ToString("F2"));
     Debug.Log("right=" + city_plane.transform.right.ToString("F2"));
     Debug.Log("normal=" + city_plane.Plane.Plane.normal.ToString("F2"));
-    PlaceCube(0.25f, 0.75f, 0.25f, m_flat_material, Color.red, city_plane, -0.25f + 0.0f, 0.1f);
-    PlaceCube(0.25f, 0.30f, 0.25f, m_flat_material, Color.green, city_plane, -0.50f - 0.1f, 0.1f);
-    PlaceCube(0.25f, 0.40f, 0.25f, m_flat_material, Color.blue, city_plane, 0.0f + 0.1f, 0.25f + 0.1f);
+    PlaceCube(0.25f, 0.75f, 0.25f, flatMaterial, Color.red, city_plane, -0.25f + 0.0f, 0.1f);
+    PlaceCube(0.25f, 0.30f, 0.25f, flatMaterial, Color.green, city_plane, -0.50f - 0.1f, 0.1f);
+    PlaceCube(0.25f, 0.40f, 0.25f, flatMaterial, Color.blue, city_plane, 0.0f + 0.1f, 0.25f + 0.1f);
+    */
+    //SpawnObject(skyScraperAPrefab, city_plane, 0, .5f);
+    //DrawFloorSpawnPoints(new Vector3(.1f, 1f, .1f), .02f, city_plane);
 
-    // Place tank
-    if (tables.Count >= 2)
+    // Spawn the factory
+    // TODO: compute actual bounds rather than using a 1m cube
+
+    List<Vector2> places = FindFloorSpawnPoints(new Vector3(1, 1, 1), new Vector2(.1f, .1f), .02f, city_plane);
+    if (places.Count != 0)
     {
-      HoloToolkit.Unity.SurfacePlane plane = tables[1].GetComponent<HoloToolkit.Unity.SurfacePlane>();
-      SpawnObject(m_tank_prefab, plane, 0, 0.1f);
+      Vector2 place = FindNearestToPlayer(places);
+      SpawnObject(factoryComplexPrefab, city_plane, place.x, place.y);
+    }
+
+    // Place two tanks
+    HoloToolkit.Unity.SurfacePlane plane = tables[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    SpawnObject(tankPrefab, plane, 0, 0.2f);
+    SpawnObject(tankPrefab, plane, -0.25f, -0.2f);
+
+    // Place more tanks if possible
+    for (int i = 1; i < tables.Count; i++)
+    {
+      plane = tables[i].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+      SpawnObject(tankPrefab, plane, 0, 0);
     }
   }
 
@@ -155,10 +273,10 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     // unused variants of the shader in a build. If this code stops working,
     // may need to use a dummy asset with these material settings somewhere?
     //
-    //m_flat_material = new Material(Shader.Find("HoloToolkit/Vertex Lit Configurable"));
-    //m_flat_material.EnableKeyword("_USECOLOR_ON");
-    //m_flat_material.DisableKeyword("_USEMAINTEX_ON");
-    //m_flat_material.DisableKeyword("_USEEMISSIONTEX_ON");
+    //flatMaterial = new Material(Shader.Find("HoloToolkit/Vertex Lit Configurable"));
+    //flatMaterial.EnableKeyword("_USECOLOR_ON");
+    //flatMaterial.DisableKeyword("_USEMAINTEX_ON");
+    //flatMaterial.DisableKeyword("_USEEMISSIONTEX_ON");
   }
 	
 	void Update()

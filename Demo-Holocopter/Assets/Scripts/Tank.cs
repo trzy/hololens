@@ -3,6 +3,9 @@ using System.Collections;
 
 public class Tank : MonoBehaviour
 {
+  [Tooltip("Tank hit points.")]
+  public float lifePoints = 25;
+
   [Tooltip("Maximum angle of gun in degrees.")]
   public float maxGunAngle = -20;
 
@@ -21,8 +24,14 @@ public class Tank : MonoBehaviour
   [Tooltip("Bullet ricochet sound.")]
   public AudioClip soundRicochet;
 
-  private AudioSource m_audio_source;
-  private IMissionHandler m_current_mission;
+  [Tooltip("Explosion sounds, chosen randomly.")]
+  public AudioClip[] soundExplosion;
+
+  [Tooltip("Wreckage model.")]
+  public GameObject wreckagePrefab;
+
+  private AudioSource m_audio_source = null;
+  private IMissionHandler m_current_mission = null;
   private Transform m_turret = null;
   private Transform m_gun = null;
   private Quaternion m_turret_zero_rotation;
@@ -33,18 +42,18 @@ public class Tank : MonoBehaviour
   private Quaternion m_gun_end_rotation;
   private float m_t0 = 0;
   private float m_t1 = 0;
+  private bool m_dead = false;
 
   enum TurretState
   {
-    Dead,
-    ScanningSweep,
     ScanningSleep,
+    ScanningSweep,
     TrackingStart,
     Tracking,
     TrackingEnd
   };
 
-  private TurretState m_state = TurretState.Dead;
+  private TurretState m_state = TurretState.ScanningSleep;
   private float[] m_angles = { 90, 180, 45, 270, 0, 135, 90, 30, 180, 45, 270, 60, 0, 120 };
   private int m_scan_idx = 0;
 
@@ -78,6 +87,13 @@ public class Tank : MonoBehaviour
   // Update is called once per frame
   void Update()
   {
+    if (m_dead)
+    {
+      // Wait until sounds have stopped playing then kill
+      if (!m_audio_source.isPlaying)
+        Destroy(this.gameObject);
+      return;
+    }
     Vector3 to_player = Camera.main.transform.position - transform.position;
     to_player.y = 0;  // we only care about distance along ground plane
     float distance_to_player = Vector3.Magnitude(to_player);
@@ -85,7 +101,6 @@ public class Tank : MonoBehaviour
     float delta = now - m_t0;
     switch (m_state)
     {
-      case TurretState.Dead:
       default:
         break;
       case TurretState.ScanningSleep:
@@ -97,7 +112,7 @@ public class Tank : MonoBehaviour
         {
           Vector3 old_angles = m_turret.localRotation.eulerAngles;
           Vector3 new_angles = old_angles;
-          new_angles.y = m_angles[m_scan_idx++ % m_angles.Length];
+          new_angles.y = m_angles[Random.Range(0, m_angles.Length)];
           m_turret_start_rotation = m_turret.localRotation;
           m_turret_end_rotation = Quaternion.Euler(new_angles);
           m_t0 = now;
@@ -134,6 +149,8 @@ public class Tank : MonoBehaviour
           Vector3 turret_forward_axis = m_turret.rotation * Vector3.forward;
           // Construct a rotation that places turret in current position, then
           // rotates to face the player
+          //TODO: this is currently broken because it operates in world space. Probably
+          //      need to transform player to turret space and rotate based on that.
           to_player.y = 0;  // Want to rotate in xz plane only
           Quaternion target_direction = Quaternion.FromToRotation(turret_forward_axis, to_player) * m_turret.rotation;
           float angle_to_player = Vector3.Angle(turret_forward_axis, to_player);
@@ -170,15 +187,61 @@ public class Tank : MonoBehaviour
     }
   }
 
+  private void Hide()
+  {
+    foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+      renderer.enabled = false;
+    foreach(Rigidbody rb in GetComponentsInChildren<Rigidbody>())
+    {
+      rb.isKinematic = true;
+      rb.detectCollisions = false;
+    }
+    foreach (Collider collider in GetComponentsInChildren<Collider>())
+      collider.enabled = false;
+  }
+
   void OnCollisionEnter(Collision collision)
   {
     GameObject target = collision.collider.gameObject;
-    Debug.Log("Collided with: " + target.tag);
     if (target.CompareTag("Bullet"))
     {
-      m_audio_source.Stop();
-      m_audio_source.PlayOneShot(soundRicochet);
       m_current_mission.OnEnemyHitByPlayer(this);
+      m_audio_source.Stop();
+      if (--lifePoints > 0)
+      {
+        m_audio_source.PlayOneShot(soundRicochet);
+      }
+      else
+      {
+        m_dead = true;
+        Hide();
+        if (soundExplosion.Length > 0)
+        {
+          m_audio_source.PlayOneShot(soundExplosion[Random.Range(0, soundExplosion.Length)]);
+        }
+        GameObject wreckage = Instantiate(wreckagePrefab, transform.parent) as GameObject;
+        wreckage.transform.position = transform.position;
+        wreckage.transform.rotation = transform.rotation;
+        foreach (Rigidbody rb in wreckage.GetComponentsInChildren<Rigidbody>())
+        {
+          rb.AddExplosionForce(200, wreckage.transform.position, 0.1f, 0.1f);
+        }
+        ParticleEffectsManager.Instance.CreateExplosionBlastWave(transform.position, Vector3.up);
+        /*
+         * TODO: try using bindpose
+        foreach (Transform original in transform)
+        {
+          foreach (Transform wrecked in wreckage.transform)
+          {
+            if (original.name == wrecked.name)
+            {
+              wrecked.position = original.position;
+              wrecked.rotation = original.rotation;
+            }
+          }
+        }
+        */
+      }
     }
   }
 }

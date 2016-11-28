@@ -47,6 +47,9 @@ public class Helicopter: MonoBehaviour
   private Vector3 m_target_forward;
   private float m_gun_last_fired;
 
+  private AudioSource m_gun_audio_source = null;
+  private AudioSource m_rotor_audio_source = null;
+
   private const float SCALE = .06f;
   private const float MAX_TILT_DEGREES = 30;
   private const float MAX_TORQUE = 25000 * SCALE; //TODO: reformulate in terms of mass?
@@ -146,7 +149,7 @@ public class Helicopter: MonoBehaviour
     Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.up * -0.05f + transform.forward * 0.25f, Quaternion.identity) as Bullet;
     bullet.transform.forward = transform.forward; 
     m_gun_last_fired = Time.time;
-    GetComponent<AudioSource>().Play();
+    m_gun_audio_source.Play();
   }
 
   private IEnumerator ChangeRotorSpeedCoroutine(string rps_param_name, float target_rps, float ramp_time)
@@ -288,6 +291,10 @@ public class Helicopter: MonoBehaviour
     rb.AddForce(Vector3.up * hover_force);
     rb.AddForce(translational_force);
     rb.AddRelativeTorque(torque);
+
+    // Pitch of engine is based on tilt
+    float engine_output = Mathf.Max(Mathf.Abs(controls.longitudinal), Mathf.Abs(controls.lateral));
+    m_rotor_audio_source.pitch = Mathf.Lerp(1.0f, 1.3f, engine_output);
   }
 
   private void UpdateControls()
@@ -363,6 +370,7 @@ public class Helicopter: MonoBehaviour
       // Compute desired orientation vector. Vector3.Angle() returns [0,180),
       // so to determine left vs. right relative to camera, dot with camera's
       // right vector.
+      /*
       if (angle >= 45 && angle <= (90 + 45))
       {
         // Helicopter orientation is closer to being sideways
@@ -371,6 +379,7 @@ public class Helicopter: MonoBehaviour
           m_target_forward *= -1;
       }
       else
+      */
       {
         // Helicopter orientation is closer to being along view vector
         m_target_forward = Camera.main.transform.forward;
@@ -429,6 +438,8 @@ public class Helicopter: MonoBehaviour
   // Use this for initialization
   void Start()
   {
+    m_gun_audio_source = GetComponent<AudioSource>();
+    m_rotor_audio_source = transform.Find("RotorSound").gameObject.GetComponent<AudioSource>();
     SetControlMode(ControlMode.Program);
     ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
     m_gun_last_fired = Time.time;

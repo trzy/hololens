@@ -9,7 +9,6 @@ public class PlayerGazeControlled: MonoBehaviour
 {
   public Helicopter m_helicopter;
   public Material   m_reticle_material;
-  public PlayspaceManager m_playspace_manager;
   public GameObject m_cursor1;
   public GameObject m_cursor2;
   public GameObject testHole;
@@ -30,7 +29,7 @@ public class PlayerGazeControlled: MonoBehaviour
     switch (m_state)
     {
     case State.Scanning:
-      m_playspace_manager.SetMakePlanesCompleteCallback(LevelManager.Instance.GenerateLevel);
+      PlayspaceManager.Instance.SetMakePlanesCompleteCallback(LevelManager.Instance.GenerateLevel);
       SetState(State.Playing);
       break;
     case State.Playing:
@@ -53,10 +52,10 @@ public class PlayerGazeControlled: MonoBehaviour
     switch (state)
     {
     case State.Scanning:
-      m_playspace_manager.StartScanning();
+      PlayspaceManager.Instance.StartScanning();
       break;
     case State.Playing:
-      m_playspace_manager.StopScanning();
+      PlayspaceManager.Instance.StopScanning();
       m_helicopter.SetControlMode(Helicopter.ControlMode.Player);
       break;
     }

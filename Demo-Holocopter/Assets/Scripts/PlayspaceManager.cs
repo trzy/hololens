@@ -4,12 +4,15 @@ using HoloToolkit.Unity;
 using System.Collections;
 using System.Collections.Generic;
 
-public class PlayspaceManager : MonoBehaviour
+public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 {
   public delegate void MakePlanesCompleteDelegate();
 
   [Tooltip("Draw surface planes when running in Unity editor")]
   public bool planesVisibleInEditor = true;
+
+  [Tooltip("Render queue value to use for drawing freshly-embeded objects before spatial mesh.")]
+  public int highPriorityRenderQueueValue = 1000;
 
   [Tooltip("Remove triangles that are inside of surfaces detected by plane finding algo")]
   public bool removeSurfaceTriangles = false;
@@ -20,10 +23,32 @@ public class PlayspaceManager : MonoBehaviour
   private uint m_scanning_time_limit = 0;
   private bool m_scanning_complete = false;
   private MakePlanesCompleteDelegate m_make_planes_complete_cb = null;
+  private SpatialMeshDeformationManager m_spatial_mesh_deformation_manager = null;
 
-  public int GetPhysicsLayerBitmask()
+  public void Embed(GameObject obj)
   {
-    return 1 << SpatialMappingManager.Instance.PhysicsLayer;
+    if (m_spatial_mesh_deformation_manager == null)
+    {
+      Debug.Log("ERROR: No SpatialMeshDeformationManager");
+      return;
+    }
+    m_spatial_mesh_deformation_manager.Embed(obj);
+  }
+  
+  //TODO: refactor -- too much duplication
+  public List<GameObject> GetFloors()
+  {
+    PlaneTypes desired_types = PlaneTypes.Floor;
+    List<GameObject> planes = new List<GameObject>();
+    foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
+    {
+      SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType)
+        Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
+      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
+        planes.Add(plane);
+    }
+    return planes;
   }
 
   public List<GameObject> GetTables()
@@ -102,6 +127,7 @@ public class PlayspaceManager : MonoBehaviour
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
+    m_spatial_mesh_deformation_manager = new SpatialMeshDeformationManager(highPriorityRenderQueueValue, SpatialMappingManager.Instance.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
       SetPlanesVisible(true);

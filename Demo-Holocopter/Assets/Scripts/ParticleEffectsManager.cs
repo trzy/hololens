@@ -20,6 +20,9 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
   [Tooltip("Prefab for the lingering bullet impact fireball.")]
   public ExplosionSphere m_flame_hemisphere_prefab;
 
+  [Tooltip("Prefab for blast shockwave.")]
+  public ExplosionSphere m_blast_hemisphere_prefab;
+
   [Tooltip("Prefab for bullet hole decal.")]
   public GameObject m_bullet_hole_prefab;
 
@@ -166,6 +169,8 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     blast.transform.parent = this.transform;
   }
 
+  //TODO: move this function into Bullet.cs
+  //TODO: anchors should be embedded into the SurfacePlane and then the bullet holes attached to that plane
   public void CreateBulletHole(Vector3 position, Vector3 normal)
   {
     //m_bullet_hole_buffer.Insert(position + normal * .005f, normal);
@@ -173,6 +178,7 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     GameObject bullet_hole = Instantiate(m_bullet_hole_prefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
     bullet_hole.AddComponent<WorldAnchor>();
     bullet_hole.transform.parent = this.transform;
+    PlayspaceManager.Instance.Embed(bullet_hole);
     //TODO: logic for objects to self destruct after not being gazed at for long enough?
     m_bullet_holes.Enqueue(bullet_hole);
     while (m_bullet_holes.Count > maxBulletHoles)
@@ -186,9 +192,11 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 
   public void CreateCrater(Vector3 position, Vector3 normal)
   {
+    /*
     GameObject crater = Instantiate(m_crater_prefab, position + normal * 0, Quaternion.LookRotation(normal)) as GameObject;
     crater.AddComponent<WorldAnchor>();
     crater.transform.parent = this.transform;
+    */
   }
 
   public void CreateLingeringFireball(Vector3 position, Vector3 normal, float start_time_in_seconds)
@@ -313,6 +321,13 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
       start_time += delay_time;
       pos += Vector3.up * vertical_step_size;
     }
+  }
+
+  public void CreateExplosionBlastWave(Vector3 ground_position, Vector3 normal, float delay_time = 0)
+  {
+    ExplosionSphere blast = Instantiate(m_blast_hemisphere_prefab, ground_position, Quaternion.LookRotation(normal)) as ExplosionSphere;
+    blast.delayTime = delay_time;
+    blast.transform.parent = this.transform;
   }
 
   private void Awake()
