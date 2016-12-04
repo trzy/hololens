@@ -175,10 +175,11 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
   {
     //m_bullet_hole_buffer.Insert(position + normal * .005f, normal);
 
+    
     GameObject bullet_hole = Instantiate(m_bullet_hole_prefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
     bullet_hole.AddComponent<WorldAnchor>();
     bullet_hole.transform.parent = this.transform;
-    PlayspaceManager.Instance.Embed(bullet_hole);
+    SpatialMeshDeformationManager.Instance.Embed(bullet_hole);
     //TODO: logic for objects to self destruct after not being gazed at for long enough?
     m_bullet_holes.Enqueue(bullet_hole);
     while (m_bullet_holes.Count > maxBulletHoles)
@@ -187,7 +188,7 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
       if (old_bullet_hole)  // if hasn't destroyed itself already
         Destroy(old_bullet_hole);
     }
-
+    
   }
 
   public void CreateCrater(Vector3 position, Vector3 normal)

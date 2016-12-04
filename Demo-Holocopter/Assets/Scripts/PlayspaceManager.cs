@@ -23,18 +23,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private uint m_scanning_time_limit = 0;
   private bool m_scanning_complete = false;
   private MakePlanesCompleteDelegate m_make_planes_complete_cb = null;
-  private SpatialMeshDeformationManager m_spatial_mesh_deformation_manager = null;
 
-  public void Embed(GameObject obj)
-  {
-    if (m_spatial_mesh_deformation_manager == null)
-    {
-      Debug.Log("ERROR: No SpatialMeshDeformationManager");
-      return;
-    }
-    m_spatial_mesh_deformation_manager.Embed(obj);
-  }
-  
   //TODO: refactor -- too much duplication
   public List<GameObject> GetFloors()
   {
@@ -127,7 +116,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
-    m_spatial_mesh_deformation_manager = new SpatialMeshDeformationManager(highPriorityRenderQueueValue, SpatialMappingManager.Instance.GetMeshFilters());
+    SpatialMeshDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
       SetPlanesVisible(true);

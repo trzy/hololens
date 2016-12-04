@@ -245,7 +245,10 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     if (places.Count != 0)
     {
       Vector2 place = FindNearestToPlayer(places);
-      SpawnObject(factoryComplexPrefab, city_plane, place.x, place.y);
+      if (factoryComplexPrefab)
+      {
+        SpawnObject(factoryComplexPrefab, city_plane, place.x, place.y);
+      }
     }
 
     // Place two tanks
@@ -258,6 +261,30 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     {
       plane = tables[i].GetComponent<HoloToolkit.Unity.SurfacePlane>();
       SpawnObject(tankPrefab, plane, 0, 0);
+    }
+
+    // Tmp
+    int j = 0;
+    var spatial_mesh_filters = HoloToolkit.Unity.SpatialMappingManager.Instance.GetMeshFilters();
+    foreach (MeshFilter filter in spatial_mesh_filters)
+    {
+      Debug.Log("Mesh " + j + ": " + filter.sharedMesh.bounds.center.ToString("F2") + ", " + filter.sharedMesh.bounds.extents.ToString("F2"));
+      filter.sharedMesh.RecalculateBounds();
+      Debug.Log("      : " + filter.sharedMesh.bounds.center.ToString("F2") + ", " + filter.sharedMesh.bounds.extents.ToString("F2"));
+      Debug.Log("      : " + filter.gameObject.GetComponent<Renderer>().bounds.center.ToString("F2") + ", " + filter.gameObject.GetComponent<Renderer>().bounds.extents.ToString("F2"));
+      Debug.Log("      : " + filter.gameObject.transform.position.ToString("F2") + ", " + filter.gameObject.transform.lossyScale.ToString("F2"));
+      j++;
+/*
+      Mesh mesh = filter.sharedMesh;
+      GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+      cube.transform.parent = gameObject.transform; // level manager will be parent
+      cube.transform.localScale = 2 * mesh.bounds.extents;
+      cube.transform.position = mesh.bounds.center;
+      //cube.transform.transform.rotation = orientation;
+      cube.GetComponent<Renderer>().material = flatMaterial;
+      cube.GetComponent<Renderer>().material.color = Color.green;
+      cube.SetActive(true);
+*/
     }
   }
 

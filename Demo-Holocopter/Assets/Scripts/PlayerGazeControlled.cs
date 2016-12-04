@@ -33,6 +33,16 @@ public class PlayerGazeControlled: MonoBehaviour
       SetState(State.Playing);
       break;
     case State.Playing:
+      //TEST: place a bullet hole wherever we are looking
+      float distance = 5.0f;
+      int layer_mask = Layers.Instance.collidable_layers_mask;
+      RaycastHit hit;
+      if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
+      {
+        Debug.Log("hit point=" + hit.point);
+        ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal);
+      }
+
       if (m_gaze_target == null)
       {
       }
@@ -82,19 +92,7 @@ public class PlayerGazeControlled: MonoBehaviour
         if (p.PlaneType == HoloToolkit.Unity.PlaneTypes.Wall && Input.GetButtonDown("Fire2"))
         {
           Debug.Log("hit point=" + hit.point);
-          GameObject hole = Instantiate(testHole, hit.point + 0 * hit.normal * 0.01f, Quaternion.LookRotation(hit.normal)) as GameObject;
-          Renderer renderer = hole.GetComponent<Renderer>();
-          // Remap render queues to a progressively increasing sequence from 1000 (background) onwards
-          List<Material> materials = renderer.materials.OrderBy(element => element.renderQueue).ToList();
-          int new_queue = 1000 - 1;
-          int last_queue = -1;
-          foreach (Material material in materials)
-          {
-            new_queue += (material.renderQueue != last_queue ? 1 : 0);
-            last_queue = material.renderQueue;
-            material.renderQueue = new_queue;
-          }
-          hole.AddComponent<WorldAnchor>();
+          ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal);
         }
       }
       /*

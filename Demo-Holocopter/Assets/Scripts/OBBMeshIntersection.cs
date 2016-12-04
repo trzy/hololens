@@ -1,4 +1,9 @@
 ﻿/*
+ * Based on the method described in "Fast 3D Triangle-Box Overlap Testing" by
+ * Tomas Akenine-Moller (2001). The code here is a direct C -> C# conversion of
+ * Moller's implementation, which can be found along with the paper here:
+ * http://fileadmin.cs.lth.se/cs/personal/tomas_akenine-moller/code/
+ * 
  * Performance optimization TO-DO:
  * -------------------------------
  * - Copy all surface mesh vertices and indices over at the beginning so we don't
@@ -166,13 +171,9 @@ public static class OBBMeshIntersection
       }
     }
     if (Vector3.Dot(normal, vmin) > 0.0f)
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (Vector3.Dot(normal, vmax) >= 0.0f)
       return true;
-    //Debug.Log("no overlap");
     return false;
   }
 
@@ -196,56 +197,29 @@ public static class OBBMeshIntersection
     float fey = Mathf.Abs(e0.y);
     float fez = Mathf.Abs(e0.z);
     if (AxisTestX01Failed(v, boxhalfsize, e0.z, e0.y, fez, fey))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestY02Failed(v, boxhalfsize, e0.z, e0.x, fez, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestZ12Failed(v, boxhalfsize, e0.y, e0.x, fey, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     fex = Mathf.Abs(e1.x);
     fey = Mathf.Abs(e1.y);
     fez = Mathf.Abs(e1.z);
     if (AxisTestX01Failed(v, boxhalfsize, e1.z, e1.y, fez, fey))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestY02Failed(v, boxhalfsize, e1.z, e1.x, fez, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestZ0Failed(v, boxhalfsize, e1.y, e1.x, fey, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     fex = Mathf.Abs(e2.x);
     fey = Mathf.Abs(e2.y);
     fez = Mathf.Abs(e2.z);
     if (AxisTestX2Failed(v, boxhalfsize, e2.z, e2.y, fez, fey))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestY1Failed(v, boxhalfsize, e2.z, e2.x, fez, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxisTestZ12Failed(v, boxhalfsize, e2.y, e2.x, fey, fex))
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
 
     // Bullet 1: Test overlap in {x,y,z}-directions. Find min/max of the
     // triangles in each direction, and test for overlap in that direction.
@@ -253,20 +227,11 @@ public static class OBBMeshIntersection
     // the AABB.
 
     if (AxialOverlapTestFailed(v0.x, v1.x, v2.x, boxhalfsize.x)) // test x direction
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxialOverlapTestFailed(v0.y, v1.y, v2.y, boxhalfsize.y)) // test y direction
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
     if (AxialOverlapTestFailed(v0.z, v1.z, v2.z, boxhalfsize.z)) // test z direction
-    {
-      //Debug.Log("no overlap");
       return false;
-    }
 
     // Bullet 2: Test if the box intersects the plane of the triangle.
     Vector3 normal = Vector3.Cross(e0, e1);
@@ -280,15 +245,14 @@ public static class OBBMeshIntersection
     stopwatch.Start();
 
     int[] indices = mesh.GetTriangles(0);
-    int expected_num_intersecting = Math.Max(1, (int) (0.1f * indices.Length)); // assume 10% will intersect
+    int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
     List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
-    Vector3 boxcenter = obb.center;//obb.transform.localPosition;
+    Vector3 boxcenter = obb.center;
     Vector3 boxhalfsize = obb.size * 0.5f;
-    //Debug.Log("boxcenter=" + boxcenter);
-    //Debug.Log("boxhalfsize=" + boxhalfsize);
 
     // Gross test using AABB
-    if (!obb.bounds.Intersects(mesh.bounds))
+    obb.enabled = true; // TODO: still need to solve weird OBB issue
+    if (!obb.bounds.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
       return intersecting_triangles;
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
@@ -297,26 +261,14 @@ public static class OBBMeshIntersection
     Vector3[] mesh_verts = mesh.vertices;
     Vector3[] verts = new Vector3[mesh.vertexCount];
     //Debug.Log("Mesh transform identity=" + (mesh_transform.rotation == Quaternion.identity));
-    if (mesh_transform.rotation == Quaternion.identity && mesh_transform.position == Vector3.zero)
+    // Transform mesh 1) mesh local -> world, 2) world -> OBB local
+    for (int i = 0; i < mesh.vertexCount; i++)
     {
-      // Optimize the case of mesh already being in world coordinate system.
-      // TODO: may want to reformulate above test with inequality tests and tolerances
-      for (int i = 0; i < mesh.vertexCount; i++)
-      {
-        verts[i] = obb.transform.InverseTransformPoint(mesh_verts[i]);
-      }
+      Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
+      verts[i] = obb.transform.InverseTransformPoint(world_vertex);
+      //Debug.Log("vert " + i + "=" + mesh.vertices[i] + " -> " + world_vertex + " -> " + verts[i]);
     }
-    else
-    {
-      // Transform mesh 1) mesh local -> world, 2) world -> OBB local
-      for (int i = 0; i < mesh.vertexCount; i++)
-      {
-        Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
-        verts[i] = obb.transform.InverseTransformPoint(world_vertex);
-        //Debug.Log("vert " + i + "=" + mesh.vertices[i] + " -> " + world_vertex + " -> " + verts[i]);
-      }
-    }
-
+    
     // Test each triangle in the mesh
     for (int i = 0; i < indices.Length; i += 3)
     {
