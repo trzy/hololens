@@ -13,6 +13,7 @@
 
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 public static class OBBMeshIntersection
@@ -180,7 +181,6 @@ public static class OBBMeshIntersection
   private static bool TriangleBoxTest(Vector3 boxcenter, Vector3 boxhalfsize, Vector3 v0, Vector3 v1, Vector3 v2)
   {
     // Center the vertices about the box origin
-    //Debug.Log("boxcenter=" + boxcenter);
     v0 -= boxcenter;
     v1 -= boxcenter;
     v2 -= boxcenter;
@@ -251,22 +251,19 @@ public static class OBBMeshIntersection
     Vector3 boxhalfsize = obb.size * 0.5f;
 
     // Gross test using AABB
-    obb.enabled = true; // TODO: still need to solve weird OBB issue
+    //obb.enabled = true; // TODO: still need to solve weird OBB issue
     if (!obb.bounds.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
       return intersecting_triangles;
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
     // testing (because the OBB then becomes an AABB in its local space)
-    //TODO: allocate once, save and resize whenever a larger one is needed
     Vector3[] mesh_verts = mesh.vertices;
     Vector3[] verts = new Vector3[mesh.vertexCount];
-    //Debug.Log("Mesh transform identity=" + (mesh_transform.rotation == Quaternion.identity));
-    // Transform mesh 1) mesh local -> world, 2) world -> OBB local
     for (int i = 0; i < mesh.vertexCount; i++)
     {
+      // Transform mesh 1) mesh local -> world, 2) world -> OBB local
       Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
       verts[i] = obb.transform.InverseTransformPoint(world_vertex);
-      //Debug.Log("vert " + i + "=" + mesh.vertices[i] + " -> " + world_vertex + " -> " + verts[i]);
     }
     
     // Test each triangle in the mesh
@@ -286,5 +283,64 @@ public static class OBBMeshIntersection
     stopwatch.Stop();
     Debug.Log("Elapsed time=" + stopwatch.ElapsedTicks + " ticks (" + (double)(stopwatch.ElapsedTicks) / (double)(System.Diagnostics.Stopwatch.Frequency) + " sec)");
     return intersecting_triangles;
+  }
+
+  public delegate void ResultsCallback(List<int> intersecting_triangles_found);
+
+  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Mesh mesh, Transform mesh_transform)
+  {
+    float t0 = Time.realtimeSinceStartup;
+
+    int[] indices = mesh.GetTriangles(0);
+    int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
+    List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
+    Vector3 boxcenter = obb.center;
+    Vector3 boxhalfsize = obb.size * 0.5f;
+
+    // Gross test using AABB
+    //obb.enabled = true; // TODO: still need to solve weird OBB issue
+    if (!obb.bounds.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
+    {
+      callback(intersecting_triangles);
+      yield break;
+    }
+
+    // Rotate the mesh into OBB-local space so we can perform axis-aligned
+    // testing (because the OBB then becomes an AABB in its local space).
+    Vector3[] mesh_verts = mesh.vertices;
+    Vector3[] verts = new Vector3[mesh.vertexCount];
+    for (int i = 0; i < mesh.vertexCount; i++)
+    {
+      // Transform mesh: 1) mesh local -> world, 2) world -> OBB local
+      Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
+      verts[i] = obb.transform.InverseTransformPoint(world_vertex);
+      if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+      {
+        yield return null;
+        t0 = Time.realtimeSinceStartup;
+      }
+    }
+
+    // Test each triangle in the mesh
+    for (int i = 0; i < indices.Length; i += 3)
+    {
+      int i0 = indices[i + 0];
+      int i1 = indices[i + 1];
+      int i2 = indices[i + 2];
+      if (TriangleBoxTest(boxcenter, boxhalfsize, verts[i0], verts[i1], verts[i2]))
+      {
+        intersecting_triangles.Add(i0);
+        intersecting_triangles.Add(i1);
+        intersecting_triangles.Add(i2);
+      }
+      if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+      {
+        yield return null;
+        t0 = Time.realtimeSinceStartup;
+      }
+    }
+
+    // Pass result to caller
+    callback(intersecting_triangles);
   }
 }

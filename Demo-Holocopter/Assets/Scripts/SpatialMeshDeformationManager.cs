@@ -7,9 +7,17 @@
  * 
  * TODO:
  * -----
+ * - Write a function to pre-deform mesh over the area of surface planes with
+ *   depth of a user-chosen object.
  * - Assert that no transform is applied to SpatialMeshDeformationManager and
  *   that it is positioned at (0, 0, 0).
  * - Assert that spatial meshes have no scaling applied.
+ * - Patch meshes need more testing on actual device.
+ * - Write code to unwind changes to mesh. This could work by computing AABBs
+ *   for each patch mesh. When unwinding a patch, perform some sort of testing
+ *   to determine when neighboring, overlapping patches are also due for 
+ *   unwinding (i.e, their associated embedded object has been removed), and 
+ *   unwind only then.
  */
 using UnityEngine;
 using System;
@@ -28,6 +36,9 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
   [Tooltip("Whether to render (and enable mesh colliders for) vertex patches.")]
   public bool renderPatches = false;
 
+  [Tooltip("Whether to update mesh collider. This is an expensive operation and may cause unavoidable stutter.")]
+  public bool updateCollider = false;
+
   [Tooltip("Render queue value to use for spatial meshes (existing value will be overwritten)")]
   public int spatialMeshRenderQueueValue = 1500;
 
@@ -36,6 +47,9 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
 
   [Tooltip("Render queue value to use for drawing freshly-embeded objects before spatial mesh.")]
   public int highPriorityRenderQueueValue = 1000;
+
+  [Tooltip("Maximum number of seconds per frame to spend processing.")]
+  public float maxSecondsPerFrame = 4e-3f;
 
   // Restoring original materials:
   // http://answers.unity3d.com/questions/44108/changing-and-resetting-materials-dynamically.html
@@ -69,6 +83,11 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
       output += " ";
     }
     return output;
+  }
+
+  private bool TooMuchTimeElapsed(float t0)
+  {
+    return (Time.realtimeSinceStartup - t0) > maxSecondsPerFrame;
   }
 
   private void ReassignSpatialMeshRenderOrder()
@@ -178,12 +197,6 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
       patch_triangles[i] = dest_vert_idx;
     }
 
-    /*
-    Debug.Log("Intersecting Triangles = " + AsString(intersecting_triangles));
-    Debug.Log("Unique Vertices        = " + AsString(vert_indices));
-    Debug.Log("Saved Triangles        = " + AsString(patch_triangles));
-    */
-
     // Step 5
     // TODO: write me
 
@@ -219,8 +232,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
     }
   }
 
-  //private IEnumerator WorkRoutine()
-  private void WorkRoutine()
+  private IEnumerator WorkRoutine()
   {
     while (m_work_queue.Count > 0)
     {
@@ -230,7 +242,8 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
       if (obb == null)
       {
         Debug.Log("ERROR: Object " + work.renderer.gameObject.name + " lacks a box collider");
-        return;
+        m_working = false;
+        yield break;
       }
 
       // Compute parameters for a projection plane behind embedded object 
@@ -253,9 +266,14 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
         Mesh mesh = mesh_filter.sharedMesh;
         if (mesh == null)
           continue;
-        List<int> intersecting_triangles = OBBMeshIntersection.FindTriangles(obb, mesh, mesh_filter.transform);
+        List<int> intersecting_triangles = new List<int>();
+        OBBMeshIntersection.ResultsCallback results = delegate (List<int> intersecting_triangles_found) { intersecting_triangles = intersecting_triangles_found; };
+        IEnumerator f = OBBMeshIntersection.FindTrianglesCoroutine(results, maxSecondsPerFrame, obb, mesh, mesh_filter.transform);
+        while (f.MoveNext())
+          yield return f.Current;
         if (intersecting_triangles.Count == 0)
           continue;
+        float t0 = Time.realtimeSinceStartup;
         Vector3[] verts = mesh.vertices;  // spatial mesh has vertices and normals, no UVs
         Vector3[] normals = mesh.normals;
         List<int> vert_indices = MakeSetOfVertexIndices(intersecting_triangles);
@@ -278,6 +296,11 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
          * than embedded object, so that they are rendered after
          */
         CreatePatchObject(mesh, mesh_filter, intersecting_triangles, verts, normals, vert_indices);
+        if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+        {
+          yield return null;
+          t0 = Time.realtimeSinceStartup;
+        }
 
         /*
          * Step 8: Modify the spatial mesh's vertices by pushing them inward
@@ -292,11 +315,24 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
         }
         mesh.vertices = verts;  // apply changes
         mesh.RecalculateBounds();
-        MeshCollider collider = mesh_filter.gameObject.GetComponent<MeshCollider>();
-        if (collider != null)
+        if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
         {
-          collider.sharedMesh = null;
-          collider.sharedMesh = mesh;
+          yield return null;
+          t0 = Time.realtimeSinceStartup;
+        }
+        if (updateCollider)
+        {
+          MeshCollider collider = mesh_filter.gameObject.GetComponent<MeshCollider>();
+          if (collider != null)
+          {
+            collider.sharedMesh = null;
+            collider.sharedMesh = mesh;
+          }
+          if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+          {
+            yield return null;
+            t0 = Time.realtimeSinceStartup;
+          }
         }
       }
 
@@ -309,6 +345,8 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
         material.renderQueue = material.renderQueue + (spatialMeshRenderQueueValue - highPriorityRenderQueueValue) + 1;
       }
     }
+
+    m_working = false;
   }
 
   public void Embed(GameObject obj)
@@ -319,12 +357,34 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
 
     // Step 2: Push to work queue for proper solution (spatial mesh adjustment)
     m_work_queue.Enqueue(work);
-    //if (!m_working)
+    if (!m_working)
     {
       m_working = true;
-      //StartCoroutine(WorkRoutine())
-      WorkRoutine();  // TODO: make us a singleton and use a coroutine
+      StartCoroutine(WorkRoutine());
     }
+  }
+
+  public static IEnumerator InnerRoutine()
+  {
+    int i = 0;
+    float t = Time.realtimeSinceStartup;
+    float t2 = t;
+    while (i < 1000)
+    {
+      Debug.Log("===> " + i + "=" + (t2 - t)/1e-3f);
+      ++i;
+      yield return null;
+      t = t2;
+      t2 = Time.realtimeSinceStartup;
+    }
+  }
+
+  public IEnumerator OuterRoutine()
+  {
+    IEnumerator f = InnerRoutine();
+    while (f.MoveNext())
+      yield return null;
+    Debug.Log("Coroutine complete");
   }
 
   public void SetSpatialMeshFilters(List<MeshFilter> spatial_mesh_filters)
