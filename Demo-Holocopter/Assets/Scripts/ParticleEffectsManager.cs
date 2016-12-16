@@ -186,7 +186,9 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     {
       GameObject old_bullet_hole = m_bullet_holes.Dequeue();
       if (old_bullet_hole)  // if hasn't destroyed itself already
+      {
         Destroy(old_bullet_hole);
+      }
     }
     
   }

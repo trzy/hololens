@@ -1,4 +1,7 @@
-﻿/*
+﻿//TODO: If not rendering patches, then we don't need to reassign spatial mesh
+//      rendering order.
+
+/*
  * Notes:
  * ------
  * - Spatial meshes are assumed to be at world scale (i.e., a scale of 1, 1, 1)
@@ -7,6 +10,7 @@
  * 
  * TODO:
  * -----
+ * - When we create patch meshes, are we responsible for cleanup of the sharedMesh?
  * - Write a function to pre-deform mesh over the area of surface planes with
  *   depth of a user-chosen object.
  * - Assert that no transform is applied to SpatialMeshDeformationManager and
@@ -94,12 +98,15 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
   {
     foreach (MeshFilter mesh_filter in m_spatial_mesh_filters)
     {
-      foreach (Material material in mesh_filter.gameObject.GetComponent<Renderer>().materials)
+      GameObject g = mesh_filter.gameObject;
+      if (g.GetComponent<SharedMaterialHelper>() == null)
       {
-        if (0 == m_old_spatial_mesh_render_queue_value)
-        {
-          m_old_spatial_mesh_render_queue_value = material.renderQueue;
-        }
+        g.AddComponent<SharedMaterialHelper>();
+      }
+      m_old_spatial_mesh_render_queue_value = g.GetComponent<Renderer>().sharedMaterials[0].renderQueue;
+      g.GetComponent<SharedMaterialHelper>().ApplySharedMaterialClones(); // clone the shared materials and modify clone render queues!
+      foreach (Material material in g.GetComponent<Renderer>().materials)
+      {
         material.renderQueue = spatialMeshRenderQueueValue;
       }
     }
@@ -209,7 +216,8 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
       patch.transform.rotation = mesh_filter.transform.rotation;
       patch.transform.position = mesh_filter.transform.position;
       patch.transform.localScale = mesh_filter.transform.localScale;  // must be (1, 1, 1)
-      Mesh new_mesh = patch.AddComponent<MeshFilter>().sharedMesh;
+      Mesh new_mesh = new Mesh();
+      patch.AddComponent<MeshFilter>().sharedMesh = new_mesh;
       new_mesh.vertices = patch_verts;
       new_mesh.triangles = patch_triangles;
       new_mesh.normals = patch_normals;
@@ -227,6 +235,8 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
           patch_collider.sharedMesh = new_mesh;
         }
       }
+      patch.AddComponent<SharedMaterialHelper>();
+      patch.GetComponent<SharedMaterialHelper>().ApplySharedMaterialClones();
       patch_renderer.material.renderQueue = patchMeshRenderQueueValue;
       patch.SetActive(renderPatches == true);
     }
@@ -338,8 +348,16 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
 
       /*
        * Step 9: Reassign render order of embedded object to be just after the
-       * spatial mesh layer but before patches
+       * spatial mesh layer but before patches. We 
        */
+      SharedMaterialHelper helper = work.renderer.gameObject.GetComponent<SharedMaterialHelper>();
+      if (helper != null)
+      {
+        // Apply clones of the shared material. Only a single clone is ever
+        // instantiated, which is much more efficient than Unity's default
+        // behavior of cloning materials[] for each object!
+        helper.ApplySharedMaterialClones();
+      }
       foreach (Material material in work.renderer.materials)
       {
         material.renderQueue = material.renderQueue + (spatialMeshRenderQueueValue - highPriorityRenderQueueValue) + 1;
