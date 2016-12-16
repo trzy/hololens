@@ -174,7 +174,7 @@ public class SharedMaterialHelper: MonoBehaviour
   {
     if (null == m_ourClones)
       return;
-    // Iterate backwars so we can remove from list if neccessary
+    // Iterate backwards so we can remove from list if neccessary
     for (int i = m_ourClones.Count - 1; i >= 0; i--)
     {
       DecrementReferenceCount(m_ourClones[i]);
