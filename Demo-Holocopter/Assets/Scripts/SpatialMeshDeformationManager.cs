@@ -159,7 +159,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
    * embedded object rather than in its center.
    */
   private void ComputeBackPlaneParameters(out Vector3 displacement_normal, out float plane_to_origin_distance, BoxCollider obb)
-  {
+  { 
     displacement_normal = -Vector3.Normalize(obb.transform.forward);
     Vector3 back_plane_point = obb.transform.position + displacement_normal * (obb.size.z * obb.transform.lossyScale.z + extraDisplacement);
     plane_to_origin_distance = 0 - Vector3.Dot(displacement_normal, back_plane_point); // Ax+By+Cz+D=0, solving for D here
@@ -277,15 +277,15 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
         if (mesh == null)
           continue;
         List<int> intersecting_triangles = new List<int>();
+        Vector3[] verts = mesh.vertices;  // spatial mesh has vertices and normals, no UVs
+        Vector3[] normals = mesh.normals;
         OBBMeshIntersection.ResultsCallback results = delegate (List<int> intersecting_triangles_found) { intersecting_triangles = intersecting_triangles_found; };
-        IEnumerator f = OBBMeshIntersection.FindTrianglesCoroutine(results, maxSecondsPerFrame, obb, mesh, mesh_filter.transform);
+        IEnumerator f = OBBMeshIntersection.FindTrianglesCoroutine(results, maxSecondsPerFrame, obb, verts, mesh.GetTriangles(0), mesh_filter.transform);
         while (f.MoveNext())
           yield return f.Current;
         if (intersecting_triangles.Count == 0)
           continue;
         float t0 = Time.realtimeSinceStartup;
-        Vector3[] verts = mesh.vertices;  // spatial mesh has vertices and normals, no UVs
-        Vector3[] normals = mesh.normals;
         List<int> vert_indices = MakeSetOfVertexIndices(intersecting_triangles);
 
         /*

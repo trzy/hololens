@@ -171,7 +171,7 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 
   //TODO: move this function into Bullet.cs
   //TODO: anchors should be embedded into the SurfacePlane and then the bullet holes attached to that plane
-  public void CreateBulletHole(Vector3 position, Vector3 normal)
+  public void CreateBulletHole(Vector3 position, Vector3 normal, HoloToolkit.Unity.SurfacePlane plane)
   {
     //m_bullet_hole_buffer.Insert(position + normal * .005f, normal);
 
@@ -179,7 +179,8 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     GameObject bullet_hole = Instantiate(m_bullet_hole_prefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
     bullet_hole.AddComponent<WorldAnchor>();
     bullet_hole.transform.parent = this.transform;
-    SpatialMeshDeformationManager.Instance.Embed(bullet_hole);
+    //SpatialMeshDeformationManager.Instance.Embed(bullet_hole);
+    SurfacePlaneDeformationManager.Instance.Embed(bullet_hole, plane);
     //TODO: logic for objects to self destruct after not being gazed at for long enough?
     m_bullet_holes.Enqueue(bullet_hole);
     while (m_bullet_holes.Count > maxBulletHoles)

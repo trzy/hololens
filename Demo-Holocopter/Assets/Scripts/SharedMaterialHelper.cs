@@ -153,7 +153,10 @@ public class SharedMaterialHelper: MonoBehaviour
 
   private void DestroyInstancedMaterials()
   {
-    //TODO: optimization: if sharedMaterials[] == s_sharedMaterialsByRenderer[renderer], then we know materials[] hasn't been modified. No need to free!
+    //TODO: optimization: if sharedMaterials[] == s_sharedMaterialsByRenderer[renderer],
+    //      then we know materials[] hasn't been modified and there is no need to free!
+    //      Whenever materials[] is modified, sharedMaterials[] is set equal to it. No
+    //      need to free!
     foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
     {
       Material[] materials = renderer.materials;  // if this is the first read, Unity will deep copy

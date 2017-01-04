@@ -40,7 +40,7 @@ public class PlayerGazeControlled: MonoBehaviour
       if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
       {
         Debug.Log("hit point=" + hit.point);
-        ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal);
+        ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal, null);
       }
 
       if (m_gaze_target == null)
@@ -92,7 +92,7 @@ public class PlayerGazeControlled: MonoBehaviour
         if (p.PlaneType == HoloToolkit.Unity.PlaneTypes.Wall && Input.GetButtonDown("Fire2"))
         {
           Debug.Log("hit point=" + hit.point);
-          ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal);
+          ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal, p);
         }
       }
       /*

@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using HoloLensXboxController;
 
 public class Helicopter: MonoBehaviour
 {
@@ -36,6 +37,7 @@ public class Helicopter: MonoBehaviour
     }
   }
 
+  private ControllerInput m_xboxController = null;
   private IEnumerator m_control_coroutine = null;
   private IEnumerator m_rotor_speed_coroutine = null;
   private ControlMode m_control_mode = ControlMode.Player;
@@ -348,15 +350,28 @@ public class Helicopter: MonoBehaviour
     float angle = Vector3.Angle(view, forward);
 
     // Get current joypad axis values
+#if UNITY_EDITOR
     float hor = Input.GetAxis("Horizontal");
     float ver = Input.GetAxis("Vertical");
-#if UNITY_EDITOR
     float lt = Input.GetAxis("Axis9");
     float rt = Input.GetAxis("Axis10");
+    bool buttonA = Input.GetKey(KeyCode.Joystick1Button0);
+    bool buttonB = Input.GetKey(KeyCode.Joystick1Button1);
 #else
+    m_xboxController.Update();
+    float hor = m_xboxController.GetAxisLeftThumbstickX();
+    float ver = m_xboxController.GetAxisLeftThumbstickY();
+    float lt = m_xboxController.GetAxisLeftTrigger();
+    float rt = m_xboxController.GetAxisRightTrigger();
+    bool buttonA = m_xboxController.GetButton(ControllerButton.A);
+    bool buttonB = m_xboxController.GetButton(ControllerButton.B);
+    /*
+    float hor = Input.GetAxis("Horizontal");
+    float ver = Input.GetAxis("Vertical");
     float axis3 = Input.GetAxis("Axis3");
     float lt = Mathf.Max(axis3, 0);
     float rt = -Mathf.Min(axis3, 0);
+    */
 #endif
 
     // Any of the main axes (which are relative to orientation) pressed?
@@ -414,7 +429,7 @@ public class Helicopter: MonoBehaviour
     m_player_controls.altitude = -lt + rt;
 
     // Gun
-    if (Input.GetKey(KeyCode.Joystick1Button0))
+    if (buttonA)
     {
       if (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD)
       {
@@ -422,7 +437,7 @@ public class Helicopter: MonoBehaviour
         //ParticleEffectsManager.Instance.CreateCloud(transform.position + transform.forward, 0.5f, 5);
       }
     }
-    if (Input.GetButtonDown("Fire2"))
+    if (buttonB)
     {
       //ParticleEffectsManager.Instance.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
     }
@@ -438,6 +453,9 @@ public class Helicopter: MonoBehaviour
   // Use this for initialization
   void Start()
   {
+#if !UNITY_EDITOR
+    m_xboxController = new ControllerInput(0, 0.19f);
+#endif
     m_gun_audio_source = GetComponent<AudioSource>();
     m_rotor_audio_source = transform.Find("RotorSound").gameObject.GetComponent<AudioSource>();
     SetControlMode(ControlMode.Program);

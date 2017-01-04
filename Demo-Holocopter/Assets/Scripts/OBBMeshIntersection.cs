@@ -238,13 +238,13 @@ public static class OBBMeshIntersection
     return PlaneBoxOverlap(normal, v0, boxhalfsize);
   }
 
-  public static List<int> FindTriangles(BoxCollider obb, Mesh mesh, Transform mesh_transform)
+  public static List<int> FindTriangles(BoxCollider obb, Vector3[] mesh_verts, int[] triangle_indices, Transform mesh_transform)
   {
     System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
     stopwatch.Reset();
     stopwatch.Start();
 
-    int[] indices = mesh.GetTriangles(0);
+    int[] indices = triangle_indices;
     int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
     List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
     Vector3 boxcenter = obb.center;
@@ -257,9 +257,8 @@ public static class OBBMeshIntersection
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
     // testing (because the OBB then becomes an AABB in its local space)
-    Vector3[] mesh_verts = mesh.vertices;
-    Vector3[] verts = new Vector3[mesh.vertexCount];
-    for (int i = 0; i < mesh.vertexCount; i++)
+    Vector3[] verts = new Vector3[mesh_verts.Length];
+    for (int i = 0; i < mesh_verts.Length; i++)
     {
       // Transform mesh 1) mesh local -> world, 2) world -> OBB local
       Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
@@ -287,11 +286,11 @@ public static class OBBMeshIntersection
 
   public delegate void ResultsCallback(List<int> intersecting_triangles_found);
 
-  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Mesh mesh, Transform mesh_transform)
+  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Vector3[] mesh_verts, int[] triangle_indices, Transform mesh_transform)
   {
     float t0 = Time.realtimeSinceStartup;
 
-    int[] indices = mesh.GetTriangles(0);
+    int[] indices = triangle_indices;
     int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
     List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
     Vector3 boxcenter = obb.center;
@@ -307,9 +306,8 @@ public static class OBBMeshIntersection
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
     // testing (because the OBB then becomes an AABB in its local space).
-    Vector3[] mesh_verts = mesh.vertices;
-    Vector3[] verts = new Vector3[mesh.vertexCount];
-    for (int i = 0; i < mesh.vertexCount; i++)
+    Vector3[] verts = new Vector3[mesh_verts.Length];
+    for (int i = 0; i < mesh_verts.Length; i++)
     {
       // Transform mesh: 1) mesh local -> world, 2) world -> OBB local
       Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);

@@ -37,7 +37,7 @@ public class Bullet: MonoBehaviour
       {
       case HoloToolkit.Unity.PlaneTypes.Wall:
         ParticleEffectsManager.Instance.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
-        ParticleEffectsManager.Instance.CreateBulletHole(hit_point, hit_normal);
+        ParticleEffectsManager.Instance.CreateBulletHole(hit_point, hit_normal, plane);
         break;
       case HoloToolkit.Unity.PlaneTypes.Floor:
         ParticleEffectsManager.Instance.CreateLingeringFireball(hit_point, hit_normal, 0);
