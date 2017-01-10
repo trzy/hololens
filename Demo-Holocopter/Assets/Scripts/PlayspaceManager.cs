@@ -116,7 +116,6 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
     if (m_make_planes_complete_cb != null)
       m_make_planes_complete_cb();
-    SpatialMeshDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
     SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
