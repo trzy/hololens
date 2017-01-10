@@ -225,7 +225,6 @@ public static class OBBMeshIntersection
     // triangles in each direction, and test for overlap in that direction.
     // This is equivalent to testing a minimal AABB around the triangle against
     // the AABB.
-
     if (AxialOverlapTestFailed(v0.x, v1.x, v2.x, boxhalfsize.x)) // test x direction
       return false;
     if (AxialOverlapTestFailed(v0.y, v1.y, v2.y, boxhalfsize.y)) // test y direction
@@ -236,6 +235,38 @@ public static class OBBMeshIntersection
     // Bullet 2: Test if the box intersects the plane of the triangle.
     Vector3 normal = Vector3.Cross(e0, e1);
     return PlaneBoxOverlap(normal, v0, boxhalfsize);
+  }
+
+  private static Bounds ComputeAABB(BoxCollider obb)
+  {
+    // Naive method using 8 points from OBB (could be improved!)
+    Transform xform = obb.transform;
+    Vector3[] points = new Vector3[8];
+    Vector3 center = xform.TransformPoint(obb.center);
+    points[0] = center + xform.TransformVector(0.5f * new Vector3(obb.size.x, obb.size.y, obb.size.z));
+    points[1] = center + xform.TransformVector(0.5f * new Vector3(obb.size.x, obb.size.y, -obb.size.z));
+    points[2] = center + xform.TransformVector(0.5f * new Vector3(obb.size.x, -obb.size.y, obb.size.z));
+    points[3] = center + xform.TransformVector(0.5f * new Vector3(obb.size.x, -obb.size.y, -obb.size.z));
+    points[4] = center + xform.TransformVector(0.5f * new Vector3(-obb.size.x, obb.size.y, obb.size.z));
+    points[5] = center + xform.TransformVector(0.5f * new Vector3(-obb.size.x, obb.size.y, -obb.size.z));
+    points[6] = center + xform.TransformVector(0.5f * new Vector3(-obb.size.x, -obb.size.y, obb.size.z));
+    points[7] = center + xform.TransformVector(0.5f * new Vector3(-obb.size.x, -obb.size.y, -obb.size.z));
+    float minX = float.PositiveInfinity;
+    float minY = float.PositiveInfinity;
+    float minZ = float.PositiveInfinity;
+    float maxX = float.NegativeInfinity;
+    float maxY = float.NegativeInfinity;
+    float maxZ = float.NegativeInfinity;
+    foreach (Vector3 point in points)
+    {
+      minX = Mathf.Min(minX, point.x);
+      maxX = Mathf.Max(maxX, point.x);
+      minY = Mathf.Min(minY, point.y);
+      maxY = Mathf.Max(maxY, point.y);
+      minZ = Mathf.Min(minZ, point.z);
+      maxZ = Mathf.Max(maxZ, point.z);
+    }
+    return new Bounds(center, new Vector3(maxX - minX, maxY - minY, maxZ - minZ));
   }
 
   public static List<int> FindTriangles(BoxCollider obb, Vector3[] mesh_verts, int[] triangle_indices, Transform mesh_transform)
@@ -251,8 +282,8 @@ public static class OBBMeshIntersection
     Vector3 boxhalfsize = obb.size * 0.5f;
 
     // Gross test using AABB
-    //obb.enabled = true; // TODO: still need to solve weird OBB issue
-    if (!obb.bounds.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
+    Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
+    if (!aabb.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
       return intersecting_triangles;
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
@@ -297,8 +328,8 @@ public static class OBBMeshIntersection
     Vector3 boxhalfsize = obb.size * 0.5f;
 
     // Gross test using AABB
-    //obb.enabled = true; // TODO: still need to solve weird OBB issue
-    if (!obb.bounds.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
+    Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
+    if (!aabb.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
     {
       callback(intersecting_triangles);
       yield break;
