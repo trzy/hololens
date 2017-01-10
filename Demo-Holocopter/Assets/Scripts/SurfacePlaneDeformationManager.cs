@@ -74,7 +74,10 @@
  *  6. Project each of the intersecting triangles' vertices onto the back plane
  *     of the margin volume ("push" them back) and then update the spatial mesh
  *     vertices without updating the collider mesh.
- *  7. Record the margin for this spatial mesh.
+ *  7. Record the margin for this spatial mesh. Note that both the spatial mesh
+ *     *and* the SurfacePlane are required because a single spatial mesh may 
+ *     contain multiple SurfacePlanes. The margin created through deformation
+ *     only exists in the vicinity of a given plane.
  *  8. Destroy the temporary margin volume game object.
  *  9. Restore the shared materials of the embedded object (which will also 
  *     restore its original render queue values).
@@ -98,17 +101,23 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
   [Tooltip("Maximum number of seconds per frame to spend processing.")]
   public float maxSecondsPerFrame = 4e-3f;
 
-  //public Material flatMaterial;
+  [Tooltip("Draw margin volumes for debugging purposes")]
+  public bool debugMarginVolumes = false;
+
+  [Tooltip("Debug material to use to render margin volumes if debugging is enabled")]
+  public Material debugMaterial = null;
 
   private class Task
   {
+    public HoloToolkit.Unity.SurfacePlane plane;
     public GameObject marginVolume;
     public Vector3 centerPointOnFrontPlane;
     public Vector3 centerPointOnBackPlane;
     public GameObject embedded;
 
-    public Task(GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    public Task(HoloToolkit.Unity.SurfacePlane pPlane, GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
     {
+      plane = pPlane;
       marginVolume = pMarginVolume;
       centerPointOnFrontPlane = pCenterPointOnFrontPlane;
       centerPointOnBackPlane = pCenterPointOnBackPlane;
@@ -117,7 +126,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
   }
 
   private List<MeshFilter> m_spatialMeshFilters = null;
-  private Dictionary<MeshFilter, float> m_marginBySpatialMesh = null;
+  private Dictionary<Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh = null;
   private Queue<Task> m_taskQueue = null;
   private bool m_working = false;
 
@@ -171,18 +180,21 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     }
   }
 
-  private bool HasSufficientMargin(MeshFilter meshFilter, float requiredMargin)
+  private bool HasSufficientMargin(HoloToolkit.Unity.SurfacePlane plane, MeshFilter meshFilter, float requiredMargin)
   {
+    Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter> key = new Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>(plane, meshFilter);
+    //Debug.Log("hash key " + plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + " = " + key.GetHashCode());
     float currentMargin;
-    if (m_marginBySpatialMesh.TryGetValue(meshFilter, out currentMargin))
+    if (m_marginByPlaneAndSpatialMesh.TryGetValue(key, out currentMargin))
     {
       return currentMargin >= requiredMargin;
     }
     return false;
   }
 
-  private List<int> MakeSetOfVertexIndices(List<int> triangles)
+  private IEnumerator MakeSetOfVertexIndices(System.Action<List<int>> callback, List<int> triangles)
   {
+    float t0 = Time.realtimeSinceStartup;
     List<int> vertexSet = new List<int>(triangles.Count);
     for (int i = 0; i < triangles.Count; i += 3)
     {
@@ -201,8 +213,14 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       { 
         vertexSet.Add(i2);
       }
+      if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+      {
+        yield return null;
+        t0 = Time.realtimeSinceStartup;
+      }
     }
-    return vertexSet;
+    callback(vertexSet);
+    yield break;
   }
 
   private IEnumerator DeformSurfaceCoroutine()
@@ -249,9 +267,9 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
           continue;
         }
 
-        if (HasSufficientMargin(meshFilter, requiredMargin))
+        if (HasSufficientMargin(task.plane, meshFilter, requiredMargin))
         {
-          //Debug.Log("Skipping " + meshFilter.name + " due to sufficient margin");
+          //Debug.Log("Skipping [" + task.plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + "] due to sufficient margin");
           continue;
         }
 
@@ -263,9 +281,8 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
         }
         Vector3[] verts = mesh.vertices;  // spatial mesh has vertices and normals, no UVs
         Vector3[] normals = mesh.normals;
-        List<int> intersectingTriangles = new List<int>();
-        OBBMeshIntersection.ResultsCallback results = delegate (List<int> result) { intersectingTriangles = result; };
-        IEnumerator f = OBBMeshIntersection.FindTrianglesCoroutine(results, maxSecondsPerFrame, obb, verts, mesh.GetTriangles(0), meshFilter.transform);
+        List<int> intersectingTriangles = null;
+        IEnumerator f = OBBMeshIntersection.FindTrianglesCoroutine((List<int> result) => { intersectingTriangles = result; }, maxSecondsPerFrame, obb, verts, mesh.GetTriangles(0), meshFilter.transform);
         while (f.MoveNext())
         {
           yield return f.Current;
@@ -274,8 +291,20 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
         {
           continue;
         }
+
+        // Collapse all the vertices down into a set
+        // TODO: it may be faster just to omit this step entirely and process vertices
+        // multiple times.
+        /*
+        List<int> vertIndices = null;
+        f = MakeSetOfVertexIndices((List<int> result) => { vertIndices = result; }, intersectingTriangles);
+        while (f.MoveNext())
+        {
+          yield return f.Current;
+        }
+        */
         float t0 = Time.realtimeSinceStartup;
-        List<int> vertIndices = MakeSetOfVertexIndices(intersectingTriangles);
+        List<int> vertIndices = intersectingTriangles;
 
         // Modify spatial mesh by pushing vertices inward onto the back plane of
         // the margin volume
@@ -285,17 +314,23 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
           float displacement = Vector3.Dot(intoSurfaceNormal, worldVert) + planeToOriginDistance;
           worldVert = worldVert - displacement * intoSurfaceNormal;
           verts[i] = meshFilter.transform.InverseTransformPoint(worldVert);
+          if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
+          {
+            yield return null;
+            t0 = Time.realtimeSinceStartup;
+          }
         }
-        mesh.vertices = verts;  // apply changes
-        mesh.RecalculateBounds();
+        mesh.vertices = verts;      // apply changes
+        mesh.RecalculateBounds();   // not needed because deformation should be minor
         if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
         {
           yield return null;
           t0 = Time.realtimeSinceStartup;
         }
 
-        // Update margin depth of this spatial mesh
-        m_marginBySpatialMesh[meshFilter] = requiredMargin;
+        // Update margin depth of this plane/spatial mesh pair
+        m_marginByPlaneAndSpatialMesh[new Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>(task.plane, meshFilter)] = requiredMargin;
+        //Debug.Log("Finished deforming [" + task.plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + "]");
       }
 
       // Restore embedded object's shared materials (and its render order) now
@@ -340,6 +375,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     centerPointOnFrontPlane = plane.transform.TransformPoint(embeddedPosOnPlane);
     centerPointOnBackPlane = centerPointOnFrontPlane + intoSurfaceNormal * embeddedThickness;
     Vector3 centerPoint = 0.5f * (centerPointOnFrontPlane + centerPointOnBackPlane);
+    //Debug.Log("*** PlanePos: " + plane.transform.position + ", PlaneFwd: " + plane.transform.forward + ", Embed Point: " + embedded.transform.position.ToString("F2") + ", IntoNorm: " + intoSurfaceNormal.ToString("F2") + ", thick: " + embeddedThickness + ", embeddedPosOnPlane: " + embeddedPosOnPlane.ToString("F2") + ", centerFront: " + centerPointOnFrontPlane.ToString("F2") + ", centerBack: " + centerPointOnBackPlane.ToString("F2"));
 
     /*
      * Create a game object to describe the size, position, and orientation of
@@ -385,30 +421,31 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_taskQueue.Enqueue(new Task(marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_taskQueue.Enqueue(new Task(plane, marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
     if (!m_working)
     {
       m_working = true;
       StartCoroutine(DeformSurfaceCoroutine());
     }
 
-    /*
-    Debug.Log("pos=" + marginVolume.transform.position + ", obbpos = " + marginVolume.GetComponent<BoxCollider>().transform.position);
-    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-    cube.transform.parent = null;
-    cube.transform.localScale = marginVolume.transform.localScale;
-    cube.transform.position = marginVolume.transform.position;
-    cube.transform.transform.rotation = marginVolume.transform.rotation;
-    cube.GetComponent<Renderer>().material = flatMaterial;
-    cube.GetComponent<Renderer>().material.color = Color.green;
-    cube.SetActive(true);
-    */
+    if (debugMarginVolumes)
+    {
+      Debug.Log("pos=" + marginVolume.transform.position + ", obbpos = " + marginVolume.GetComponent<BoxCollider>().transform.position);
+      GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+      cube.transform.parent = null;
+      cube.transform.localScale = marginVolume.transform.localScale;
+      cube.transform.position = marginVolume.transform.position;
+      cube.transform.transform.rotation = marginVolume.transform.rotation;
+      cube.GetComponent<Renderer>().material = debugMaterial;
+      cube.GetComponent<Renderer>().material.color = Color.green;
+      cube.SetActive(true);
+    }
   }
 
   public void SetSpatialMeshFilters(List<MeshFilter> spatialMeshFilters)
   {
     m_spatialMeshFilters = spatialMeshFilters;
-    m_marginBySpatialMesh = new Dictionary<MeshFilter, float>(spatialMeshFilters.Count);
+    m_marginByPlaneAndSpatialMesh = new Dictionary<Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>, float>(spatialMeshFilters.Count);
   }
 
   private void Awake()
