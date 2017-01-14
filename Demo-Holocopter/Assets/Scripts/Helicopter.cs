@@ -339,14 +339,14 @@ public class Helicopter: MonoBehaviour
 #endif
 
     // Any of the main axes (which are relative to orientation) pressed?
-      bool moving_this_frame = (hor != 0) || (ver != 0);
-      if (moving_this_frame && !m_moving_last_frame)
-      {
-        // Joypad was not pressed last frame, reorient based on current view position
-        m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
-        m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
-      }
-      m_moving_last_frame = moving_this_frame;
+    bool moving_this_frame = (hor != 0) || (ver != 0);
+    if (moving_this_frame && !m_moving_last_frame)
+    {
+      // Joypad was not pressed last frame, reorient based on current view position
+      m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
+      m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
+    }
+    m_moving_last_frame = moving_this_frame;
 
     // Apply longitudinal and lateral controls. Compute projection of joypad
     // lateral/longitudinal axes onto helicopter's.
