@@ -84,7 +84,7 @@ public class Tank : MonoBehaviour
 
     Debug.Log("TURRET=" + m_turret.localRotation.eulerAngles + " " + m_turret.up.ToString("F3"));
   }
-
+  
   // Update is called once per frame
   private void Update()
   {
@@ -214,6 +214,7 @@ public class Tank : MonoBehaviour
     {
       collider.enabled = false;
     }
+    GetComponent<LockIndicatorHelper>().lockIndicator.gameObject.SetActive(false);
   }
 
   void OnCollisionEnter(Collision collision)

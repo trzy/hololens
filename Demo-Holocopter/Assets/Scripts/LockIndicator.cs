@@ -21,9 +21,91 @@ public class LockIndicator: MonoBehaviour
   public float zDistance = 2f;
   public LockIndicatorHelper targetObject = null;
 
-  private Mesh m_mesh = null;
-  private float m_viewportRadius; // distance from center to extreme right/left of viewport at z distance
+  private GameObject m_reticleObject = null;
+  private MeshRenderer m_reticleRenderer = null;
+  private Mesh m_reticleMesh = null;
 
+  private GameObject m_timerObject = null;
+  private MeshRenderer m_timerRenderer = null;
+  private Mesh m_timerMesh = null;
+
+  private class StepwiseAnimator
+  {
+    private float[] m_values = null;
+    private float[] m_timeDeltas = null;
+    private TimeScaleFunction[] m_timeScale = null;
+    private int m_step = 0;
+    private bool m_finished = true;
+    private float m_tStart = 0;     // beginning of animation
+    private float m_tSegmentStart;  // beginning of current animation segment
+
+    public float currentValue = 0;
+    public float previousValue = 0;
+
+    public void Update()
+    {
+      if (m_timeDeltas == null || m_finished)
+      {
+        return;
+      }
+
+      // Is it time to advance to next animation step?
+      float deltaTSeg = Time.time - m_tSegmentStart;
+      while (m_step < (m_timeDeltas.Length - 1) && deltaTSeg > m_timeDeltas[m_step])
+      {
+        m_tSegmentStart += m_timeDeltas[m_step];
+        deltaTSeg -= m_timeDeltas[m_step];
+        ++m_step;
+      }
+
+      // Interpolate between animation frames
+      int i = m_step;
+      float t = deltaTSeg / m_timeDeltas[i];
+      float tScaled = (m_timeScale == null || m_timeScale[i] == null) ? t : m_timeScale[i](t);
+      float value = Mathf.Lerp(m_values[i + 0], m_values[i + 1], tScaled);
+      previousValue = currentValue;
+      currentValue = value;
+
+      // Finished?
+      if (m_step == m_timeDeltas.Length - 1 && deltaTSeg >= m_timeDeltas[m_step])
+      {
+        m_finished = false;
+      }
+    }
+
+    public void Reset()
+    {
+      m_step = 0;
+      m_finished = false;
+      m_tStart = Time.time;
+      m_tSegmentStart = m_tStart;
+      currentValue = 0;
+      // Retain previous value
+    }
+
+    public void Reset(float[] values, float[] timeDeltas, TimeScaleFunction[] timeScale)
+    {
+      m_values = (float[])values.Clone();
+      m_timeDeltas = (float[])timeDeltas.Clone();
+      m_timeScale = timeScale != null ? (TimeScaleFunction[])timeScale.Clone() : null;
+      m_step = 0;
+      m_finished = false;
+      m_tStart = Time.time;
+      m_tSegmentStart = m_tStart;
+      currentValue = 0;
+      // Retain previous value
+    }
+
+    public StepwiseAnimator(float[] values, float[] timeDeltas, TimeScaleFunction[] timeScale)
+    {
+      Reset(values, timeDeltas, timeScale);
+    }
+  }
+
+  private StepwiseAnimator m_radiusAnimation = null;
+  private StepwiseAnimator m_rotationAnimation = null;
+  private StepwiseAnimator m_timerAnimation = null; // TEMPORARY: use an API for setting this and not an animation
+  
   /*
    * Draws a triangle that is parameterized by polar angles and radial 
    * distances from the coordinate system origin point.
@@ -137,10 +219,11 @@ public class LockIndicator: MonoBehaviour
     }
   }
 
-  private void GenerateReticle(float radius)
+  private void GenerateReticle(float radius, float thickness)
   {
-    float thickness = .02f;
+    //float thickness = .02f;
     //float thickness = .0025f; // looks great on actual device at z=2m
+    //thickness = .01f;
     float innerRadius = radius - 0.5f * thickness;
     float outerRadius = radius + 0.5f * thickness;
     int segments = 10;
@@ -148,10 +231,12 @@ public class LockIndicator: MonoBehaviour
     List<int> triangles = new List<int>();
     List<Color32> colors = new List<Color32>();
     Color32 black = new Color32(0xff, 0, 0, 0xc0);
-    Color32 red = new Color32(0xff, 0, 0, 0xc0);
+    //Color32 red = new Color32(0xff, 0, 0, 0xc0);
     Color32 blue = new Color32(101, 215, 252, 0xc0);
     Color32 orange = new Color32(0xff, 0x8c, 0, 0xff);
     Color32 gold = new Color32(0xff, 0xd7, 0x00, 0xff);
+
+    Color32 red = new Color32(244, 66, 66, 0xe0);
 
     Color32 startColor = red;
     Color32 endColor = red;
@@ -162,35 +247,137 @@ public class LockIndicator: MonoBehaviour
     DrawArc(verts, triangles, colors, startColor, endColor, innerRadius, outerRadius, 235f, 305f, segments);
     DrawArc(verts, triangles, colors, startColor, endColor, innerRadius, outerRadius, 325f, 395f, segments);
 
-    m_mesh.vertices = verts.ToArray();
-    m_mesh.triangles = triangles.ToArray();
-    m_mesh.colors32 = colors.ToArray();
-    m_mesh.RecalculateBounds();  // absolutely needed because Unity may erroneously think we are off-screen at times
+    m_reticleMesh.vertices = verts.ToArray();
+    m_reticleMesh.triangles = triangles.ToArray();
+    m_reticleMesh.colors32 = colors.ToArray();
+    m_reticleMesh.RecalculateBounds();  // absolutely needed because Unity may erroneously think we are off-screen at times
+  }
+
+  private void GenerateTimer(float radius, float thickness, float pctComplete)
+  {
+    //float thickness = .02f;
+    //float thickness = .0025f; // looks great on actual device at z=2m
+    float innerRadius = radius - 0.5f * thickness;
+    float outerRadius = radius + 0.5f * thickness;
+    int segments = 4;
+    List<Vector3> verts = new List<Vector3>();
+    List<int> triangles = new List<int>();
+    List<Color32> colors = new List<Color32>();
+    Color32 black = new Color32(0xff, 0, 0, 0xc0);
+    //Color32 red = new Color32(0xff, 0, 0, 0xc0);
+    Color32 blue = new Color32(101, 215, 252, 0xc0);
+    Color32 orange = new Color32(0xff, 0x8c, 0, 0xff);
+    Color32 gold = new Color32(0xff, 0xd7, 0x00, 0xff);
+
+    Color32 red = new Color32(244, 66, 66, 0x20);
+    
+
+    Color32 startColor = red;
+    Color32 endColor = red;
+
+    Color32 colorOff = new Color32(244, 66, 66, 0x20);
+    Color32 colorOn = new Color32(244, 66, 66, 0xe0);
+
+
+    int numTicks = 16;
+    float tickPitch = 360.0f / numTicks;
+    float tickWidth = tickPitch * 0.9f;
+    float theta = 90f;
+    for (int i = 0; i < numTicks; i++)
+    {
+      float height = 1 - (1 - Mathf.Sin(Mathf.Deg2Rad * theta)) * 0.5f; // how high up from bottom are we?
+      Color32 color = height <= pctComplete ? colorOn : colorOff;
+      DrawArc(verts, triangles, colors, color, color, innerRadius, outerRadius, theta - 0.5f * tickWidth, theta + 0.5f * tickWidth, segments);
+      theta += tickPitch;
+    }
+    m_timerMesh.vertices = verts.ToArray();
+    m_timerMesh.triangles = triangles.ToArray();
+    m_timerMesh.colors32 = colors.ToArray();
+    m_timerMesh.RecalculateBounds();  // absolutely needed because Unity may erroneously think we are off-screen at times
+  }
+
+  private void OnDestroy()
+  {
+    //TODO: clean up material? (what about mesh?)
+  }
+
+  private float Sigmoid01(float x)
+  {
+    // f(x) = x / (1 + |x|), f(x): [-0.5, 0.5] for x: [-1, 1]
+    // To get [0, 1] for [0, 1]: f'(x) = 0.5 + f(2 * (x - 0.5))
+    float y = 2 * (x - 0.5f);
+    float f = 0.5f + y / (1 + Mathf.Abs(y));
+    return f;
+  }
+
+  private delegate float TimeScaleFunction(float t01);
+
+  private float[] m_animationRadius = null;
+  private float[] m_animationRotation = null;
+  private TimeScaleFunction[] m_animationTimeScale = null;
+  private float[] m_animationTimeDelta = null;
+  private int m_animationStep = 0;
+
+  private void UpdateReticleTransform()
+  {
+    // Update the local reticle transform
+    m_radiusAnimation.Update();
+    m_rotationAnimation.Update();
+    m_timerAnimation.Update();
+    if (m_radiusAnimation.currentValue != m_radiusAnimation.previousValue || m_timerAnimation.currentValue != m_timerAnimation.previousValue)
+    {
+      float reticleThickness = .0025f;
+      float timerThickness = .005f;
+      GenerateReticle(m_radiusAnimation.currentValue, reticleThickness);
+      GenerateTimer(m_radiusAnimation.currentValue - (.5f * reticleThickness + 2*timerThickness + 0.5f * timerThickness), timerThickness, m_timerAnimation.currentValue);
+    }
+    m_reticleObject.transform.localRotation = Quaternion.Euler(0, 0, m_rotationAnimation.currentValue);
+    m_timerObject.transform.localRotation = Quaternion.Euler(0, 0, -m_rotationAnimation.currentValue);
   }
 
   private void Update()
   {
     if (targetObject == null)
+    {
       return;
-    //TODO: onlyneed to re-generate position, not all bound
-    LockIndicatorHelper.ProjectedBoundingBox pbb = targetObject.ComputeCameraSpaceBounds(zDistance);
-    transform.position = pbb.center;/*Camera.main.transform.position + new Vector3(pbb.center.x, pbb.center.y, zDistance);*/
+    }
+    UpdateReticleTransform();
+    m_reticleRenderer.enabled = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), targetObject.GetComponent<BoxCollider>().bounds);
+    transform.position = targetObject.ComputeCameraSpaceCentroidAt(zDistance);
     transform.rotation = Camera.main.transform.rotation;
     //Debug.Log("Distance = " + Vector3.Magnitude(transform.position - Camera.main.transform.position) + ", center=" + pbb.center);
   }
 
   private void Start()
   {
-    // Set up reticle mesh
-    m_mesh = gameObject.AddComponent<MeshFilter>().mesh;
-    MeshRenderer renderer = gameObject.AddComponent<MeshRenderer>();
-    renderer.material = material;
-    renderer.material.color = Color.white;
-    LockIndicatorHelper.ProjectedBoundingBox pbb = targetObject.ComputeCameraSpaceBounds(zDistance);
-    float radius = 0.5f * Mathf.Max(pbb.size.x, pbb.size.y);
-    GenerateReticle(radius);
+    // Create reticle game object and mesh
+    m_reticleObject = new GameObject("LockIndicator-Reticle");
+    m_reticleObject.transform.parent = transform;
+    m_reticleMesh = m_reticleObject.AddComponent<MeshFilter>().mesh;
+    m_reticleRenderer = m_reticleObject.AddComponent<MeshRenderer>();
+    m_reticleRenderer.material = material;
+    m_reticleRenderer.material.color = Color.white;
+    //GenerateReticle(targetObject.ComputeCameraSpaceRadiusAt(zDistance));
 
-    // Precompute some values
-    m_viewportRadius = zDistance * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView);
+    // Create wn game object and mesh
+    m_timerObject = new GameObject("LockIndicator-Timer");
+    m_timerObject.transform.parent = transform;
+    m_timerMesh = m_timerObject.AddComponent<MeshFilter>().mesh;
+    m_timerRenderer = m_timerObject.AddComponent<MeshRenderer>();
+    m_timerRenderer.material = material;
+    m_timerRenderer.material.color = Color.white;
+
+    // Set up initial animation
+    float viewportRadius = zDistance * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView);
+    float radius = targetObject.ComputeCameraSpaceRadiusAt(zDistance);
+    float[] radii                 = new float[]             { viewportRadius, radius, radius, radius, radius        };
+    float[] rotations             = new float[]             { 0,              0,    45,        -45,       0         };
+    float[] timeDeltas            = new float[]             {                 1,    1,         1,         1         };
+    TimeScaleFunction[] timeScale = new TimeScaleFunction[] {                 null, Sigmoid01, Sigmoid01, Sigmoid01 };
+    m_radiusAnimation = new StepwiseAnimator(radii, timeDeltas, timeScale);
+    m_rotationAnimation = new StepwiseAnimator(rotations, timeDeltas, timeScale);
+    float[] countdown = new float[] { -1, -1, -1, -1, 0, 1 };
+    float[] timeDeltas2 = new float[] { 1, 1, 1, 1, 10 };
+    m_timerAnimation = new StepwiseAnimator(countdown, timeDeltas2, null);
   }
 }
