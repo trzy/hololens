@@ -43,7 +43,7 @@ public class Helicopter: MonoBehaviour
   private ControlMode m_control_mode = ControlMode.Player;
   private Controls m_player_controls = new Controls();
   private Controls m_program_controls = new Controls();
-  private bool m_joypad_axes_pressed_last_frame = false;
+  private bool m_moving_last_frame = false;
   private Vector3 m_joypad_lateral_axis;
   private Vector3 m_joypad_longitudinal_axis;
   private Vector3 m_target_forward;
@@ -301,48 +301,6 @@ public class Helicopter: MonoBehaviour
 
   private void UpdateControls()
   {
-    /*
-    if (Input.GetKey(KeyCode.Joystick1Button0))
-      Debug.Log("Joy A");
-    if (Input.GetKey(KeyCode.Joystick1Button1))
-      Debug.Log("Joy B");
-    if (Input.GetKey(KeyCode.Joystick1Button2))
-      Debug.Log("Joy X");
-    if (Input.GetKey(KeyCode.Joystick1Button3))
-      Debug.Log("Joy Y");
-    if (Input.GetKey(KeyCode.Joystick1Button4))
-      Debug.Log("Joy LB");
-    if (Input.GetKey(KeyCode.Joystick1Button5))
-      Debug.Log("Joy RB");
-    if (Input.GetKey(KeyCode.Joystick1Button6))
-      Debug.Log("Joy View");
-    if (Input.GetKey(KeyCode.Joystick1Button7))
-      Debug.Log("Joy Menu");
-    if (Input.GetKey(KeyCode.Joystick1Button8))
-      Debug.Log("Joy LeftStick");
-    if (Input.GetKey(KeyCode.Joystick1Button9))
-      Debug.Log("Joy RightStick");
-
-    float val = 0;
-    if ((val = Input.GetAxis("Horizontal")) != 0) // left stick
-      Debug.Log("Horizontal: " + val.ToString());
-    if ((val = Input.GetAxis("Vertical")) != 0)   // left stick
-      Debug.Log("Vertical: " + val.ToString());
-    if ((val = Input.GetAxis("Horizontal2")) != 0) // right stick (4th axis)
-      Debug.Log("Horizontal2: " + val.ToString());
-    if ((val = Input.GetAxis("Vertical2")) != 0) // right stick (5th axis)
-      Debug.Log("Vertical2: " + val.ToString());
-    if ((val = Input.GetAxis("LeftTrigger")) != 0)
-      Debug.Log("LeftTrigger: " + val.ToString());
-    if ((val = Input.GetAxis("RightTrigger")) != 0)
-      Debug.Log("RightTrigger: " + val.ToString());
-
-    m_player_controls.lateral = Input.GetAxis("Horizontal");
-    m_player_controls.longitudinal = Input.GetAxis("Vertical");
-    m_player_controls.rotational = Input.GetAxis("Horizontal2");
-    m_player_controls.altitude = -Input.GetAxis("Vertical2");
-    */
-
     // Determine angle between user gaze vector and helicopter forward, in xz
     // plane
     Vector3 view = new Vector3(Camera.main.transform.forward.x, 0, Camera.main.transform.forward.z);
@@ -353,16 +311,22 @@ public class Helicopter: MonoBehaviour
 #if UNITY_EDITOR
     float hor = Input.GetAxis("Horizontal");
     float ver = Input.GetAxis("Vertical");
+    float hor2 = Input.GetAxis("Horizontal2");
+    float ver2 = -Input.GetAxis("Vertical2");
     float lt = Input.GetAxis("Axis9");
     float rt = Input.GetAxis("Axis10");
     bool buttonA = Input.GetKey(KeyCode.Joystick1Button0);
     bool buttonB = Input.GetKey(KeyCode.Joystick1Button1);
+    bool fire = rt > 0.5f || buttonA;
 #else
     m_xboxController.Update();
     float hor = m_xboxController.GetAxisLeftThumbstickX();
     float ver = m_xboxController.GetAxisLeftThumbstickY();
+    float hor2 = m_xboxController.GetAxisRightThumbstickX();
+    float ver2 = m_xboxController.GetAxisRightThumbstickY();
     float lt = m_xboxController.GetAxisLeftTrigger();
     float rt = m_xboxController.GetAxisRightTrigger();
+    bool fire = rt > 0.5f;
     bool buttonA = m_xboxController.GetButton(ControllerButton.A);
     bool buttonB = m_xboxController.GetButton(ControllerButton.B);
     /*
@@ -375,46 +339,14 @@ public class Helicopter: MonoBehaviour
 #endif
 
     // Any of the main axes (which are relative to orientation) pressed?
-    bool pressed = (hor != 0) || (ver != 0);
-    if (pressed && !m_joypad_axes_pressed_last_frame)
-    {
-      // Joypad was not pressed last frame, reorient based on current view position
-      m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
-      m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
-
-      // Compute desired orientation vector. Vector3.Angle() returns [0,180),
-      // so to determine left vs. right relative to camera, dot with camera's
-      // right vector.
-      /*
-      if (angle >= 45 && angle <= (90 + 45))
+      bool moving_this_frame = (hor != 0) || (ver != 0);
+      if (moving_this_frame && !m_moving_last_frame)
       {
-        // Helicopter orientation is closer to being sideways
-        m_target_forward = Camera.main.transform.right;
-        if (Vector3.Dot(transform.forward, Camera.main.transform.right) < 0)
-          m_target_forward *= -1;
+        // Joypad was not pressed last frame, reorient based on current view position
+        m_joypad_lateral_axis = Vector3.Normalize(Camera.main.transform.right);
+        m_joypad_longitudinal_axis = Vector3.Normalize(Camera.main.transform.forward);
       }
-      else
-      */
-      {
-        // Helicopter orientation is closer to being along view vector
-        m_target_forward = Camera.main.transform.forward;
-      }
-    }
-    m_joypad_axes_pressed_last_frame = pressed;
-
-    // Apply correction for heading (rotate toward desired orientation)
-    if (pressed)
-    {
-      // Only perform update when user is applying input
-      float heading_error = HeadingError(m_target_forward);
-      float heading_error_magnitude = Mathf.Abs(heading_error);
-      if (heading_error_magnitude > ACCEPTABLE_HEADING_ERROR)
-        m_player_controls.rotational = -Mathf.Sign(heading_error) * Mathf.Lerp(0.8F, 1.0F, heading_error_magnitude / 360.0F);
-      else
-        m_player_controls.rotational = 0;
-    }
-    else
-      m_player_controls.rotational = 0;
+      m_moving_last_frame = moving_this_frame;
 
     // Apply longitudinal and lateral controls. Compute projection of joypad
     // lateral/longitudinal axes onto helicopter's.
@@ -425,21 +357,16 @@ public class Helicopter: MonoBehaviour
     m_player_controls.longitudinal = joypad_longitudinal_to_heli_longitudinal * ver + joypad_lateral_to_heli_longitudinal * hor;
     m_player_controls.lateral = joypad_longitudinal_to_heli_lateral * ver + joypad_lateral_to_heli_lateral * hor;
 
+    // Helicopter rotation
+    m_player_controls.rotational = hor2;
+
     // Altitude control (trigger axes each range from 0 to 1)
-    m_player_controls.altitude = -lt + rt;
+    m_player_controls.altitude = ver2;
 
     // Gun
-    if (buttonA)
+    if (fire && (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD))
     {
-      if (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD)
-      {
-        FireGun();
-        //ParticleEffectsManager.Instance.CreateCloud(transform.position + transform.forward, 0.5f, 5);
-      }
-    }
-    if (buttonB)
-    {
-      //ParticleEffectsManager.Instance.CreateExplosionCloud(transform.position + transform.forward * 1.5f, 0.3f, 5);
+      FireGun();
     }
   }
 
