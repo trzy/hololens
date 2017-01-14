@@ -161,6 +161,10 @@ public class PlayerGazeControlled: MonoBehaviour
       m_euler.x += 30 * Time.deltaTime;
     if (Input.GetKey("o"))
       m_euler.x = 0;
+    if (Input.GetKey(KeyCode.KeypadDivide))
+      m_euler.z -= 30 * Time.deltaTime;
+    if (Input.GetKey(KeyCode.KeypadMultiply))
+      m_euler.z += 30 * Time.deltaTime;
     transform.rotation = Quaternion.Euler(m_euler);
 
     // Motion relative to XZ plane
