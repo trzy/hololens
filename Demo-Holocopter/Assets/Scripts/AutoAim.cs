@@ -74,7 +74,6 @@ public class AutoAim: MonoBehaviour
     Vector3 u = Vector3.Normalize(transform.InverseTransformVector(targetPoint - transform.position));
     Vector3 xz = Vector3.Normalize(new Vector3(u.x, 0, u.z));
     Vector3 yz = Vector3.Normalize(new Vector3(0, u.y, u.z));
-    Debug.Log("xz=" + xz.ToString("F2") + ", yz=" + yz.ToString("F2"));
 
     // Cannot aim gun above the horizontal point or below 45 degrees 
     if (yz.y > 0 || yz.y < -0.707f)
