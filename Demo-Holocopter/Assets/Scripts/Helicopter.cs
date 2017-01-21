@@ -48,6 +48,8 @@ public class Helicopter: MonoBehaviour
   private Vector3 m_joypad_longitudinal_axis;
   private Vector3 m_target_forward;
   private float m_gun_last_fired;
+  private AutoAim m_autoAim = null;
+  private Transform m_muzzleTransform = null;
 
   private AudioSource m_gun_audio_source = null;
   private AudioSource m_rotor_audio_source = null;
@@ -146,10 +148,11 @@ public class Helicopter: MonoBehaviour
     SetControlMode(ControlMode.Program, FlyToPositionCoroutine(target_position));
   }
 
-  public void FireGun()
+  private void FireGun(Vector3 aim)
   {
-    Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.up * -0.05f + transform.forward * 0.25f, Quaternion.identity) as Bullet;
-    bullet.transform.forward = transform.forward; 
+    //Bullet bullet = Instantiate(m_bullet_prefab, transform.position + transform.up * -0.05f + transform.forward * 0.25f, Quaternion.identity) as Bullet;
+    Bullet bullet = Instantiate(m_bullet_prefab, m_muzzleTransform.position, Quaternion.identity) as Bullet;
+    bullet.transform.forward = aim; 
     m_gun_last_fired = Time.time;
     m_gun_audio_source.Play();
   }
@@ -299,7 +302,7 @@ public class Helicopter: MonoBehaviour
     m_rotor_audio_source.pitch = Mathf.Lerp(1.0f, 1.3f, engine_output);
   }
 
-  private void UpdateControls()
+  private void UpdateControls(Vector3 aim)
   {
     // Determine angle between user gaze vector and helicopter forward, in xz
     // plane
@@ -366,14 +369,15 @@ public class Helicopter: MonoBehaviour
     // Gun
     if (fire && (Time.time - m_gun_last_fired >= GUN_FIRE_PERIOD))
     {
-      FireGun();
+      FireGun(aim);
     }
   }
 
   // Update is called once per frame
   void Update()
   {
-    UpdateControls();
+    Vector3 aim = m_autoAim == null ? transform.forward : Vector3.Normalize(m_autoAim.UpdateReticle() - m_muzzleTransform.position);
+    UpdateControls(aim);
     UnityEditorUpdate();
   }
   
@@ -389,6 +393,17 @@ public class Helicopter: MonoBehaviour
     ChangeRotorSpeed(ref m_rotor_speed_coroutine, "RotorSpeed", 3, 0);
     m_gun_last_fired = Time.time;
     m_target_forward = transform.forward;
+
+    // Find muzzle and auto aim component
+    m_autoAim = GetComponentInChildren<AutoAim>();
+    Transform[] transforms = GetComponentsInChildren<Transform>();
+    foreach (Transform xform in transforms)
+    {
+      if (xform.name == "Muzzle")
+      {
+        m_muzzleTransform = xform;
+      }
+    }
   }
 
   private void UnityEditorUpdate()

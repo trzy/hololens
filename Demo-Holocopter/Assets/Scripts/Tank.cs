@@ -31,7 +31,9 @@ public class Tank : MonoBehaviour
   public GameObject wreckagePrefab;
 
   private AudioSource m_audioSource = null;
+  private LockIndicatorHelper m_lockIndicatorHelper = null;
   private IMissionHandler m_currentMission = null;
+  private BoxCollider m_boxCollider = null;
   private Transform m_turret = null;
   private Transform m_gun = null;
   private Quaternion m_turretStartRotation;
@@ -58,7 +60,9 @@ public class Tank : MonoBehaviour
   void Awake()
   {
     m_audioSource = GetComponent<AudioSource>();
+    m_lockIndicatorHelper = GetComponent<LockIndicatorHelper>();
     m_currentMission = LevelManager.Instance.currentMission;
+    m_boxCollider = GetComponent<BoxCollider>();
         
     // Find bones
     Transform[] transforms = GetComponentsInChildren<Transform>();
@@ -97,6 +101,14 @@ public class Tank : MonoBehaviour
       }
       return;
     }
+
+    // As soon as we enter the frame, start the lock-on sequence
+    if (!m_lockIndicatorHelper.lockIndicator.IsActive() && m_lockIndicatorHelper.InViewFrustum(m_boxCollider.bounds))
+    {
+      m_lockIndicatorHelper.lockIndicator.StartLockOnSequence();
+    }
+    
+    // Animate turret
     Vector3 toPlayer = Camera.main.transform.position - transform.position;
     toPlayer.y = 0; // we only care about distance along ground plane
     float distanceToPlayer = Vector3.Magnitude(toPlayer);
@@ -214,7 +226,7 @@ public class Tank : MonoBehaviour
     {
       collider.enabled = false;
     }
-    GetComponent<LockIndicatorHelper>().lockIndicator.gameObject.SetActive(false);
+    m_lockIndicatorHelper.lockIndicator.gameObject.SetActive(false);
   }
 
   void OnCollisionEnter(Collision collision)

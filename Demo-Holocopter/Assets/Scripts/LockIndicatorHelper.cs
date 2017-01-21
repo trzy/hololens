@@ -1,7 +1,10 @@
 ﻿/*
  * TODO:
  * 
- * Rename this to LockIndicatorHelper.cs
+ * - Create a targeting base class?
+ * - Compute camera space bounds only once per frame and retain (use frame time
+ *   to determine when to recompute)
+ * 
  */
 
 using System.Collections;
@@ -91,6 +94,12 @@ public class LockIndicatorHelper: MonoBehaviour
     ProjectedBoundingBox pbb = ComputeCameraSpaceBoundsAt(z);
     float radius = 0.5f * Mathf.Max(pbb.size.x, pbb.size.y);
     return radius;
+  }
+
+  public bool InViewFrustum(Bounds bounds)
+  {
+    Plane[] planes = GeometryUtility.CalculateFrustumPlanes(Camera.main);
+    return GeometryUtility.TestPlanesAABB(planes, bounds);
   }
 
   private void OnDestroy()
