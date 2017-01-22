@@ -20,6 +20,9 @@ public class LockIndicator: MonoBehaviour
   [Tooltip("Material to render with.")]
   public Material material = null;
 
+  [Tooltip("Maximum fraction of viewport that the radius can be.")]
+  public float maxRadiusFractionOfViewport = 0.1f;
+
   [Tooltip("Distance from camera at which to render.")]
   public float zDistance = 2f;
 
@@ -43,17 +46,20 @@ public class LockIndicator: MonoBehaviour
   private StepwiseAnimator m_rotationAnimation = null;
   private StepwiseAnimator m_timerAnimation = null; // TEMPORARY: use an API for setting this and not an animation
   private bool m_visible = false;
+  private bool m_active = false;
 
   public bool IsActive()
   {
-    return m_visible;
+    return m_active;
   }
 
   public void StartLockOnSequence()
   {
-    // Set up initial animation
+    // Compute target radius
     float viewportRadius = zDistance * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView);
-    float radius = m_targetObject.ComputeCameraSpaceRadiusAt(zDistance);
+    float radius = Mathf.Min(maxRadiusFractionOfViewport * viewportRadius, m_targetObject.ComputeCameraSpaceRadiusAt(zDistance));
+
+    // Set up initial animation
     float[] radii = new float[] { viewportRadius, radius, radius, radius, radius };
     float[] rotations = new float[] { 0, 0, 45, -45, 0 };
     float[] timeDeltas = new float[] { 1, 1, 1, 1 };
@@ -66,6 +72,7 @@ public class LockIndicator: MonoBehaviour
     m_timerAnimation = new StepwiseAnimator(countdown, timeDeltas2, null);
 
     SetVisible(true);
+    m_active = true;
   }
 
   private void SetVisible(bool visible)
@@ -164,8 +171,6 @@ public class LockIndicator: MonoBehaviour
 
   private void UpdateReticleTransform()
   {
-    if (!m_visible)
-      return;
     // Update the local reticle transform
     m_radiusAnimation.Update();
     m_rotationAnimation.Update();
@@ -183,14 +188,19 @@ public class LockIndicator: MonoBehaviour
 
   private void Update()
   {
-    if (m_targetObject == null)
+    if (m_targetObject == null || !m_active)
+    {
+      return;
+    }
+
+    bool visible = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), m_targetObject.GetComponent<BoxCollider>().bounds);
+    SetVisible(visible);
+    if (!visible)
     {
       return;
     }
 
     UpdateReticleTransform();
-    bool visible = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), m_targetObject.GetComponent<BoxCollider>().bounds);
-    SetVisible(visible);
     transform.position = m_targetObject.ComputeCameraSpaceCentroidAt(zDistance);
 
     // Project world-space up vector onto current camera-local xy plane so that

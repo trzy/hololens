@@ -24,6 +24,11 @@ public class StepwiseAnimator
     return f;
   }
 
+  public bool IsPlaying()
+  {
+    return !m_finished;
+  }
+
   public void Update()
   {
     if (m_timeDeltas == null || m_finished)
