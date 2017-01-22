@@ -88,8 +88,8 @@ public class PlayerGazeControlled: MonoBehaviour
     {
       if (hit.collider.gameObject.CompareTag(Layers.Instance.surfacePlaneTag))
       {
-        HoloToolkit.Unity.SurfacePlane p = hit.collider.gameObject.GetComponent<HoloToolkit.Unity.SurfacePlane>();
-        if (p.PlaneType == HoloToolkit.Unity.PlaneTypes.Wall && Input.GetButtonDown("Fire2"))
+        HoloToolkit.Unity.SpatialMapping.SurfacePlane p = hit.collider.gameObject.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
+        if (p.PlaneType == HoloToolkit.Unity.SpatialMapping.PlaneTypes.Wall && Input.GetButtonDown("Fire2"))
         {
           Debug.Log("hit point=" + hit.point);
           ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal, p);

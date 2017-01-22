@@ -15,7 +15,7 @@ using System.Collections.Generic;
 public class AutoAim: MonoBehaviour
 {
   [Tooltip("Speed (m/s) at which reticle moves to snap to new target")]
-  public float updateSpeed = .01f;
+  public float updateSpeed = 1f;
 
   [Tooltip("Proximity to enemies for auto-aim to take effect")]
   public float proximity = 1.5f;
@@ -113,7 +113,7 @@ public class AutoAim: MonoBehaviour
     if (targets.Count > 0)
     {
       targets.Sort((target1, target2) => Math.Sign(target1.first - target2.first));
-      targetPoint = ClampToAllowableRange(targets[0].second.transform.position);
+      targetPoint = targets[0].second.transform.position; //ClampToAllowableRange(targets[0].second.transform.position);
       m_smoothUpdate = true;
     }
     else

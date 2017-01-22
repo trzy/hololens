@@ -32,14 +32,14 @@ public class Bullet: MonoBehaviour
     ParticleEffectsManager.Instance.CreateBulletImpact(hit_point, hit_normal);
     if (hit_object.CompareTag(Layers.Instance.surfacePlaneTag))
     {
-      HoloToolkit.Unity.SurfacePlane plane = hit_object.GetComponent<HoloToolkit.Unity.SurfacePlane>();
+      HoloToolkit.Unity.SpatialMapping.SurfacePlane plane = hit_object.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
       switch (plane.PlaneType)
       {
-      case HoloToolkit.Unity.PlaneTypes.Wall:
+      case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Wall:
         ParticleEffectsManager.Instance.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
         ParticleEffectsManager.Instance.CreateBulletHole(hit_point, hit_normal, plane);
         break;
-      case HoloToolkit.Unity.PlaneTypes.Floor:
+      case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Floor:
         ParticleEffectsManager.Instance.CreateLingeringFireball(hit_point, hit_normal, 0);
         ParticleEffectsManager.Instance.CreateCrater(hit_point, hit_normal);
         break;

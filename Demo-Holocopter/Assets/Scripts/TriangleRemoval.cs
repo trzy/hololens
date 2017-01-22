@@ -470,7 +470,7 @@ public class TriangleRemoval: HoloToolkit.Unity.Singleton<TriangleRemoval>
   /// <returns>Yield result.</returns>
   private IEnumerator RemoveSurfaceVerticesWithinBoundsRoutine()
   {
-    List<MeshFilter> meshFilters = HoloToolkit.Unity.SpatialMappingManager.Instance.GetMeshFilters();
+    List<MeshFilter> meshFilters = HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.GetMeshFilters();
     float start = Time.realtimeSinceStartup;
 
     while (boundingObjectsQueue.Count > 0)

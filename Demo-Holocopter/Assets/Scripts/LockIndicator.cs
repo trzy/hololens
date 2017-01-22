@@ -17,9 +17,19 @@ using UnityEngine;
 
 public class LockIndicator: MonoBehaviour
 {
+  [Tooltip("Material to render with.")]
   public Material material = null;
+
+  [Tooltip("Distance from camera at which to render.")]
   public float zDistance = 2f;
-  public LockIndicatorHelper targetObject = null;
+
+  public LockIndicatorHelper targetObject
+  {
+    get { return m_targetObject; }
+    set { m_targetObject = value; }
+  }
+
+  private LockIndicatorHelper m_targetObject = null;
 
   private GameObject m_reticleObject = null;
   private MeshRenderer m_reticleRenderer = null;
@@ -43,7 +53,7 @@ public class LockIndicator: MonoBehaviour
   {
     // Set up initial animation
     float viewportRadius = zDistance * Mathf.Tan(Mathf.Deg2Rad * Camera.main.fieldOfView);
-    float radius = targetObject.ComputeCameraSpaceRadiusAt(zDistance);
+    float radius = m_targetObject.ComputeCameraSpaceRadiusAt(zDistance);
     float[] radii = new float[] { viewportRadius, radius, radius, radius, radius };
     float[] rotations = new float[] { 0, 0, 45, -45, 0 };
     float[] timeDeltas = new float[] { 1, 1, 1, 1 };
@@ -173,14 +183,14 @@ public class LockIndicator: MonoBehaviour
 
   private void Update()
   {
-    if (targetObject == null)
+    if (m_targetObject == null)
     {
       return;
     }
 
     UpdateReticleTransform();
-    m_reticleRenderer.enabled = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), targetObject.GetComponent<BoxCollider>().bounds);
-    transform.position = targetObject.ComputeCameraSpaceCentroidAt(zDistance);
+    m_reticleRenderer.enabled = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), m_targetObject.GetComponent<BoxCollider>().bounds);
+    transform.position = m_targetObject.ComputeCameraSpaceCentroidAt(zDistance);
 
     // Project world-space up vector onto current camera-local xy plane so that
     // reticle orientation stays fixed even when user tilts head left or right
@@ -197,7 +207,7 @@ public class LockIndicator: MonoBehaviour
     m_reticleRenderer = m_reticleObject.AddComponent<MeshRenderer>();
     m_reticleRenderer.material = material;
     m_reticleRenderer.material.color = Color.white;
-    //GenerateReticle(targetObject.ComputeCameraSpaceRadiusAt(zDistance));
+    //GenerateReticle(m_targetObject.ComputeCameraSpaceRadiusAt(zDistance));
 
     // Create wn game object and mesh
     m_timerObject = new GameObject("LockIndicator-Timer");

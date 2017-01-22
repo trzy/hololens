@@ -171,7 +171,7 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 
   //TODO: move this function into Bullet.cs
   //TODO: anchors should be embedded into the SurfacePlane and then the bullet holes attached to that plane
-  public void CreateBulletHole(Vector3 position, Vector3 normal, HoloToolkit.Unity.SurfacePlane plane)
+  public void CreateBulletHole(Vector3 position, Vector3 normal, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
     //m_bullet_hole_buffer.Insert(position + normal * .005f, normal);
 
@@ -334,8 +334,9 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     blast.transform.parent = this.transform;
   }
 
-  private void Awake()
+  private new void Awake()
   {
+    base.Awake();
     m_bullet_holes = new Queue<GameObject>(maxBulletHoles + 2);
     m_bullet_hole_buffer = new PopulationLimitingBuffer(m_bullet_hole_prefab, maxBulletHoles, this.gameObject);
   }

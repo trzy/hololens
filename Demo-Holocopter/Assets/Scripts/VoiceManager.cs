@@ -25,8 +25,9 @@ public class VoiceManager: HoloToolkit.Unity.Singleton<VoiceManager>
     }
   }
 
-  private void Awake()
+  private new void Awake()
   {
+    base.Awake();
     m_audio_source = GetComponent<AudioSource>();
   }
 }

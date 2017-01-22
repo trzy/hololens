@@ -48,8 +48,8 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     List<GameObject> floors = PlayspaceManager.Instance.GetFloors();
     floors.Sort((plane1, plane2) =>
     {
-      HoloToolkit.Unity.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
-      HoloToolkit.Unity.BoundedPlane bp2 = plane2.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
+      HoloToolkit.Unity.SpatialMapping.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>().Plane;
+      HoloToolkit.Unity.SpatialMapping.BoundedPlane bp2 = plane2.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>().Plane;
       // Sort descending
       return bp2.Area.CompareTo(bp1.Area);
     });
@@ -61,15 +61,15 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     List<GameObject> floors = PlayspaceManager.Instance.GetTables();
     floors.Sort((plane1, plane2) =>
     {
-      HoloToolkit.Unity.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
-      HoloToolkit.Unity.BoundedPlane bp2 = plane2.GetComponent<HoloToolkit.Unity.SurfacePlane>().Plane;
+      HoloToolkit.Unity.SpatialMapping.BoundedPlane bp1 = plane1.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>().Plane;
+      HoloToolkit.Unity.SpatialMapping.BoundedPlane bp2 = plane2.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>().Plane;
       // Sort descending
       return bp2.Area.CompareTo(bp1.Area);
     });
     return floors;
   }
 
-  private void PlaceCube(float width, float height, float depth, Material material, Color color, HoloToolkit.Unity.SurfacePlane plane, float local_x, float local_z)
+  private void PlaceCube(float width, float height, float depth, Material material, Color color, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane, float local_x, float local_z)
   {
     //
     // Plane coordinate system is different from Unity world convention:
@@ -104,7 +104,7 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     cube.SetActive(true);
   }
 
-  private void SpawnObject(GameObject prefab, HoloToolkit.Unity.SurfacePlane plane, float local_x, float local_z)
+  private void SpawnObject(GameObject prefab, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane, float local_x, float local_z)
   {
     // Rotation from a coordinate system where y is up into one where z is up.
     // This is used to orient objects in a plane-local system before applying
@@ -126,10 +126,10 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     obj.SetActive(true);
   }
 
-  private List<Vector2> FindFloorSpawnPoints(Vector3 required_size, Vector2 step_size, float clearance, HoloToolkit.Unity.SurfacePlane plane)
+  private List<Vector2> FindFloorSpawnPoints(Vector3 required_size, Vector2 step_size, float clearance, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
     List<Vector2> places = new List<Vector2>();
-    HoloToolkit.Unity.OrientedBoundingBox bb = plane.Plane.Bounds;
+    HoloToolkit.Unity.SpatialMapping.OrientedBoundingBox bb = plane.Plane.Bounds;
     Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
     // Note that xy in local plane coordinate system correspond to what would be xz in global space
     Vector3 half_extents = new Vector3(required_size.x, required_size.z, required_size.y) * 0.5f;
@@ -160,9 +160,9 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     return places;
   }
 
-  private void DrawFloorSpawnPoints(Vector3 required_size, float clearance, HoloToolkit.Unity.SurfacePlane plane)
+  private void DrawFloorSpawnPoints(Vector3 required_size, float clearance, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
-    HoloToolkit.Unity.OrientedBoundingBox bb = plane.Plane.Bounds;
+    HoloToolkit.Unity.SpatialMapping.OrientedBoundingBox bb = plane.Plane.Bounds;
     Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
     // Note that xy in local plane coordinate system correspond to what would be xz in global space
     Vector3 half_extents = new Vector3(required_size.x, required_size.z, required_size.y) * 0.5f;
@@ -225,7 +225,7 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
       return;
     }
     // Until we develop some real assets, just place cubes :)
-    HoloToolkit.Unity.SurfacePlane city_plane = floors[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    HoloToolkit.Unity.SpatialMapping.SurfacePlane city_plane = floors[0].GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
     /*
     Debug.Log("up=" + city_plane.transform.up.ToString("F2"));
     Debug.Log("forward=" + city_plane.transform.forward.ToString("F2"));
@@ -252,20 +252,20 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     }
 
     // Place two tanks
-    HoloToolkit.Unity.SurfacePlane plane = tables[0].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+    HoloToolkit.Unity.SpatialMapping.SurfacePlane plane = tables[0].GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
     SpawnObject(tankPrefab, plane, 0, 0.2f);
     SpawnObject(tankPrefab, plane, -0.25f, -0.2f);
 
     // Place more tanks if possible
     for (int i = 1; i < tables.Count; i++)
     {
-      plane = tables[i].GetComponent<HoloToolkit.Unity.SurfacePlane>();
+      plane = tables[i].GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
       SpawnObject(tankPrefab, plane, 0, 0);
     }
 
     // Tmp
     int j = 0;
-    var spatial_mesh_filters = HoloToolkit.Unity.SpatialMappingManager.Instance.GetMeshFilters();
+    var spatial_mesh_filters = HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.GetMeshFilters();
     foreach (MeshFilter filter in spatial_mesh_filters)
     {
       Debug.Log("Mesh " + j + ": " + filter.sharedMesh.bounds.center.ToString("F2") + ", " + filter.sharedMesh.bounds.extents.ToString("F2"));

@@ -109,13 +109,13 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
   private class Task
   {
-    public HoloToolkit.Unity.SurfacePlane plane;
+    public HoloToolkit.Unity.SpatialMapping.SurfacePlane plane;
     public GameObject marginVolume;
     public Vector3 centerPointOnFrontPlane;
     public Vector3 centerPointOnBackPlane;
     public GameObject embedded;
 
-    public Task(HoloToolkit.Unity.SurfacePlane pPlane, GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    public Task(HoloToolkit.Unity.SpatialMapping.SurfacePlane pPlane, GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
     {
       plane = pPlane;
       marginVolume = pMarginVolume;
@@ -126,7 +126,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
   }
 
   private List<MeshFilter> m_spatialMeshFilters = null;
-  private Dictionary<Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh = null;
+  private Dictionary<Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh = null;
   private Queue<Task> m_taskQueue = null;
   private bool m_working = false;
 
@@ -180,9 +180,9 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     }
   }
 
-  private bool HasSufficientMargin(HoloToolkit.Unity.SurfacePlane plane, MeshFilter meshFilter, float requiredMargin)
+  private bool HasSufficientMargin(HoloToolkit.Unity.SpatialMapping.SurfacePlane plane, MeshFilter meshFilter, float requiredMargin)
   {
-    Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter> key = new Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>(plane, meshFilter);
+    Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter> key = new Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>(plane, meshFilter);
     //Debug.Log("hash key " + plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + " = " + key.GetHashCode());
     float currentMargin;
     if (m_marginByPlaneAndSpatialMesh.TryGetValue(key, out currentMargin))
@@ -329,7 +329,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
         }
 
         // Update margin depth of this plane/spatial mesh pair
-        m_marginByPlaneAndSpatialMesh[new Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>(task.plane, meshFilter)] = requiredMargin;
+        m_marginByPlaneAndSpatialMesh[new Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>(task.plane, meshFilter)] = requiredMargin;
         //Debug.Log("Finished deforming [" + task.plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + "]");
       }
 
@@ -345,7 +345,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     yield break;
   }
 
-  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, HoloToolkit.Unity.SurfacePlane plane)
+  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
     BoxCollider embeddedOBB = embedded.GetComponent<BoxCollider>();
     if (null == embeddedOBB)
@@ -356,7 +356,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       centerPointOnBackPlane = Vector3.zero;
       return true;
     }
-    HoloToolkit.Unity.OrientedBoundingBox surfaceBounds = plane.Plane.Bounds;
+    HoloToolkit.Unity.SpatialMapping.OrientedBoundingBox surfaceBounds = plane.Plane.Bounds;
 
     /*
      * Compute margin volume front (i.e., the actual surface) and back (onto
@@ -399,7 +399,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     return false;
   }
 
-  public void Embed(GameObject embedded, HoloToolkit.Unity.SurfacePlane plane)
+  public void Embed(GameObject embedded, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
     if (null == plane)
     {
@@ -445,11 +445,12 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
   public void SetSpatialMeshFilters(List<MeshFilter> spatialMeshFilters)
   {
     m_spatialMeshFilters = spatialMeshFilters;
-    m_marginByPlaneAndSpatialMesh = new Dictionary<Tuple<HoloToolkit.Unity.SurfacePlane, MeshFilter>, float>(spatialMeshFilters.Count);
+    m_marginByPlaneAndSpatialMesh = new Dictionary<Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>, float>(spatialMeshFilters.Count);
   }
 
-  private void Awake()
+  private new void Awake()
   {
+    base.Awake();
     m_taskQueue = new Queue<Task>();
     if (transform.position != Vector3.zero || transform.lossyScale != Vector3.one || transform.rotation != Quaternion.identity)
     {

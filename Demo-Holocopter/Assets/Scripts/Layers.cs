@@ -11,7 +11,7 @@ public class Layers : HoloToolkit.Unity.Singleton<Layers>
   // Spatial meshes and surface planes
   public int spatial_mesh_layer
   {
-    get { return HoloToolkit.Unity.SpatialMappingManager.Instance.PhysicsLayer; }
+    get { return HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer; }
   }
 
   public int spatial_mesh_layer_mask
@@ -55,8 +55,9 @@ public class Layers : HoloToolkit.Unity.Singleton<Layers>
 
   private int m_object_layer;
 
-  void Awake()
+  private new void Awake()
   {
+    base.Awake();
     m_object_layer = LayerMask.NameToLayer("Default");
   }
 }

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.VR.WSA;
-using HoloToolkit.Unity;
+using HoloToolkit.Unity.SpatialMapping;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -139,10 +139,11 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     if (removeVerts != null && removeVerts.enabled)
       removeVerts.RemoveSurfaceVerticesWithinBounds(boundingObjects);
   }
-
+/*
   void Awake()
   {
   }
+  */
 
   void Start()
   {
