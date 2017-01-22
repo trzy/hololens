@@ -113,7 +113,7 @@ public class AutoAim: MonoBehaviour
     if (targets.Count > 0)
     {
       targets.Sort((target1, target2) => Math.Sign(target1.first - target2.first));
-      targetPoint = targets[0].second.transform.position; //ClampToAllowableRange(targets[0].second.transform.position);
+      targetPoint = ClampToAllowableRange(targets[0].second.transform.position);
       m_smoothUpdate = true;
     }
     else
