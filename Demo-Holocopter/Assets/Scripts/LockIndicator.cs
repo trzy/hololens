@@ -190,8 +190,7 @@ public class LockIndicator: MonoBehaviour
 
     UpdateReticleTransform();
     bool visible = GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(Camera.main), m_targetObject.GetComponent<BoxCollider>().bounds);
-    m_reticleRenderer.enabled = visible;
-    m_timerRenderer.enabled = visible;
+    SetVisible(visible);
     transform.position = m_targetObject.ComputeCameraSpaceCentroidAt(zDistance);
 
     // Project world-space up vector onto current camera-local xy plane so that
