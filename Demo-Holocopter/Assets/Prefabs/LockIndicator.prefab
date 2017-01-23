@@ -52,4 +52,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: df434899c8ed56843ae69f6df9cfacc6, type: 2}
+  maxRadiusFractionOfViewport: 0.1
   zDistance: 2
