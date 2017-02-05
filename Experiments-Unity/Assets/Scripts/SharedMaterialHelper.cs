@@ -1,4 +1,33 @@
-﻿using UnityEngine;
+﻿/*
+ * Helper component for automatic saving and restoration of shared materials.
+ * 
+ * Problems with Unity material handling
+ * -------------------------------------
+ * Accessing materials in Unity causes them to be cloned. The user is
+ * responsible for cleaning them up, else a memory leak occurs. When a material
+ * is cloned, the shared material pointer is set to the clone, making it
+ * impossible to restore the original material.
+ * 
+ * Modifying shared materials affects all instances of objects using those 
+ * materials but when running in the Unity editor, will modify the materials on
+ * disk, which is normally undesirable.
+ * 
+ * What this component does
+ * ------------------------
+ * - This component saves all the shared materials when either 
+ *   SaveSharedMaterials() is called or when "Initialize On Awake" is set in
+ *   the inspector.
+ * - To restore shared materials, call RestoreSharedMaterials().
+ * - Shared materials can also be cloned using ApplySharedMaterialClones().
+ *   These clones are then applied to both sharedMaterials[] and materials[],
+ *   naturally, and can safely be modified without overwriting anything on
+ *   disk. Clones are created only once globally and shared between object 
+ *   instances that use this script. For example, if each object instance
+ *   clones the shared materials in Start() and then a single instance
+ *   subsequently changes a material property, all instances will be affected.
+ */
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
