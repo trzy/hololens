@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.VR.WSA.Input;
 using HoloToolkit.Unity;
 using HoloToolkit.Unity.SpatialMapping;
+using System;
 
 public class Demo: MonoBehaviour
 {
@@ -13,8 +14,9 @@ public class Demo: MonoBehaviour
   [Tooltip("Material to use when spatial mesh is being visualized")]
   public Material spatialMeshVisibleMaterial = null;
 
-  private SpatialMappingManager m_spatialMappingManager;
-  private SpatialUnderstanding m_spatialUnderstanding;
+  [Tooltip("Material to use when rendering visual debugging aids")]
+  public Material debugMaterial = null;
+
   private enum State
   {
     Scanning,
@@ -23,6 +25,36 @@ public class Demo: MonoBehaviour
   };
   private State m_state;
   private GestureRecognizer m_gestureRecognizer;
+  private SpatialMappingManager m_spatialMappingManager;
+  private SpatialUnderstanding m_spatialUnderstanding;
+  private SpatialUnderstandingDllTopology.TopologyResult[] m_queryResults = new SpatialUnderstandingDllTopology.TopologyResult[1024];
+  private IntPtr m_queryResultsPtr = IntPtr.Zero;
+
+  private void MakeCube(Vector3 position, Vector3 normal)
+  {
+    GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+    cube.transform.parent = null;
+    cube.transform.localScale = new Vector3(1, 1, .25f);
+    cube.transform.position = position;
+    cube.transform.transform.rotation = Quaternion.LookRotation(normal, Vector3.up);
+    cube.GetComponent<Renderer>().material = debugMaterial;
+    cube.GetComponent<Renderer>().material.color = Color.blue;
+    cube.SetActive(true);
+  }
+
+  private void QueryFloorPositions()
+  {
+    float minWidth = 1f;
+    float minLength = 1f;
+    int numPositions = SpatialUnderstandingDllTopology.QueryTopology_FindPositionsOnFloor(minLength, minWidth, m_queryResults.Length, m_queryResultsPtr);
+    Debug.Log("Found " + numPositions + " positions");
+    for (int i = 0; i < numPositions; i++)
+    {
+      var result = m_queryResults[i];
+      Debug.Log("  Position " + i + ": pos=" + result.position.ToString("F5") + ", length=" + result.length.ToString("F3") + ", width=" + result.width.ToString("F3") + ", normal=" + result.normal.ToString("F3"));
+      MakeCube(result.position, result.normal);
+    }
+  }
 
   private void HideSpatialMesh()
   {
@@ -42,25 +74,7 @@ public class Demo: MonoBehaviour
         m_state = State.FinalizingScan;
         break;
       case State.Playing:
-        /*
-        RaycastHit hit;
-        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit))
-        {
-          // If a wall, floor, or ceiling was hit, embed a bullet hole
-          GameObject target = hit.collider.gameObject;
-          Debug.Log("Hit: " + target.name);
-          SurfacePlane plane = target.GetComponent<SurfacePlane>();
-          if (plane != null)
-          {
-            if (plane.PlaneType == PlaneTypes.Ceiling ||
-              plane.PlaneType == PlaneTypes.Floor ||
-              plane.PlaneType == PlaneTypes.Wall)
-            {
-              CreateBulletHole(hit.point, hit.normal, plane);
-            }
-          }
-        }
-        */
+        QueryFloorPositions();
         break;
       default:
         break;
@@ -86,8 +100,10 @@ public class Demo: MonoBehaviour
     {
       if (!m_spatialUnderstanding.ScanStatsReportStillWorking)
       {
+        Debug.Log("Finalizing scan...");
         m_spatialUnderstanding.RequestFinishScan();
         HideSpatialMesh();
+//        QueryFloorPositions();
         m_state = State.Playing;
       }
       //TODO: timeout and error handling
@@ -119,5 +135,8 @@ public class Demo: MonoBehaviour
     m_gestureRecognizer.SetRecognizableGestures(GestureSettings.Tap);
     m_gestureRecognizer.TappedEvent += OnTapEvent;
     m_gestureRecognizer.StartCapturingGestures();
+
+    // Pin the query results memory and get a native pointer
+    m_queryResultsPtr = SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(m_queryResults);
   }
 }

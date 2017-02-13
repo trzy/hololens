@@ -215,6 +215,7 @@ MonoBehaviour:
   visualizeSpatialMesh: 1
   spatialMeshVisibleMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a,
     type: 2}
+  debugMaterial: {fileID: 2100000, guid: 7873f58639de16f45893b6b5100bce32, type: 2}
 --- !u!4 &713797291
 Transform:
   m_ObjectHideFlags: 0
