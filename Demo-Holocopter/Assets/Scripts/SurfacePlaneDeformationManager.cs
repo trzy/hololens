@@ -192,37 +192,6 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     return false;
   }
 
-  private IEnumerator MakeSetOfVertexIndices(System.Action<List<int>> callback, List<int> triangles)
-  {
-    float t0 = Time.realtimeSinceStartup;
-    List<int> vertexSet = new List<int>(triangles.Count);
-    for (int i = 0; i < triangles.Count; i += 3)
-    {
-      int i0 = triangles[i + 0];
-      int i1 = triangles[i + 1];
-      int i2 = triangles[i + 2];
-      if (!vertexSet.Contains(i0))
-      {
-        vertexSet.Add(i0);
-      }
-      if (!vertexSet.Contains(i1))
-      {
-        vertexSet.Add(i1);
-      }
-      if (!vertexSet.Contains(i2))
-      { 
-        vertexSet.Add(i2);
-      }
-      if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
-      {
-        yield return null;
-        t0 = Time.realtimeSinceStartup;
-      }
-    }
-    callback(vertexSet);
-    yield break;
-  }
-
   private IEnumerator DeformSurfaceCoroutine()
   {
     while (m_taskQueue.Count > 0)
@@ -292,17 +261,8 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
           continue;
         }
 
-        // Collapse all the vertices down into a set
-        // TODO: it may be faster just to omit this step entirely and process vertices
-        // multiple times.
-        /*
-        List<int> vertIndices = null;
-        f = MakeSetOfVertexIndices((List<int> result) => { vertIndices = result; }, intersectingTriangles);
-        while (f.MoveNext())
-        {
-          yield return f.Current;
-        }
-        */
+        // TODO: Use a bit set to keep track of which vertex indices to modify?
+
         float t0 = Time.realtimeSinceStartup;
         List<int> vertIndices = intersectingTriangles;
 

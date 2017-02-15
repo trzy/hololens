@@ -234,6 +234,7 @@ public class Tank : MonoBehaviour
     GameObject target = collision.collider.gameObject;
     if (target.CompareTag("Bullet"))
     {
+      FXManager.Instance.EmitImpact(collision.contacts[0].point);
       m_currentMission.OnEnemyHitByPlayer(this);
       m_audioSource.Stop();
       if (--lifePoints > 0)
@@ -253,9 +254,10 @@ public class Tank : MonoBehaviour
         wreckage.transform.rotation = transform.rotation;
         foreach (Rigidbody rb in wreckage.GetComponentsInChildren<Rigidbody>())
         {
-          rb.AddExplosionForce(200, wreckage.transform.position, 0.1f, 0.1f);
+          rb.AddExplosionForce(250, wreckage.transform.position, 0.1f, 0.1f);
         }
-        ParticleEffectsManager.Instance.CreateExplosionBlastWave(transform.position, Vector3.up);
+        FXManager.Instance.EmitExplosion(transform.position, Vector3.up);
+        //ParticleEffectsManager.Instance.CreateExplosionBlastWave(transform.position, Vector3.up);
         /*
          * TODO: try using bindpose
         foreach (Transform original in transform)

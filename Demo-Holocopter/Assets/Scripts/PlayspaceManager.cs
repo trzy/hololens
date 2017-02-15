@@ -11,30 +11,36 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   [Tooltip("Draw surface planes when running in Unity editor")]
   public bool planesVisibleInEditor = true;
 
+  [Tooltip("Visualize the spatial meshes by inhibiting use of the occlusion material")]
+  public bool visualizeSpatialMeshes = false;
+
   [Tooltip("Render queue value to use for drawing freshly-embeded objects before spatial mesh.")]
   public int highPriorityRenderQueueValue = 1000;
 
   [Tooltip("Remove triangles that are inside of surfaces detected by plane finding algo")]
   public bool removeSurfaceTriangles = false;
 
-  public Material m_occlusion_material;
-  public Material m_rendering_material;
+  [Tooltip("Material used for spatial mesh occlusion during game play")]
+  public Material occlusionMaterial = null;
 
-  private uint m_scanning_time_limit = 0;
-  private bool m_scanning_complete = false;
-  private MakePlanesCompleteDelegate m_make_planes_complete_cb = null;
+  [Tooltip("Material used spatial mesh visualization during scanning")]
+  public Material renderingMaterial = null;
+
+  private uint m_scanningTimeLimit = 0;
+  private bool m_scanningComplete = false;
+  private MakePlanesCompleteDelegate m_OnMakePlanesComplete = null;
 
   //TODO: refactor -- too much duplication
   public List<GameObject> GetFloors()
   {
-    PlaneTypes desired_types = PlaneTypes.Floor;
+    PlaneTypes desiredTypes = PlaneTypes.Floor;
     List<GameObject> planes = new List<GameObject>();
     foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
     {
       SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType)
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType)
         Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
         planes.Add(plane);
     }
     return planes;
@@ -42,7 +48,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   public List<GameObject> GetTables()
   {
-    PlaneTypes desired_types = PlaneTypes.Table;
+    PlaneTypes desiredTypes = PlaneTypes.Table;
     List<GameObject> planes = new List<GameObject>();
     foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
     {
@@ -50,9 +56,9 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
       // Only tables below eye level. SurfacePlane has the unfortunate problem
       // that it creates tables with planes oriented downwards. We ignore these
       // (but maybe we should rotate?).
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType)
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType)
         Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
-      if ((surfacePlane.PlaneType & desired_types) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
         planes.Add(plane);
     }
     return planes;
@@ -60,16 +66,16 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   public void SetMakePlanesCompleteCallback(MakePlanesCompleteDelegate cb)
   {
-    m_make_planes_complete_cb = cb;
+    m_OnMakePlanesComplete = cb;
   }
 
   //TODO: if time limited, take an optional callback
-  public void StartScanning(uint scanning_time_limit = 0)
+  public void StartScanning(uint scanningTimeLimit = 0)
   {
-    m_scanning_time_limit = scanning_time_limit;
+    m_scanningTimeLimit = scanningTimeLimit;
     if (!SpatialMappingManager.Instance.IsObserverRunning())
       SpatialMappingManager.Instance.StartObserver();
-    SpatialMappingManager.Instance.SetSurfaceMaterial(m_rendering_material);
+    SpatialMappingManager.Instance.SetSurfaceMaterial(renderingMaterial);
   }
 
   public void StopScanning()
@@ -77,7 +83,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     if (SpatialMappingManager.Instance.IsObserverRunning())
       SpatialMappingManager.Instance.StopObserver();
     CreatePlanes();
-    m_scanning_complete = true;
+    m_scanningComplete = true;
   }
 
   private void SetPlanesVisible(bool visible)
@@ -100,10 +106,10 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   private void Update()
   {
-    if (m_scanning_complete)
+    if (m_scanningComplete)
       return;
     // If no time limit, or if time limit but still time left, keep scanning
-    if (m_scanning_time_limit == 0 || (Time.time - SpatialMappingManager.Instance.StartTime) < m_scanning_time_limit)
+    if (m_scanningTimeLimit == 0 || (Time.time - SpatialMappingManager.Instance.StartTime) < m_scanningTimeLimit)
       return;
     StopScanning();
   }
@@ -113,9 +119,10 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   {
     if (removeSurfaceTriangles)
       RemoveVertices(SurfaceMeshesToPlanes.Instance.ActivePlanes);
-    SpatialMappingManager.Instance.SetSurfaceMaterial(m_occlusion_material);
-    if (m_make_planes_complete_cb != null)
-      m_make_planes_complete_cb();
+    if (!visualizeSpatialMeshes)
+      SpatialMappingManager.Instance.SetSurfaceMaterial(occlusionMaterial);
+    if (m_OnMakePlanesComplete != null)
+      m_OnMakePlanesComplete();
     SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
@@ -135,9 +142,12 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private void RemoveVertices(IEnumerable<GameObject> boundingObjects)
   {
     TriangleRemoval removeVerts = TriangleRemoval.Instance;
-    //RemoveSurfaceVertices removeVerts = RemoveSurfaceVertices.Instance;
+   // RemoveSurfaceVertices removeVerts = RemoveSurfaceVertices.Instance;
     if (removeVerts != null && removeVerts.enabled)
+    {
+      Debug.Log("Removing vertices from spatial meshes...");
       removeVerts.RemoveSurfaceVerticesWithinBounds(boundingObjects);
+    }
   }
 /*
   void Awake()

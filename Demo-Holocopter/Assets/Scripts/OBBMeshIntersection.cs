@@ -3,12 +3,6 @@
  * Tomas Akenine-Moller (2001). The code here is a direct C -> C# conversion of
  * Moller's implementation, which can be found along with the paper here:
  * http://fileadmin.cs.lth.se/cs/personal/tomas_akenine-moller/code/
- * 
- * Performance optimization TO-DO:
- * -------------------------------
- * - Copy all surface mesh vertices and indices over at the beginning so we don't
- *   have to perform this operation frequently.
- * - Add code to do this in background and yield.
  */
 
 using UnityEngine;
@@ -269,31 +263,31 @@ public static class OBBMeshIntersection
     return new Bounds(center, new Vector3(maxX - minX, maxY - minY, maxZ - minZ));
   }
 
-  public static List<int> FindTriangles(BoxCollider obb, Vector3[] mesh_verts, int[] triangle_indices, Transform mesh_transform)
+  public static List<int> FindTriangles(BoxCollider obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
   {
-    System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-    stopwatch.Reset();
-    stopwatch.Start();
+    //System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+    //stopwatch.Reset();
+    //stopwatch.Start();
 
-    int[] indices = triangle_indices;
-    int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
-    List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
+    int[] indices = triangleIndices;
+    int expectedNumIntersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
+    List<int> intersectingTriangles = new List<int>(expectedNumIntersecting);
     Vector3 boxcenter = obb.center;
     Vector3 boxhalfsize = obb.size * 0.5f;
 
     // Gross test using AABB
     Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
-    if (!aabb.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
-      return intersecting_triangles;
+    if (!aabb.Intersects(meshTransform.gameObject.GetComponent<Renderer>().bounds))
+      return intersectingTriangles;
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
     // testing (because the OBB then becomes an AABB in its local space)
-    Vector3[] verts = new Vector3[mesh_verts.Length];
-    for (int i = 0; i < mesh_verts.Length; i++)
+    Vector3[] verts = new Vector3[meshVerts.Length];
+    for (int i = 0; i < meshVerts.Length; i++)
     {
       // Transform mesh 1) mesh local -> world, 2) world -> OBB local
-      Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
-      verts[i] = obb.transform.InverseTransformPoint(world_vertex);
+      Vector3 worldVertex = meshTransform.TransformPoint(meshVerts[i]);
+      verts[i] = obb.transform.InverseTransformPoint(worldVertex);
     }
     
     // Test each triangle in the mesh
@@ -304,45 +298,45 @@ public static class OBBMeshIntersection
       int i2 = indices[i + 2];
       if (TriangleBoxTest(boxcenter, boxhalfsize, verts[i0], verts[i1], verts[i2]))
       {
-        intersecting_triangles.Add(i0);
-        intersecting_triangles.Add(i1);
-        intersecting_triangles.Add(i2);
+        intersectingTriangles.Add(i0);
+        intersectingTriangles.Add(i1);
+        intersectingTriangles.Add(i2);
       }
     }
 
-    stopwatch.Stop();
-    Debug.Log("Elapsed time=" + stopwatch.ElapsedTicks + " ticks (" + (double)(stopwatch.ElapsedTicks) / (double)(System.Diagnostics.Stopwatch.Frequency) + " sec)");
-    return intersecting_triangles;
+    //stopwatch.Stop();
+    //Debug.Log("Elapsed time=" + stopwatch.ElapsedTicks + " ticks (" + (double)(stopwatch.ElapsedTicks) / (double)(System.Diagnostics.Stopwatch.Frequency) + " sec)");
+    return intersectingTriangles;
   }
 
-  public delegate void ResultsCallback(List<int> intersecting_triangles_found);
+  public delegate void ResultsCallback(List<int> intersectingTriangles_found);
 
-  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Vector3[] mesh_verts, int[] triangle_indices, Transform mesh_transform)
+  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
   {
     float t0 = Time.realtimeSinceStartup;
 
-    int[] indices = triangle_indices;
-    int expected_num_intersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
-    List<int> intersecting_triangles = new List<int>(expected_num_intersecting);
+    int[] indices = triangleIndices;
+    int expectedNumIntersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
+    List<int> intersectingTriangles = new List<int>(expectedNumIntersecting);
     Vector3 boxcenter = obb.center;
     Vector3 boxhalfsize = obb.size * 0.5f;
 
     // Gross test using AABB
     Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
-    if (!aabb.Intersects(mesh_transform.gameObject.GetComponent<Renderer>().bounds))
+    if (!aabb.Intersects(meshTransform.gameObject.GetComponent<Renderer>().bounds))
     {
-      callback(intersecting_triangles);
+      callback(intersectingTriangles);
       yield break;
     }
 
     // Rotate the mesh into OBB-local space so we can perform axis-aligned
     // testing (because the OBB then becomes an AABB in its local space).
-    Vector3[] verts = new Vector3[mesh_verts.Length];
-    for (int i = 0; i < mesh_verts.Length; i++)
+    Vector3[] verts = new Vector3[meshVerts.Length];
+    for (int i = 0; i < meshVerts.Length; i++)
     {
       // Transform mesh: 1) mesh local -> world, 2) world -> OBB local
-      Vector3 world_vertex = mesh_transform.TransformPoint(mesh_verts[i]);
-      verts[i] = obb.transform.InverseTransformPoint(world_vertex);
+      Vector3 worldVertex = meshTransform.TransformPoint(meshVerts[i]);
+      verts[i] = obb.transform.InverseTransformPoint(worldVertex);
       if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
       {
         yield return null;
@@ -358,9 +352,9 @@ public static class OBBMeshIntersection
       int i2 = indices[i + 2];
       if (TriangleBoxTest(boxcenter, boxhalfsize, verts[i0], verts[i1], verts[i2]))
       {
-        intersecting_triangles.Add(i0);
-        intersecting_triangles.Add(i1);
-        intersecting_triangles.Add(i2);
+        intersectingTriangles.Add(i0);
+        intersectingTriangles.Add(i1);
+        intersectingTriangles.Add(i2);
       }
       if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
       {
@@ -370,6 +364,6 @@ public static class OBBMeshIntersection
     }
 
     // Pass result to caller
-    callback(intersecting_triangles);
+    callback(intersectingTriangles);
   }
 }

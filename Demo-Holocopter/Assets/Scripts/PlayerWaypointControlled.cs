@@ -23,7 +23,7 @@ public class PlayerWaypointControlled: MonoBehaviour
   private List<GameObject>  m_waypoint_list = new List<GameObject>();
   private bool              m_music_played = false;
   private GameObject        m_gaze_target = null;
-  private int               m_object_layer = 0;
+  private int               m_objectLayer = 0;
   private Reticle           m_reticle;
   private State             m_state;
 
@@ -93,7 +93,7 @@ public class PlayerWaypointControlled: MonoBehaviour
     m_gesture_recognizer.SetRecognizableGestures(GestureSettings.Tap);
     m_gesture_recognizer.TappedEvent += OnTapEvent;
     m_gesture_recognizer.StartCapturingGestures();
-    m_object_layer = 1 << LayerMask.NameToLayer("Default");
+    m_objectLayer = 1 << LayerMask.NameToLayer("Default");
     m_reticle = new Reticle(m_reticle_material);
     SetState(State.Scanning);
     //StartCoroutine(BlinkGazeTargetCoroutine());
@@ -116,7 +116,7 @@ public class PlayerWaypointControlled: MonoBehaviour
       SetRenderEnable(old_gaze_target, true);
     */
     RaycastHit hit;
-    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, m_object_layer))//Physics.DefaultRaycastLayers))
+    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 20.0f, m_objectLayer))//Physics.DefaultRaycastLayers))
     {
       GameObject gaze_target = hit.collider.transform.parent.gameObject;
       if (gaze_target.activeSelf)

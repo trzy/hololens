@@ -4,34 +4,34 @@ using System.Collections;
 public class ExplosionSphere : MonoBehaviour
 {
   [Tooltip("If non-zero, object's render queue value is offset from the shader's default. Higher values are rendered later. Use this (sparingly) to enforce draw order.")]
-  public int m_render_queue_offset = 0;
+  public int renderQueueOffset = 0;
 
   [Tooltip("Time in seconds to delay appearance.")]
   public float delayTime = 0;
 
   [Tooltip("Time in seconds over which to ramp to maximum size using S-curve.")]
-  public float m_ramp_up_time = 0.4f;
+  public float rampUpTime = 0.4f;
 
   [Tooltip("Time over which to fade out (and be destroyed) after ramping to maximum size.")]
-  public float m_fade_out_time = 0.3f;
+  public float fadeOutTime = 0.3f;
 
   [Tooltip("Texture scroll speed, expressed as number of seconds to loop over entire V range.")]
-  public float m_texture_scroll_time = 5;
+  public float textureScrollTime = 5;
 
-  private Vector3 m_max_scale;
+  private Vector3 m_maxScale;
   private Renderer m_renderer;
-  private int m_v_offset;
+  private int m_vOffset;
   private float m_t0 = 0;
 
 	void Awake()
   {
     //Debug.Log("Awake");
-    m_max_scale = transform.localScale; // use local scale from editor as max size
+    m_maxScale = transform.localScale; // use local scale from editor as max size
     transform.localScale = Vector3.zero;
     m_renderer = GetComponent<Renderer>();
-    m_v_offset = Shader.PropertyToID("_VOffset");
-    if (m_render_queue_offset != 0)
-      m_renderer.material.renderQueue = m_renderer.material.shader.renderQueue + m_render_queue_offset;
+    m_vOffset = Shader.PropertyToID("_VOffset");
+    if (renderQueueOffset != 0)
+      m_renderer.material.renderQueue = m_renderer.material.shader.renderQueue + renderQueueOffset;
   }
 
   void Start()
@@ -55,13 +55,13 @@ public class ExplosionSphere : MonoBehaviour
       m_renderer.enabled = true;
 
     // Animate
-    if (delta > m_ramp_up_time + m_fade_out_time)
+    if (delta > rampUpTime + fadeOutTime)
       Destroy(this.gameObject);
-    float size = Sigmoid1(delta / m_ramp_up_time);
-    transform.localScale = size * m_max_scale;
+    float size = Sigmoid1(delta / rampUpTime);
+    transform.localScale = size * m_maxScale;
     Color color = new Color(m_renderer.material.color.r, m_renderer.material.color.g, m_renderer.material.color.b, m_renderer.material.color.a);
-    color.a *= Mathf.Clamp(1 - (delta - m_ramp_up_time) / m_fade_out_time, 0, 1);
+    color.a *= Mathf.Clamp(1 - (delta - rampUpTime) / fadeOutTime, 0, 1);
     m_renderer.material.color = color;
-    m_renderer.material.SetFloat(m_v_offset, delta / m_texture_scroll_time);
+    m_renderer.material.SetFloat(m_vOffset, delta / textureScrollTime);
   }
 }

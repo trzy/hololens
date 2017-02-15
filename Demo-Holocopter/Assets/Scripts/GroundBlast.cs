@@ -7,7 +7,7 @@ public class GroundBlast: MonoBehaviour
   public float m_duration = 0.16f;
 
   [Tooltip("Peak height (y scale factor) to grow to")]
-  public float m_peak_height = 5;
+  public float peakHeight = 5;
 
   [Tooltip("Number of revolutions to complete")]
   public float m_revolutions = 0;
@@ -57,7 +57,7 @@ public class GroundBlast: MonoBehaviour
     new Vector2(1, 1)     // 15
   };
 
-  private Vector3[] m_flat_verts =
+  private Vector3[] m_flatVerts =
   {
     new Vector3(-0.5f,                        0.5f + INVSQRT2,              0), // 0
     new Vector3(0.5f,                         0.5f + INVSQRT2,              0), // 1
@@ -77,7 +77,7 @@ public class GroundBlast: MonoBehaviour
     new Vector3(-0.5f - INVSQRT2 - THICKNESS, 0.5f,                         0), // 15
   };
 
-  private Vector3[] m_standing_verts =
+  private Vector3[] m_standingVerts =
   {
     new Vector3(-0.5f,            0.5f + INVSQRT2,  0),         // 0
     new Vector3(0.5f,             0.5f + INVSQRT2,  0),         // 1
@@ -155,7 +155,7 @@ public class GroundBlast: MonoBehaviour
 
   void Awake()
   {
-    Interpolate(m_verts, m_flat_verts, m_standing_verts, 1);
+    Interpolate(m_verts, m_flatVerts, m_standingVerts, 1);
     m_mesh = GetComponent<MeshFilter>().mesh;
     m_mesh.vertices = m_verts;
     m_mesh.triangles = m_triangles;
@@ -179,11 +179,11 @@ public class GroundBlast: MonoBehaviour
       //delta = 0;
       //m_t0 = Time.time;
     }
-    Interpolate(m_verts, m_flat_verts, m_standing_verts, Mathf.Min(delta / m_duration, 1));
+    Interpolate(m_verts, m_flatVerts, m_standingVerts, Mathf.Min(delta / m_duration, 1));
     m_mesh.vertices = m_verts;
-    float xy_scale = Mathf.Lerp(1, 0, Mathf.Min(delta / m_duration, 1));
-    float z_scale = Mathf.Lerp(1, m_peak_height, Mathf.Min(delta / m_duration, 1));
-    Vector3 scale = new Vector3(m_scale.x * xy_scale, m_scale.y * xy_scale, m_scale.z * z_scale);
+    float xyScale = Mathf.Lerp(1, 0, Mathf.Min(delta / m_duration, 1));
+    float zScale = Mathf.Lerp(1, peakHeight, Mathf.Min(delta / m_duration, 1));
+    Vector3 scale = new Vector3(m_scale.x * xyScale, m_scale.y * xyScale, m_scale.z * zScale);
     transform.localScale = scale;
     transform.Rotate(new Vector3(0, 0, m_revolutions * 360 * delta / m_duration));
 	}

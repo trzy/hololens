@@ -9,14 +9,14 @@ public class ExplosionBillboard: MonoBehaviour
   private const float FRAME_DURATION = 1f / 60f;  // duration in seconds of each explosion frame
   private const float U_STEP = .25f;              // one step right in the texture sheet
   private const float V_STEP = -.0625f;           // one step down the texture sheet
-  private float[] m_u_steps =
+  private float[] m_uSteps =
   {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
   };
-  private float[] m_v_steps =
+  private float[] m_vSteps =
   {
     5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -24,17 +24,17 @@ public class ExplosionBillboard: MonoBehaviour
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
   };
   private float m_t0 = 0;
-  private int m_u_offset = 0;
-  private int m_v_offset = 0;
+  private int m_uOffset = 0;
+  private int m_vOffset = 0;
   private Renderer m_renderer;
 
   void Awake()
   {
-    m_u_offset = Shader.PropertyToID("_UOffset");
-    m_v_offset = Shader.PropertyToID("_VOffset");
+    m_uOffset = Shader.PropertyToID("_UOffset");
+    m_vOffset = Shader.PropertyToID("_VOffset");
     m_renderer = GetComponent<Renderer>();
-    m_renderer.material.SetFloat(m_u_offset, m_u_steps[0]);
-    m_renderer.material.SetFloat(m_v_offset, m_v_steps[0]);
+    m_renderer.material.SetFloat(m_uOffset, m_uSteps[0]);
+    m_renderer.material.SetFloat(m_vOffset, m_vSteps[0]);
     m_renderer.enabled = false;
   }
 
@@ -56,14 +56,14 @@ public class ExplosionBillboard: MonoBehaviour
 
     // Animate
     transform.forward = -Camera.main.transform.forward;
-    int num_steps = m_u_steps.Length;
+    int numSteps = m_uSteps.Length;
     int frame = (int) (delta / FRAME_DURATION);
-    if (frame >= num_steps)
+    if (frame >= numSteps)
     {
       Destroy(this.gameObject);
       return;
     }
-    m_renderer.material.SetFloat(m_u_offset, U_STEP * m_u_steps[frame]);
-    m_renderer.material.SetFloat(m_v_offset, V_STEP * m_v_steps[frame]);
+    m_renderer.material.SetFloat(m_uOffset, U_STEP * m_uSteps[frame]);
+    m_renderer.material.SetFloat(m_vOffset, V_STEP * m_vSteps[frame]);
   }
 }

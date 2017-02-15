@@ -9,55 +9,55 @@ public class Layers : HoloToolkit.Unity.Singleton<Layers>
   public string surfacePlaneTag = "SurfacePlane";
 
   // Spatial meshes and surface planes
-  public int spatial_mesh_layer
+  public int spatialMeshLayer
   {
     get { return HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer; }
   }
 
-  public int spatial_mesh_layer_mask
+  public int spatialMeshLayerMask
   {
-    get { return 1 << spatial_mesh_layer; }
+    get { return 1 << spatialMeshLayer; }
   }
 
   // Solid, physical game objects (vehicles, buildings, etc.)
-  public int object_layer
+  public int objectLayer
   {
-    get { return m_object_layer; }
+    get { return m_objectLayer; }
   }
 
-  public int object_layer_mask
+  public int objectLayerMask
   {
-    get { return 1 << object_layer; }
+    get { return 1 << objectLayer; }
   }
 
   // Layers containing physical objects and surfaces that can collide (i.e.,
   // objects that can physically interact)
-  public int collidable_layers_mask
+  public int collidableLayersMask
   {
-    get { return spatial_mesh_layer_mask | object_layer_mask; }
+    get { return spatialMeshLayerMask | objectLayerMask; }
   }
 
   public bool IsSpatialMeshLayer(int layer)
   {
-    return layer == spatial_mesh_layer;
+    return layer == spatialMeshLayer;
   }
 
   public bool IsObjectLayer(int layer)
   {
-    return layer == object_layer;
+    return layer == objectLayer;
   }
 
   public bool IsCollidableLayer(int layer)
   {
-    int layer_mask = 1 << layer;
-    return (layer_mask & collidable_layers_mask) != 0;
+    int layerMask = 1 << layer;
+    return (layerMask & collidableLayersMask) != 0;
   }
 
-  private int m_object_layer;
+  private int m_objectLayer;
 
   private new void Awake()
   {
     base.Awake();
-    m_object_layer = LayerMask.NameToLayer("Default");
+    m_objectLayer = LayerMask.NameToLayer("Default");
   }
 }

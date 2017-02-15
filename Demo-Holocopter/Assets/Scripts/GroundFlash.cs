@@ -4,12 +4,12 @@ using System.Collections;
 public class GroundFlash: MonoBehaviour
 {
   [Tooltip("Time in seconds to reach scale factor specified in editor.")]
-  public float m_expand_time = 0.01f;
+  public float expandTime = 0.01f;
 
   [Tooltip("Time in seconds to shrink back down to 0 after reaching maximum size.")]
-  public float m_contract_time = 0.01f;
+  public float contractTime = 0.01f;
 
-  private Vector3 m_max_scale;
+  private Vector3 m_maxScale;
   private float m_t0 = 0;
 
   void Awake()
@@ -19,18 +19,18 @@ public class GroundFlash: MonoBehaviour
   void Start()
   {
     m_t0 = Time.time;
-    m_max_scale = transform.localScale; // use local scale from editor as max size
+    m_maxScale = transform.localScale; // use local scale from editor as max size
     transform.localScale = Vector3.zero;
   }
 	
 	void Update()
   {
     float delta = Time.time - m_t0;
-    if (delta >= m_expand_time + m_contract_time)
+    if (delta >= expandTime + contractTime)
       Destroy(this.gameObject);
-    if (delta < m_expand_time)
-      transform.localScale = Mathf.Lerp(0, 1, delta / m_expand_time) * m_max_scale;
+    if (delta < expandTime)
+      transform.localScale = Mathf.Lerp(0, 1, delta / expandTime) * m_maxScale;
     else
-      transform.localScale = Mathf.Max(0, Mathf.Lerp(1, 0, (delta - m_expand_time) / m_contract_time)) * m_max_scale;
+      transform.localScale = Mathf.Max(0, Mathf.Lerp(1, 0, (delta - expandTime) / contractTime)) * m_maxScale;
   }
 }

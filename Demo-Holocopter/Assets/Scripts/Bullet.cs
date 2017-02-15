@@ -10,38 +10,38 @@ using System.Collections;
 
 public class Bullet: MonoBehaviour
 {
-  public float m_velocity = 6f;
-  public float m_max_lifetime = 3f;
+  public float velocity = 6f;
+  public float maxLifeTime = 3f;
 
-  private AudioSource m_ricochet_sound;
-  private static AudioSource m_last_ricochet_sound = null;
+  private AudioSource m_ricochetSound;
+  private static AudioSource m_lastRicochetSound = null;
   private float m_t0;
   private bool m_collided = false;  // once true, the object will be destroyed once audio is complete
 
   private void PlayRicochetSound()
   {
     // Prevent sounds from mixing; sounds better
-    if (m_last_ricochet_sound != null && m_last_ricochet_sound.isPlaying)
-      m_last_ricochet_sound.Stop();
-    m_ricochet_sound.Play();
-    m_last_ricochet_sound = m_ricochet_sound;
+    if (m_lastRicochetSound != null && m_lastRicochetSound.isPlaying)
+      m_lastRicochetSound.Stop();
+    m_ricochetSound.Play();
+    m_lastRicochetSound = m_ricochetSound;
   }
 
-  private void CreateSurfaceHitFX(GameObject hit_object, Vector3 hit_point, Vector3 hit_normal)
+  private void CreateSurfaceHitFX(GameObject hitObject, Vector3 hitPoint, Vector3 hitNormal)
   {
-    ParticleEffectsManager.Instance.CreateBulletImpact(hit_point, hit_normal);
-    if (hit_object.CompareTag(Layers.Instance.surfacePlaneTag))
+    if (hitObject.CompareTag(Layers.Instance.surfacePlaneTag))
     {
-      HoloToolkit.Unity.SpatialMapping.SurfacePlane plane = hit_object.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
+      ParticleEffectsManager.Instance.CreateBulletImpact(hitPoint, hitNormal);
+      HoloToolkit.Unity.SpatialMapping.SurfacePlane plane = hitObject.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
       switch (plane.PlaneType)
       {
       case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Wall:
-        ParticleEffectsManager.Instance.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
-        ParticleEffectsManager.Instance.CreateBulletHole(hit_point, hit_normal, plane);
+        ParticleEffectsManager.Instance.CreateBulletImpactDebris(hitPoint, hitNormal, 0.1f, 3, 0);
+        ParticleEffectsManager.Instance.CreateBulletHole(hitPoint, hitNormal, plane);
         break;
       case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Floor:
-        ParticleEffectsManager.Instance.CreateLingeringFireball(hit_point, hit_normal, 0);
-        ParticleEffectsManager.Instance.CreateCrater(hit_point, hit_normal);
+        ParticleEffectsManager.Instance.CreateLingeringFireball(hitPoint, hitNormal, 0);
+        ParticleEffectsManager.Instance.CreateCrater(hitPoint, hitNormal);
         break;
       default:
         break;
@@ -49,25 +49,26 @@ public class Bullet: MonoBehaviour
     }
     else
     {
+      ParticleEffectsManager.Instance.CreateBulletImpact(hitPoint, hitNormal);
       float cos80 = 0.1736f;
-      if (Mathf.Abs(Vector3.Dot(hit_normal, Vector3.right)) > cos80 &&
-          Mathf.Abs(Vector3.Dot(hit_normal, Vector3.up)) > cos80 &&
-          Mathf.Abs(Vector3.Dot(hit_normal, Vector3.forward)) > cos80)
+      if (Mathf.Abs(Vector3.Dot(hitNormal, Vector3.right)) > cos80 &&
+          Mathf.Abs(Vector3.Dot(hitNormal, Vector3.up)) > cos80 &&
+          Mathf.Abs(Vector3.Dot(hitNormal, Vector3.forward)) > cos80)
       {
         PlayRicochetSound();
       }
     }
     /*
-    if (Vector3.Angle(hit_normal, Vector3.up) < 10)
+    if (Vector3.Angle(hitNormal, Vector3.up) < 10)
     {
       // Lingering fireball only when hitting the ground
-      ParticleEffectsManager.Instance.CreateLingeringFireball(hit_point, hit_normal, 0);
+      ParticleEffectsManager.Instance.CreateLingeringFireball(hitPoint, hitNormal, 0);
     }
-    else if (Mathf.Abs(90 - Vector3.Angle(hit_normal, Vector3.up)) < 10)
+    else if (Mathf.Abs(90 - Vector3.Angle(hitNormal, Vector3.up)) < 10)
     {
       // Debris when hitting walls
       //TODO: wall detection should actually involve testing against detected wall planes
-      ParticleEffectsManager.Instance.CreateBulletImpactDebris(hit_point, hit_normal, 0.1f, 3, 0);
+      ParticleEffectsManager.Instance.CreateBulletImpactDebris(hitPoint, hitNormal, 0.1f, 3, 0);
     }
     */
   }
@@ -112,18 +113,18 @@ public class Bullet: MonoBehaviour
 
   void Start()
   {
-    m_ricochet_sound = GetComponent<AudioSource>();
+    m_ricochetSound = GetComponent<AudioSource>();
     Rigidbody rb = GetComponent<Rigidbody>();
     Vector3 forward = Vector3.Normalize(transform.forward);
-    rb.velocity = forward * m_velocity;
+    rb.velocity = forward * velocity;
     m_t0 = Time.time;
   }
 
   void FixedUpdate()
   {
-    if (m_ricochet_sound.isPlaying)
+    if (m_ricochetSound.isPlaying)
       return;
-    if (m_collided || Time.time - m_t0 >= m_max_lifetime)
+    if (m_collided || Time.time - m_t0 >= maxLifeTime)
       Destroy(gameObject);
   }
 }

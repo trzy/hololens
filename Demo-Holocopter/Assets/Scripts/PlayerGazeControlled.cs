@@ -7,10 +7,9 @@ using System.Linq;
 
 public class PlayerGazeControlled: MonoBehaviour
 {
-  public Helicopter m_helicopter;
-  public Material   m_reticle_material;
-  public GameObject m_cursor1;
-  public GameObject m_cursor2;
+  public Helicopter helicopter;
+  public GameObject cursor1;
+  public GameObject cursor2;
   public GameObject testHole;
 
   enum State
@@ -19,12 +18,12 @@ public class PlayerGazeControlled: MonoBehaviour
     Playing
   };
 
-  private GestureRecognizer m_gesture_recognizer = null;
-  private GameObject        m_gaze_target = null;
+  private GestureRecognizer m_gestureRecognizer = null;
+  private GameObject        m_gazeTarget = null;
   private RaycastHit        m_hit;
   private State             m_state;
 
-  private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
+  private void OnTapEvent(InteractionSourceKind source, int tapCount, Ray headRay)
   {
     switch (m_state)
     {
@@ -35,18 +34,18 @@ public class PlayerGazeControlled: MonoBehaviour
     case State.Playing:
       //TEST: place a bullet hole wherever we are looking
       float distance = 5.0f;
-      int layer_mask = Layers.Instance.collidable_layers_mask;
+      int layerMask = Layers.Instance.collidableLayersMask;
       RaycastHit hit;
-      if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
+      if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layerMask))
       {
         Debug.Log("hit point=" + hit.point);
         ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal, null);
       }
 
-      if (m_gaze_target == null)
+      if (m_gazeTarget == null)
       {
       }
-      else if (m_gaze_target == m_helicopter.gameObject)
+      else if (m_gazeTarget == helicopter.gameObject)
       {
       }
       else
@@ -66,25 +65,25 @@ public class PlayerGazeControlled: MonoBehaviour
       break;
     case State.Playing:
       PlayspaceManager.Instance.StopScanning();
-      m_helicopter.SetControlMode(Helicopter.ControlMode.Player);
+      helicopter.SetControlMode(Helicopter.ControlMode.Player);
       break;
     }
   }
 
   void Start()
   {
-    m_gesture_recognizer = new GestureRecognizer();
-    m_gesture_recognizer.SetRecognizableGestures(GestureSettings.Tap);
-    m_gesture_recognizer.TappedEvent += OnTapEvent;
-    m_gesture_recognizer.StartCapturingGestures();
+    m_gestureRecognizer = new GestureRecognizer();
+    m_gestureRecognizer.SetRecognizableGestures(GestureSettings.Tap);
+    m_gestureRecognizer.TappedEvent += OnTapEvent;
+    m_gestureRecognizer.StartCapturingGestures();
     SetState(State.Scanning);
   }
 
-  private GameObject FindGazeTarget(out RaycastHit hit, float distance, int layer_mask)
+  private GameObject FindGazeTarget(out RaycastHit hit, float distance, int layerMask)
   {
     //TODO: This code assumes that the collider is in a child object. If this is not the case,
     //      the code fails.
-    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layer_mask))
+    if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, distance, layerMask))
     {
       if (hit.collider.gameObject.CompareTag(Layers.Instance.surfacePlaneTag))
       {
@@ -97,48 +96,19 @@ public class PlayerGazeControlled: MonoBehaviour
       }
       /*
       GameObject target = hit.collider.transform.parent.gameObject;
-      m_gaze_target = target;
+      m_gazeTarget = target;
       if (target == null)
       {
         Debug.Log("ERROR: CANNOT IDENTIFY RAYCAST OBJECT");
         return null;
       }
-      m_cursor1.transform.position = hit.point + hit.normal * 0.01f;
-      m_cursor1.transform.forward = hit.normal;
+      cursor1.transform.position = hit.point + hit.normal * 0.01f;
+      cursor1.transform.forward = hit.normal;
       return target.activeSelf ? target : null;
       */
     }
     return null;
   }
-
-  void Update()
-  {
-    if (m_state == State.Playing)
-    {
-      int layer_mask = Layers.Instance.collidable_layers_mask;
-      GameObject target = FindGazeTarget(out m_hit, 5.0f, layer_mask);
-      if (target != null && target != m_helicopter.gameObject)
-      {
-        int target_layer_mask = 1 << target.layer;
-        if ((target_layer_mask & layer_mask) != 0)
-        {
-          m_cursor2.transform.position = m_hit.point + m_hit.normal * 0.5f;
-          m_cursor2.transform.forward = -transform.forward;
-          //m_helicopter.FlyToPosition(m_hit.point + m_hit.normal * 0.5f);
-        }
-      }
-      else if (target == null)
-      {
-        // Hit nothing -- move toward point on ray, 2m out
-        //m_helicopter.FlyToPosition(transform.position + transform.forward * 2.0f);
-      }
-    }
-    UnityEditorUpdate();
-  }
-
-#if UNITY_EDITOR
-  private Vector3 m_euler = new Vector3();
-#endif
 
   private void UnityEditorUpdate()
   {
@@ -146,46 +116,34 @@ public class PlayerGazeControlled: MonoBehaviour
     // Simulate air tap
     if (Input.GetKeyDown(KeyCode.Return))
     {
-      Ray head_ray = new Ray(transform.position, transform.forward);
-      OnTapEvent(InteractionSourceKind.Hand, 1, head_ray);
+      Ray headRay = new Ray(transform.position, transform.forward);
+      OnTapEvent(InteractionSourceKind.Hand, 1, headRay);
     }
-
-    // Rotate by maintaining Euler angles relative to world
-    if (Input.GetKey("left"))
-      m_euler.y -= 30 * Time.deltaTime;
-    if (Input.GetKey("right"))
-      m_euler.y += 30 * Time.deltaTime;
-    if (Input.GetKey("up"))
-      m_euler.x -= 30 * Time.deltaTime;
-    if (Input.GetKey("down"))
-      m_euler.x += 30 * Time.deltaTime;
-    if (Input.GetKey("o"))
-      m_euler.x = 0;
-    if (Input.GetKey(KeyCode.KeypadDivide))
-      m_euler.z -= 30 * Time.deltaTime;
-    if (Input.GetKey(KeyCode.KeypadMultiply))
-      m_euler.z += 30 * Time.deltaTime;
-    transform.rotation = Quaternion.Euler(m_euler);
-
-    // Motion relative to XZ plane
-    float move_speed = 5.0F * Time.deltaTime;
-    Vector3 forward = transform.forward;
-    forward.y = 0.0F;
-    forward.Normalize();  // even if we're looking up or down, will continue to move in XZ
-    if (Input.GetKey("w"))
-      transform.Translate(forward * move_speed, Space.World);
-    if (Input.GetKey("s"))
-      transform.Translate(-forward * move_speed, Space.World);
-    if (Input.GetKey("a"))
-      transform.Translate(-transform.right * move_speed, Space.World);
-    if (Input.GetKey("d"))
-      transform.Translate(transform.right * move_speed, Space.World);
-
-    // Vertical motion
-    if (Input.GetKey(KeyCode.KeypadMinus))  // up
-      transform.Translate(new Vector3(0.0F, 1.0F, 0.0F) * move_speed, Space.World);
-    if (Input.GetKey(KeyCode.KeypadPlus))   // down
-      transform.Translate(new Vector3(0.0F, -1.0F, 0.0F) * move_speed, Space.World);
 #endif
+  }
+
+  void Update()
+  {
+    if (m_state == State.Playing)
+    {
+      int layerMask = Layers.Instance.collidableLayersMask;
+      GameObject target = FindGazeTarget(out m_hit, 5.0f, layerMask);
+      if (target != null && target != helicopter.gameObject)
+      {
+        int targetLayerMask = 1 << target.layer;
+        if ((targetLayerMask & layerMask) != 0)
+        {
+          cursor2.transform.position = m_hit.point + m_hit.normal * 0.5f;
+          cursor2.transform.forward = -transform.forward;
+          //helicopter.FlyToPosition(m_hit.point + m_hit.normal * 0.5f);
+        }
+      }
+      else if (target == null)
+      {
+        // Hit nothing -- move toward point on ray, 2m out
+        //helicopter.FlyToPosition(transform.position + transform.forward * 2.0f);
+      }
+    }
+    UnityEditorUpdate();
   }
 }

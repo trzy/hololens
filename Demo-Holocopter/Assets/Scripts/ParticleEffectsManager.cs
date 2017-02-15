@@ -6,40 +6,40 @@ using System.Collections.Generic;
 public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffectsManager>
 {
   [Tooltip("Prefab for billboard explosion. Must destroy itself after animation completed.")]
-  public ExplosionBillboard m_explosion_billboard1_prefab;
+  public ExplosionBillboard explosionBillboard1Prefab;
 
   [Tooltip("Prefab for volumetric spherical explosion. Must destroy itself after animation completed.")]
-  public ExplosionSphere m_explosion_sphere_prefab;
+  public ExplosionSphere explosionSpherePrefab;
 
   [Tooltip("Prefab for the bullet impact's flash/illumination effect.")]
-  public GroundFlash m_ground_flash_prefab; //TODO: rename to impact flash?
+  public GroundFlash groundFlashPrefab; //TODO: rename to impact flash?
 
   [Tooltip("Prefab for the bullet impact's outward spray/blast effect.")]
-  public GroundBlast m_ground_blast_prefab; //TODO: rename to impact spray?
+  public GroundBlast groundBlastPrefab; //TODO: rename to impact spray?
 
   [Tooltip("Prefab for the lingering bullet impact fireball.")]
-  public ExplosionSphere m_flame_hemisphere_prefab;
+  public ExplosionSphere flameHemispherePrefab;
 
   [Tooltip("Prefab for blast shockwave.")]
-  public ExplosionSphere m_blast_hemisphere_prefab;
+  public ExplosionSphere blastHemispherePrefab;
 
   [Tooltip("Prefab for bullet hole decal.")]
-  public GameObject m_bullet_hole_prefab;
+  public GameObject bulletHolePrefab;
 
   [Tooltip("Maximum number of bullet holes allowed.")]
   public int maxBulletHoles = 10;
 
   [Tooltip("Prefab for a crater model.")]
-  public GameObject m_crater_prefab;
+  public GameObject craterPrefab;
 
   [Tooltip("Prefab for lingering bullet impact dust cloud.")]
-  public ExplosionSphere m_dust_hemisphere_prefab;
+  public ExplosionSphere dustHemispherePrefab;
 
   [Tooltip("Prefabs for a solid debris fragments (chosen at random).")]
-  public TimeLimited[] m_debris_fragment_prefabs;
+  public TimeLimited[] debrisFragmentPrefabs;
 
   //TODO: refactor this logic into a class if used more than once
-  private Queue<GameObject> m_bullet_holes;
+  private Queue<GameObject> m_bulletHoles;
 
   // 
   class PopulationLimitingBuffer
@@ -52,9 +52,9 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     {
       SphereCollider collider = other.GetComponent<SphereCollider>();
       Vector3 scale = other.transform.lossyScale;
-      float other_radius = Mathf.Max(scale.x, scale.y, scale.z) * collider.radius;
-      Vector3 other_center = other.transform.position;  // assume sphere collider is centered about object position
-      return Vector3.Magnitude(center - other_center) < (radius + other_radius);
+      float otherRadius = Mathf.Max(scale.x, scale.y, scale.z) * collider.radius;
+      Vector3 otherCenter = other.transform.position;  // assume sphere collider is centered about object position
+      return Vector3.Magnitude(center - otherCenter) < (radius + otherRadius);
     }
 
     public void Insert(Vector3 position, Vector3 normal)
@@ -114,13 +114,13 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 */
     }
 
-    public PopulationLimitingBuffer(GameObject bullet_hole_prefab, int max_population, GameObject parent)
+    public PopulationLimitingBuffer(GameObject bulletHole_prefab, int max_population, GameObject parent)
     {
       m_array = new GameObject[max_population];
       m_parent = parent;
       for (int i = 0; i < m_array.Length; i++)
       {
-        m_array[i] = Instantiate(bullet_hole_prefab) as GameObject;
+        m_array[i] = Instantiate(bulletHole_prefab) as GameObject;
         //m_array[i].AddComponent<WorldAnchor>(); //TODO: disable these?
         //m_array[i].transform.parent = m_parent.transform;
         m_array[i].SetActive(false);
@@ -128,7 +128,7 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     }
   }
 
-  private PopulationLimitingBuffer m_bullet_hole_buffer;
+  private PopulationLimitingBuffer m_bulletHoleBuffer;
 
   private Vector3 RandomPosition(float radius)
   {
@@ -136,8 +136,8 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     float r = Random.Range(0, radius);
     float theta = Random.Range(0, 180) * Mathf.Deg2Rad;
     float phi = Random.Range(0, 360) * Mathf.Deg2Rad;
-    float sin_theta = Mathf.Sin(theta);
-    return new Vector3(r * sin_theta * Mathf.Cos(phi), r * sin_theta * Mathf.Sin(phi), r * Mathf.Cos(theta));
+    float sinTheta = Mathf.Sin(theta);
+    return new Vector3(r * sinTheta * Mathf.Cos(phi), r * sinTheta * Mathf.Sin(phi), r * Mathf.Cos(theta));
   }
 
   private Vector3 RandomPositionHemisphere(float radius, float theta_max = 90)
@@ -148,8 +148,8 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     float r = Random.Range(0, radius);
     float theta = Random.Range(0, Mathf.Clamp(theta_max, 0, 90)) * Mathf.Deg2Rad;
     float phi = Random.Range(0, 360) * Mathf.Deg2Rad;
-    float sin_theta = Mathf.Sin(theta);
-    return new Vector3(r * sin_theta * Mathf.Cos(phi), r * sin_theta * Mathf.Sin(phi), r * Mathf.Cos(theta));
+    float sinTheta = Mathf.Sin(theta);
+    return new Vector3(r * sinTheta * Mathf.Cos(phi), r * sinTheta * Mathf.Sin(phi), r * Mathf.Cos(theta));
   }
 
   private Vector2 RandomPosition2D(float radius)
@@ -162,8 +162,8 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 
   public void CreateBulletImpact(Vector3 position, Vector3 normal)
   {
-    GroundFlash flash = Instantiate(m_ground_flash_prefab, position + normal * 0.01f, Quaternion.LookRotation(normal)) as GroundFlash;
-    GroundBlast blast = Instantiate(m_ground_blast_prefab, position + normal * 0.02f, Quaternion.LookRotation(normal)) as GroundBlast;
+    GroundFlash flash = Instantiate(groundFlashPrefab, position + normal * 0.01f, Quaternion.LookRotation(normal)) as GroundFlash;
+    GroundBlast blast = Instantiate(groundBlastPrefab, position + normal * 0.02f, Quaternion.LookRotation(normal)) as GroundBlast;
     blast.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);  // scale down to real world size
     flash.transform.parent = this.transform;
     blast.transform.parent = this.transform;
@@ -173,22 +173,22 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
   //TODO: anchors should be embedded into the SurfacePlane and then the bullet holes attached to that plane
   public void CreateBulletHole(Vector3 position, Vector3 normal, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
   {
-    //m_bullet_hole_buffer.Insert(position + normal * .005f, normal);
+    //m_bulletHoleBuffer.Insert(position + normal * .005f, normal);
 
     
-    GameObject bullet_hole = Instantiate(m_bullet_hole_prefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
-    bullet_hole.AddComponent<WorldAnchor>();
-    bullet_hole.transform.parent = this.transform;
-    //SpatialMeshDeformationManager.Instance.Embed(bullet_hole);
-    SurfacePlaneDeformationManager.Instance.Embed(bullet_hole, plane);
+    GameObject bulletHole = Instantiate(bulletHolePrefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
+    bulletHole.AddComponent<WorldAnchor>();
+    bulletHole.transform.parent = this.transform;
+    //SpatialMeshDeformationManager.Instance.Embed(bulletHole);
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, plane);
     //TODO: logic for objects to self destruct after not being gazed at for long enough?
-    m_bullet_holes.Enqueue(bullet_hole);
-    while (m_bullet_holes.Count > maxBulletHoles)
+    m_bulletHoles.Enqueue(bulletHole);
+    while (m_bulletHoles.Count > maxBulletHoles)
     {
-      GameObject old_bullet_hole = m_bullet_holes.Dequeue();
-      if (old_bullet_hole)  // if hasn't destroyed itself already
+      GameObject oldBulletHole = m_bulletHoles.Dequeue();
+      if (oldBulletHole)  // if hasn't destroyed itself already
       {
-        Destroy(old_bullet_hole);
+        Destroy(oldBulletHole);
       }
     }
     
@@ -197,20 +197,20 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
   public void CreateCrater(Vector3 position, Vector3 normal)
   {
     /*
-    GameObject crater = Instantiate(m_crater_prefab, position + normal * 0, Quaternion.LookRotation(normal)) as GameObject;
+    GameObject crater = Instantiate(craterPrefab, position + normal * 0, Quaternion.LookRotation(normal)) as GameObject;
     crater.AddComponent<WorldAnchor>();
     crater.transform.parent = this.transform;
     */
   }
 
-  public void CreateLingeringFireball(Vector3 position, Vector3 normal, float start_time_in_seconds)
+  public void CreateLingeringFireball(Vector3 position, Vector3 normal, float startTimeInSeconds)
   {
-    ExplosionSphere hemisphere = Instantiate(m_flame_hemisphere_prefab, position + normal * .01f, Quaternion.LookRotation(normal)) as ExplosionSphere;
-    hemisphere.delayTime = start_time_in_seconds;
+    ExplosionSphere hemisphere = Instantiate(flameHemispherePrefab, position + normal * .01f, Quaternion.LookRotation(normal)) as ExplosionSphere;
+    hemisphere.delayTime = startTimeInSeconds;
     hemisphere.transform.parent = this.transform;
   }
 
-  public void CreateBulletImpactDebris(Vector3 origin, Vector3 normal, float radius, int count, float start_time_in_seconds)
+  public void CreateBulletImpactDebris(Vector3 origin, Vector3 normal, float radius, int count, float startTimeInSeconds)
   {
     /*
      * Generate random points on the plane described by the impact position and
@@ -248,96 +248,96 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
     float b = normal.y;
     float c = normal.z;
     float d = -Vector3.Dot(normal, origin);
-    Vector3 plane_x_axis;
-    Vector3 plane_y_axis;
+    Vector3 planeXAxis;
+    Vector3 planeYAxis;
     if (Mathf.Abs(normal.z) < 1e-6)
     {
       if (Mathf.Abs(normal.y) < 1e-6)
       {
         // Normal along x axis, trivial to pick perpendicular axes
-        plane_x_axis = new Vector3(0, 0, 1);
+        planeXAxis = new Vector3(0, 0, 1);
       }
       else
       {
-        plane_x_axis = new Vector3(1, -(a + 2 * c + d) / b, 2) - origin;
+        planeXAxis = new Vector3(1, -(a + 2 * c + d) / b, 2) - origin;
       }
     }
     else
-      plane_x_axis = new Vector3(1, 2, -(a + 2 * b + d) / c) - origin;
-    plane_x_axis = Vector3.Normalize(plane_x_axis);
-    plane_y_axis = Vector3.Normalize(Vector3.Cross(plane_x_axis, normal));
+      planeXAxis = new Vector3(1, 2, -(a + 2 * b + d) / c) - origin;
+    planeXAxis = Vector3.Normalize(planeXAxis);
+    planeYAxis = Vector3.Normalize(Vector3.Cross(planeXAxis, normal));
 
-    const float delay_time = 0;
-    float start_time = start_time_in_seconds;
+    const float delayTime = 0;
+    float startTime = startTimeInSeconds;
     while (count-- > 0)
     {
       // Spawn cloud at a random location within a circular region
       Vector2 pos2d = RandomPosition2D(radius);
-      Vector3 pos = origin + pos2d.x * plane_x_axis + pos2d.y * plane_y_axis;
-      ExplosionSphere hemisphere = Instantiate(m_dust_hemisphere_prefab, pos, Quaternion.LookRotation(normal)) as ExplosionSphere;
-      hemisphere.delayTime = start_time;
+      Vector3 pos = origin + pos2d.x * planeXAxis + pos2d.y * planeYAxis;
+      ExplosionSphere hemisphere = Instantiate(dustHemispherePrefab, pos, Quaternion.LookRotation(normal)) as ExplosionSphere;
+      hemisphere.delayTime = startTime;
       hemisphere.transform.parent = this.transform;
-      start_time += delay_time;
+      startTime += delayTime;
 
       // Launch pieces of flying debris in random directions along an outward-
       // facing hemisphere. Note that RandomPositionHemisphere() places a point
       // in a hemisphere with base in xy and axis along z (forward).
-      Vector3 fly_towards = Quaternion.FromToRotation(Vector3.forward, normal) * Vector3.Normalize(RandomPositionHemisphere(radius));
-      int which = Random.Range(0, m_debris_fragment_prefabs.Length);
-      TimeLimited debris = Instantiate(m_debris_fragment_prefabs[which], pos, Quaternion.identity) as TimeLimited;
+      Vector3 flyTowards = Quaternion.FromToRotation(Vector3.forward, normal) * Vector3.Normalize(RandomPositionHemisphere(radius));
+      int which = Random.Range(0, debrisFragmentPrefabs.Length);
+      TimeLimited debris = Instantiate(debrisFragmentPrefabs[which], pos, Quaternion.identity) as TimeLimited;
       debris.transform.parent = this.transform;
       Rigidbody rb = debris.GetComponent<Rigidbody>();
       rb.maxAngularVelocity = 30;
-      rb.AddForce(rb.mass * (Vector3.up + fly_towards), ForceMode.Impulse);  // slightly biased toward flying upward
+      rb.AddForce(rb.mass * (Vector3.up + flyTowards), ForceMode.Impulse);  // slightly biased toward flying upward
       rb.AddRelativeTorque(10f * rb.mass * Vector3.right, ForceMode.Impulse);
     }
   }
 
-  public void CreateExplosionCloud(Vector3 position, float radius, int count, float delay_time = 0)
+  public void CreateExplosionCloud(Vector3 position, float radius, int count, float delayTime = 0)
   {
-    float start_time = 0;
+    float startTime = 0;
     while (count-- > 0)
     {
       Vector3 pos = position + RandomPosition(radius);
-      ExplosionBillboard billboard_explosion = Instantiate(m_explosion_billboard1_prefab, pos, m_explosion_billboard1_prefab.transform.rotation) as ExplosionBillboard;
-      ExplosionSphere volumetric_explosion = Instantiate(m_explosion_sphere_prefab, pos, m_explosion_sphere_prefab.transform.rotation) as ExplosionSphere;
-      billboard_explosion.delayTime = start_time;
-      volumetric_explosion.delayTime = start_time;
-      billboard_explosion.transform.parent = this.transform;
-      volumetric_explosion.transform.parent = this.transform;
-      start_time += delay_time;
+      ExplosionBillboard billboardExplosion = Instantiate(explosionBillboard1Prefab, pos, explosionBillboard1Prefab.transform.rotation) as ExplosionBillboard;
+      ExplosionSphere volumetricExplosion = Instantiate(explosionSpherePrefab, pos, explosionSpherePrefab.transform.rotation) as ExplosionSphere;
+      billboardExplosion.delayTime = startTime;
+      volumetricExplosion.delayTime = startTime;
+      billboardExplosion.transform.parent = this.transform;
+      volumetricExplosion.transform.parent = this.transform;
+      startTime += delayTime;
     }
   }
 
-  public void CreateExplosionPillar(Vector3 base_pos, float height, int count, float delay_time = 0)
+  public void CreateExplosionPillar(Vector3 base_pos, float height, int count, float delayTime = 0)
   {
-    float vertical_step_size = height / count;
+    float verticalStepSize = height / count;
     Vector3 pos = base_pos;
-    float start_time = Time.time;
+    float startTime = Time.time;
     while (count-- > 0)
     {
-      ExplosionBillboard billboard_explosion = Instantiate(m_explosion_billboard1_prefab, pos, m_explosion_billboard1_prefab.transform.rotation) as ExplosionBillboard;
-      ExplosionSphere volumetric_explosion = Instantiate(m_explosion_sphere_prefab, pos, m_explosion_sphere_prefab.transform.rotation) as ExplosionSphere;
-      billboard_explosion.delayTime = start_time;
-      volumetric_explosion.delayTime = start_time;
-      billboard_explosion.transform.parent = this.transform;
-      volumetric_explosion.transform.parent = this.transform;
-      start_time += delay_time;
-      pos += Vector3.up * vertical_step_size;
+      ExplosionBillboard billboardExplosion = Instantiate(explosionBillboard1Prefab, pos, explosionBillboard1Prefab.transform.rotation) as ExplosionBillboard;
+      ExplosionSphere volumetricExplosion = Instantiate(explosionSpherePrefab, pos, explosionSpherePrefab.transform.rotation) as ExplosionSphere;
+      billboardExplosion.delayTime = startTime;
+      volumetricExplosion.delayTime = startTime;
+      billboardExplosion.transform.parent = this.transform;
+      volumetricExplosion.transform.parent = this.transform;
+      startTime += delayTime;
+      pos += Vector3.up * verticalStepSize;
     }
   }
 
-  public void CreateExplosionBlastWave(Vector3 ground_position, Vector3 normal, float delay_time = 0)
+  public void CreateExplosionBlastWave(Vector3 ground_position, Vector3 normal, float delayTime = 0)
   {
-    ExplosionSphere blast = Instantiate(m_blast_hemisphere_prefab, ground_position, Quaternion.LookRotation(normal)) as ExplosionSphere;
-    blast.delayTime = delay_time;
+    ExplosionSphere blast = Instantiate(blastHemispherePrefab, ground_position, Quaternion.LookRotation(normal)) as ExplosionSphere;
+    blast.delayTime = delayTime;
     blast.transform.parent = this.transform;
   }
 
   private new void Awake()
   {
     base.Awake();
-    m_bullet_holes = new Queue<GameObject>(maxBulletHoles + 2);
-    m_bullet_hole_buffer = new PopulationLimitingBuffer(m_bullet_hole_prefab, maxBulletHoles, this.gameObject);
+    m_bulletHoles = new Queue<GameObject>(maxBulletHoles + 2);
+    m_bulletHoleBuffer = new PopulationLimitingBuffer(bulletHolePrefab, maxBulletHoles, this.gameObject);
   }
 }

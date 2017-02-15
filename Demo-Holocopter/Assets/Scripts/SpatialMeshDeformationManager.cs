@@ -72,7 +72,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
   }
 
   private int m_old_spatial_mesh_render_queue_value = 0;
-  private List<MeshFilter> m_spatial_mesh_filters = null;
+  private List<MeshFilter> m_spatialMeshFilters = null;
   //private Dictionary<int, SavedRenderOrder> m_freshly_inserted_by_id = null;  // freshly-inserted objects w/ modified render queue values are drawn before spatial mesh
   private Queue<WorkUnit> m_work_queue = null;  // TODO: add a way to queue up object removal
   private bool m_working = false;
@@ -96,7 +96,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
 
   private void ReassignSpatialMeshRenderOrder()
   {
-    foreach (MeshFilter mesh_filter in m_spatial_mesh_filters)
+    foreach (MeshFilter mesh_filter in m_spatialMeshFilters)
     {
       GameObject g = mesh_filter.gameObject;
       if (g.GetComponent<SharedMaterialHelper>() == null)
@@ -211,7 +211,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
     if (createPatches)
     {
       GameObject patch = new GameObject("patchMesh-" + mesh.name + "-" + (++m_unique_id).ToString());
-      patch.layer = Layers.Instance.spatial_mesh_layer;
+      patch.layer = Layers.Instance.spatialMeshLayer;
       patch.transform.parent = this.transform;                        // make child of SpatialMeshDeformationManager
       patch.transform.rotation = mesh_filter.transform.rotation;
       patch.transform.position = mesh_filter.transform.position;
@@ -263,7 +263,7 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
 
       // Check against each spatial mesh and deform those that intersect
       int num = 0;
-      foreach (MeshFilter mesh_filter in m_spatial_mesh_filters)
+      foreach (MeshFilter mesh_filter in m_spatialMeshFilters)
       {
         Debug.Log("Iterating... " + (num++));
         if (mesh_filter == null)
@@ -405,9 +405,9 @@ public class SpatialMeshDeformationManager: HoloToolkit.Unity.Singleton<SpatialM
     Debug.Log("Coroutine complete");
   }
 
-  public void SetSpatialMeshFilters(List<MeshFilter> spatial_mesh_filters)
+  public void SetSpatialMeshFilters(List<MeshFilter> spatialMeshFilters)
   {
-    m_spatial_mesh_filters = spatial_mesh_filters;
+    m_spatialMeshFilters = spatialMeshFilters;
     ReassignSpatialMeshRenderOrder();
   }
 
