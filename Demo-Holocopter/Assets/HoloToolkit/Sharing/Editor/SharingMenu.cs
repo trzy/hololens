@@ -1,9 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
+using HoloToolkit.Unity;
 
 namespace HoloToolkit.Sharing
 {
@@ -21,7 +22,7 @@ namespace HoloToolkit.Sharing
                 return;
             }
 
-            Utilities.ExternalProcess.FindAndLaunch(filePathName, @"-local");
+            ExternalProcess.FindAndLaunch(filePathName, @"-local");
         }
 
         [MenuItem("HoloToolkit/Sharing Service/Launch Session Manager", false, 101)]
@@ -36,7 +37,7 @@ namespace HoloToolkit.Sharing
                 return;
             }
 
-            Utilities.ExternalProcess.FindAndLaunch(filePathName);
+            ExternalProcess.FindAndLaunch(filePathName);
         }
 
         [MenuItem("HoloToolkit/Sharing Service/Launch Profiler", false, 103)]
@@ -51,7 +52,7 @@ namespace HoloToolkit.Sharing
                 return;
             }
 
-            Utilities.ExternalProcess.FindAndLaunch(filePathName);
+            ExternalProcess.FindAndLaunch(filePathName);
         }
     }
 }

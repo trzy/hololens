@@ -9,8 +9,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
-namespace HoloToolkit.Sharing.Utilities
+namespace HoloToolkit.Unity
 {
+    /// <summary>
+    /// Helper class for launching external processes inside of the unity editor.
+    /// </summary>
     public class ExternalProcess : IDisposable
     {
         [DllImport("ExternalProcessAPI", CallingConvention = CallingConvention.Cdecl)]
@@ -26,7 +29,7 @@ namespace HoloToolkit.Sharing.Utilities
         [DllImport("ExternalProcessAPI", CallingConvention = CallingConvention.Cdecl)]
         public static extern void ExternalProcessAPI_ConfirmOrBeginProcess([MarshalAs(UnmanagedType.LPStr)] string processName);
 
-        private IntPtr mHandle = IntPtr.Zero;
+        private IntPtr mHandle;
 
         /*
         * First some static utility functions, used by some other code as well.
@@ -34,7 +37,7 @@ namespace HoloToolkit.Sharing.Utilities
         */
         private static string sAppDataPath;
 
-        static public void Launch(string appName)
+        public static void Launch(string appName)
         {
             // Full or relative paths only. Currently unused.
 
@@ -52,7 +55,7 @@ namespace HoloToolkit.Sharing.Utilities
             pr.Start();
         }
 
-        static private string AppDataPath
+        private static string AppDataPath
         {
             get
             {
@@ -65,12 +68,12 @@ namespace HoloToolkit.Sharing.Utilities
             }
         }
 
-        static public bool FindAndLaunch(string appName)
+        public static bool FindAndLaunch(string appName)
         {
             return FindAndLaunch(appName, null);
         }
 
-        static public bool FindAndLaunch(string appName, string args)
+        public static bool FindAndLaunch(string appName, string args)
         {
             // Start at working directory, append appName (should read "appRelativePath"), see if it exists.
             // If not go up to parent and try again till drive level reached.
@@ -91,7 +94,7 @@ namespace HoloToolkit.Sharing.Utilities
             return pr.Start();
         }
 
-        static public string FindPathToExecutable(string appName)
+        public static string FindPathToExecutable(string appName)
         {
             // Start at working directory, append appName (should read "appRelativePath"), see if it exists.
             // If not go up to parent and try again till drive level reached.
@@ -118,7 +121,7 @@ namespace HoloToolkit.Sharing.Utilities
             return null;
         }
 
-        static public string MakeRelativePath(string path1, string path2)
+        public static string MakeRelativePath(string path1, string path2)
         {
             // TBD- doesn't really belong in ExternalProcess.
 
@@ -136,12 +139,12 @@ namespace HoloToolkit.Sharing.Utilities
         /*
         * The actual ExternalProcess class.
         */
-        static public ExternalProcess CreateExternalProcess(string appName)
+        public static ExternalProcess CreateExternalProcess(string appName)
         {
             return CreateExternalProcess(appName, null);
         }
 
-        static public ExternalProcess CreateExternalProcess(string appName, string args)
+        public static ExternalProcess CreateExternalProcess(string appName, string args)
         {
             // Seems like it would be safer and more informative to call this static method and test for null after.
             try
@@ -170,13 +173,13 @@ namespace HoloToolkit.Sharing.Utilities
             }
 
             // This may throw, calling code should catch the exception.
-            string launchString = (args == null) ? appPath : appPath + " " + args;
+            string launchString = args == null ? appPath : appPath + " " + args;
             mHandle = ExternalProcessAPI_CreateProcess(launchString);
         }
 
         ~ExternalProcess()
         {
-            this.Dispose(false);
+            Dispose(false);
         }
 
         public bool IsRunning()
@@ -185,15 +188,15 @@ namespace HoloToolkit.Sharing.Utilities
             {
                 if (mHandle != IntPtr.Zero)
                 {
-                    return (ExternalProcessAPI_IsRunning(mHandle));
+                    return ExternalProcessAPI_IsRunning(mHandle);
                 }
             }
             catch
             {
-                this.Terminate();
+                Terminate();
             }
 
-            return (false);
+            return false;
         }
 
         public bool WaitForStart(float seconds)
@@ -213,7 +216,7 @@ namespace HoloToolkit.Sharing.Utilities
             float end = Time.realtimeSinceStartup + seconds;
 
             bool hasHappened = false;
-            while (Time.realtimeSinceStartup < end && !hasHappened)
+            while (Time.realtimeSinceStartup < end)
             {
                 hasHappened = func();
                 if (hasHappened)
@@ -236,7 +239,7 @@ namespace HoloToolkit.Sharing.Utilities
             }
             catch
             {
-                this.Terminate();
+                Terminate();
             }
         }
 
@@ -246,15 +249,15 @@ namespace HoloToolkit.Sharing.Utilities
             {
                 if (mHandle != IntPtr.Zero)
                 {
-                    return (Marshal.PtrToStringAnsi(ExternalProcessAPI_GetLine(mHandle)));
+                    return Marshal.PtrToStringAnsi(ExternalProcessAPI_GetLine(mHandle));
                 }
             }
             catch
             {
-                this.Terminate();
+                Terminate();
             }
 
-            return (null);
+            return null;
         }
 
         public void Terminate()
@@ -268,6 +271,7 @@ namespace HoloToolkit.Sharing.Utilities
             }
             catch
             {
+                // TODO: Should we be catching something here?
             }
 
             mHandle = IntPtr.Zero;
@@ -277,13 +281,13 @@ namespace HoloToolkit.Sharing.Utilities
 
         public void Dispose()
         {
-            this.Dispose(true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            this.Terminate();
+            Terminate();
         }
     }
 }
