@@ -51,26 +51,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a18d62a51a016cd4b8840ad944e60e60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_explosion_billboard1_prefab: {fileID: 114000013738473892, guid: d2d5c53425cef4a408357efcc8361093,
+  explosionBillboard1Prefab: {fileID: 114000013738473892, guid: d2d5c53425cef4a408357efcc8361093,
     type: 2}
-  m_explosion_sphere_prefab: {fileID: 114000010745559708, guid: 52f4675e5ffd58847af1e64b7b63a348,
+  explosionSpherePrefab: {fileID: 114000010745559708, guid: 52f4675e5ffd58847af1e64b7b63a348,
     type: 2}
-  m_ground_flash_prefab: {fileID: 114000011870560514, guid: 7bd3f8fd72e5d934abc0e5933106c4ce,
+  groundFlashPrefab: {fileID: 114000011870560514, guid: 7bd3f8fd72e5d934abc0e5933106c4ce,
     type: 2}
-  m_ground_blast_prefab: {fileID: 114000013493381046, guid: 031fb4eb6bb51aa419120813ec0e0a5c,
+  groundBlastPrefab: {fileID: 114000013493381046, guid: 031fb4eb6bb51aa419120813ec0e0a5c,
     type: 2}
-  m_flame_hemisphere_prefab: {fileID: 114000013955170208, guid: bf9c1e7e80d2e094fa03c92f359f551c,
+  flameHemispherePrefab: {fileID: 114000013955170208, guid: bf9c1e7e80d2e094fa03c92f359f551c,
     type: 2}
-  m_blast_hemisphere_prefab: {fileID: 114000011785923536, guid: f4adb96d7732ba348951ad0203244f70,
+  blastHemispherePrefab: {fileID: 114000011785923536, guid: f4adb96d7732ba348951ad0203244f70,
     type: 2}
-  m_bullet_hole_prefab: {fileID: 1000010540311220, guid: 21978f89561c1b34880415e7647b29ea,
+  bulletHolePrefab: {fileID: 1816989542969408, guid: 57733ba0378e8924798dad0447c9a692,
     type: 2}
-  maxBulletHoles: 10
-  m_crater_prefab: {fileID: 1000010898322700, guid: e695d2cf350a15649abdfb7aff49490e,
+  maxBulletHoles: 20
+  craterPrefab: {fileID: 1000010898322700, guid: e695d2cf350a15649abdfb7aff49490e,
     type: 2}
-  m_dust_hemisphere_prefab: {fileID: 114000013819906134, guid: 9f17c9bb21569b048a42a3c43b60eaae,
+  dustHemispherePrefab: {fileID: 114000013819906134, guid: 9f17c9bb21569b048a42a3c43b60eaae,
     type: 2}
-  m_debris_fragment_prefabs:
+  debrisFragmentPrefabs:
   - {fileID: 114000012084683960, guid: d709ed0f37afc9c42a1ab9d99b395210, type: 2}
   - {fileID: 114000012245394068, guid: 02cb8b28c7d47c64693097a234c877ea, type: 2}
   - {fileID: 114000010142248100, guid: 49e41cef31bc0fa42943c19eb455d4a8, type: 2}
