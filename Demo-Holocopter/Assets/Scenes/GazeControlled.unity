@@ -694,7 +694,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 2
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -1351,9 +1351,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1168d705fb8360646ada0bcd7c012b62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ui_inputs: {fileID: 0}
-  m_ui_control_program: {fileID: 0}
-  m_bullet_prefab: {fileID: 114000011292521622, guid: 6731a16745b10b24bbf02e30130cf479,
+  bulletPrefab: {fileID: 114000011292521622, guid: 6731a16745b10b24bbf02e30130cf479,
     type: 2}
 --- !u!95 &1247999967
 Animator:
