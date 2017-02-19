@@ -14,13 +14,18 @@ public class Demo: MonoBehaviour
   [Tooltip("Material to use when spatial mesh is being visualized")]
   public Material spatialMeshVisibleMaterial = null;
 
+  [Tooltip("Prefab for bullet hole decal.")]
+  public GameObject m_bulletHolePrefab;
+
   [Tooltip("Material to use when rendering visual debugging aids")]
   public Material debugMaterial = null;
 
   private enum State
   {
     Scanning,
-    FinalizingScan,
+    FinalizeScan,
+    WaitingForScanCompletion,
+    WaitingForMeshImport,
     Playing
   };
   private State m_state;
@@ -65,19 +70,56 @@ public class Demo: MonoBehaviour
     }
   }
 
+  private void CreateBulletHole(Vector3 position, Vector3 normal)
+  {
+    GameObject bulletHole = Instantiate(m_bulletHolePrefab, position, Quaternion.LookRotation(normal)) as GameObject;
+    //bulletHole.AddComponent<WorldAnchor>(); // does this do anything?
+    bulletHole.transform.parent = this.transform;
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, position);
+  }
+
+  private void DoRaycast()
+  {
+    Vector3 rayPos = Camera.main.transform.position;
+    Vector3 rayVec = Camera.main.transform.forward * 1f;
+    IntPtr raycastResultPtr = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticRaycastResultPtr();
+    int intersection = SpatialUnderstandingDll.Imports.PlayspaceRaycast(
+        rayPos.x, rayPos.y, rayPos.z, rayVec.x, rayVec.y, rayVec.z,
+        raycastResultPtr);
+    if (intersection != 0)
+    {
+      SpatialUnderstandingDll.Imports.RaycastResult rayCastResult = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticRaycastResult();
+      Debug.Log("hit detected=" + rayCastResult.SurfaceType.ToString());
+      CreateBulletHole(rayCastResult.IntersectPoint, rayCastResult.IntersectNormal);
+    }
+    else
+    {
+      Debug.Log("no hit");
+    }
+  }
+
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
   {
     switch (m_state)
     {
       case State.Scanning:
         // Finalize the scan
-        m_state = State.FinalizingScan;
+        m_state = State.FinalizeScan;
         break;
       case State.Playing:
-        QueryFloorPositions();
+        Debug.Log("Found " + m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters().Count + " meshes (import active=" + m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive + ")");
+        DoRaycast();
         break;
       default:
         break;
+    }
+  }
+
+  private void OnScanStateChanged()
+  {
+    if (m_spatialUnderstanding.ScanState == SpatialUnderstanding.ScanStates.Done)
+    {
+      m_state = State.WaitingForMeshImport;
     }
   }
 
@@ -96,17 +138,27 @@ public class Demo: MonoBehaviour
   private void Update()
   {
     UnityEditorUpdate();
-    if (m_state == State.FinalizingScan)
+    if (m_state == State.FinalizeScan)
     {
       if (!m_spatialUnderstanding.ScanStatsReportStillWorking)
       {
         Debug.Log("Finalizing scan...");
+        m_state = State.WaitingForScanCompletion;
         m_spatialUnderstanding.RequestFinishScan();
+      }
+      //TODO: timeout and error handling?
+    }
+    else if (m_state == State.WaitingForMeshImport)
+    {
+      if (m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive == false)
+      {
+        Debug.Log("Found " + m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters().Count + " meshes (import active=" + m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive + ")");
         HideSpatialMesh();
-//        QueryFloorPositions();
+        SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
+        //QueryFloorPositions();
         m_state = State.Playing;
       }
-      //TODO: timeout and error handling
+      //TODO: timeout?
     }
     else if (m_state == State.Playing)
     {
@@ -128,6 +180,7 @@ public class Demo: MonoBehaviour
       m_spatialMappingManager.DrawVisualMeshes = true;
     }
     m_spatialUnderstanding = SpatialUnderstanding.Instance;
+    m_spatialUnderstanding.ScanStateChanged += OnScanStateChanged;
     m_spatialUnderstanding.RequestBeginScanning();
 
     // Subscribe to tap gesture

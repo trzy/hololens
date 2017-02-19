@@ -215,6 +215,8 @@ MonoBehaviour:
   visualizeSpatialMesh: 1
   spatialMeshVisibleMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a,
     type: 2}
+  m_bulletHolePrefab: {fileID: 1656913109857730, guid: 99f5dcd73ab48214bb75dad6746dade5,
+    type: 2}
   debugMaterial: {fileID: 2100000, guid: 7873f58639de16f45893b6b5100bce32, type: 2}
 --- !u!4 &713797291
 Transform:
@@ -227,8 +229,55 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &735815270
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4363390359472048, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+      propertyPath: m_RootOrder
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 114228605629207424, guid: 38070312f7f6b8740aaedfb988318001,
+        type: 2}
+      propertyPath: debugMarginVolumes
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_ParentPrefab: {fileID: 100100000, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
+  m_IsPrefabParent: 0
 --- !u!1 &787494378
 GameObject:
   m_ObjectHideFlags: 0

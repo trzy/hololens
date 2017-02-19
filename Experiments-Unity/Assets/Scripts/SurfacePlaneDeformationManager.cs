@@ -84,11 +84,20 @@
  *     
  * Note that steps 4 through 9 are performed in a coroutine over multiple
  * frames.
+ * 
+ * Arbitrary spatial mesh
+ * ----------------------
+ * An alternative form of Embed() is provided that does not require a 
+ * SurfacePlane. This version works virtually identically except that it
+ * deforms only the portion of the spatial meshes that is intersected by
+ * the embedded object. Consequently, the meshes have to be searched and
+ * deformed each time.
  */
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using HoloToolkit.Unity.SpatialMapping;
 
 public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<SurfacePlaneDeformationManager>
 {
@@ -107,17 +116,26 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
   [Tooltip("Debug material to use to render margin volumes if debugging is enabled")]
   public Material debugMaterial = null;
 
-  private class Task
+  private class EmbedRequest
   {
-    public HoloToolkit.Unity.SpatialMapping.SurfacePlane plane;
     public GameObject marginVolume;
     public Vector3 centerPointOnFrontPlane;
     public Vector3 centerPointOnBackPlane;
     public GameObject embedded;
 
-    public Task(HoloToolkit.Unity.SpatialMapping.SurfacePlane pPlane, GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    public virtual bool HasSufficientMargin(MeshFilter meshFilter, float requiredMargin)
     {
-      plane = pPlane;
+      // Without SurfacePlane, we cannot pre-deform large areas of the spatial
+      // mesh. Therefore, each insertion will deform a new part of the mesh.
+      return false;
+    }
+
+    public virtual void RecordMargin(MeshFilter meshFilter, float margin)
+    {
+    }
+
+    public EmbedRequest(GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    {
       marginVolume = pMarginVolume;
       centerPointOnFrontPlane = pCenterPointOnFrontPlane;
       centerPointOnBackPlane = pCenterPointOnBackPlane;
@@ -125,9 +143,45 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     }
   }
 
+  private class SurfacePlaneEmbedRequest: EmbedRequest
+  {
+    public SurfacePlane plane;
+    private Dictionary<Tuple<SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh;
+
+    public override bool HasSufficientMargin(MeshFilter meshFilter, float requiredMargin)
+    {
+      Tuple<SurfacePlane, MeshFilter> key = new Tuple<SurfacePlane, MeshFilter>(plane, meshFilter);
+      //Debug.Log("hash key " + plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + " = " + key.GetHashCode());
+      float currentMargin;
+      if (m_marginByPlaneAndSpatialMesh.TryGetValue(key, out currentMargin))
+      {
+        return currentMargin >= requiredMargin;
+      }
+      return false;
+    }
+
+    public override void RecordMargin(MeshFilter meshFilter, float margin)
+    {
+      m_marginByPlaneAndSpatialMesh[new Tuple<SurfacePlane, MeshFilter>(plane, meshFilter)] = margin;
+    }
+
+    public SurfacePlaneEmbedRequest(
+      SurfacePlane pPlane,
+      Dictionary<Tuple<SurfacePlane, MeshFilter>, float> marginByPlaneAndSpatialMesh,
+      GameObject pMarginVolume,
+      Vector3 pCenterPointOnFrontPlane,
+      Vector3 pCenterPointOnBackPlane,
+      GameObject pEmbedded)
+      : base(pMarginVolume, pCenterPointOnFrontPlane, pCenterPointOnBackPlane, pEmbedded)
+    {
+      plane = pPlane;
+      m_marginByPlaneAndSpatialMesh = marginByPlaneAndSpatialMesh;
+    }
+  }
+
   private List<MeshFilter> m_spatialMeshFilters = null;
-  private Dictionary<Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh = null;
-  private Queue<Task> m_taskQueue = null;
+  private Dictionary<Tuple<SurfacePlane, MeshFilter>, float> m_marginByPlaneAndSpatialMesh = null;
+  private Queue<EmbedRequest> m_requestQueue = new Queue<EmbedRequest>();
   private bool m_working = false;
 
   private List<Material> GetAllMaterials(GameObject obj)
@@ -180,9 +234,9 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     }
   }
 
-  private bool HasSufficientMargin(HoloToolkit.Unity.SpatialMapping.SurfacePlane plane, MeshFilter meshFilter, float requiredMargin)
+  private bool HasSufficientMargin(SurfacePlane plane, MeshFilter meshFilter, float requiredMargin)
   {
-    Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter> key = new Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>(plane, meshFilter);
+    Tuple<SurfacePlane, MeshFilter> key = new Tuple<SurfacePlane, MeshFilter>(plane, meshFilter);
     //Debug.Log("hash key " + plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + " = " + key.GetHashCode());
     float currentMargin;
     if (m_marginByPlaneAndSpatialMesh.TryGetValue(key, out currentMargin))
@@ -194,14 +248,14 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
   private IEnumerator DeformSurfaceCoroutine()
   {
-    while (m_taskQueue.Count > 0)
+    while (m_requestQueue.Count > 0)
     {
       // Dequeue
-      Task task = m_taskQueue.Dequeue();
-      GameObject marginVolume = task.marginVolume;
-      Vector3 marginFrontPlanePoint = task.centerPointOnFrontPlane;
-      Vector3 marginBackPlanePoint = task.centerPointOnBackPlane;
-      GameObject embedded = task.embedded;
+      EmbedRequest request = m_requestQueue.Dequeue();
+      GameObject marginVolume = request.marginVolume;
+      Vector3 marginFrontPlanePoint = request.centerPointOnFrontPlane;
+      Vector3 marginBackPlanePoint = request.centerPointOnBackPlane;
+      GameObject embedded = request.embedded;
 
       // Get the OBB that describes the margin volume we want to create
       BoxCollider obb = marginVolume.GetComponent<BoxCollider>();
@@ -236,7 +290,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
           continue;
         }
 
-        if (HasSufficientMargin(task.plane, meshFilter, requiredMargin))
+        if (request.HasSufficientMargin(meshFilter, requiredMargin))
         {
           //Debug.Log("Skipping [" + task.plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + "] due to sufficient margin");
           continue;
@@ -289,7 +343,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
         }
 
         // Update margin depth of this plane/spatial mesh pair
-        m_marginByPlaneAndSpatialMesh[new Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>(task.plane, meshFilter)] = requiredMargin;
+        request.RecordMargin(meshFilter, requiredMargin);
         //Debug.Log("Finished deforming [" + task.plane.GetInstanceID() + "," + meshFilter.GetInstanceID() + "]");
       }
 
@@ -305,7 +359,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     yield break;
   }
 
-  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
+  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, SurfacePlane plane)
   {
     BoxCollider embeddedOBB = embedded.GetComponent<BoxCollider>();
     if (null == embeddedOBB)
@@ -316,7 +370,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       centerPointOnBackPlane = Vector3.zero;
       return true;
     }
-    HoloToolkit.Unity.SpatialMapping.OrientedBoundingBox surfaceBounds = plane.Plane.Bounds;
+    OrientedBoundingBox surfaceBounds = plane.Plane.Bounds;
 
     /*
      * Compute margin volume front (i.e., the actual surface) and back (onto
@@ -359,7 +413,74 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     return false;
   }
 
-  public void Embed(GameObject embedded, HoloToolkit.Unity.SpatialMapping.SurfacePlane plane)
+  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, Vector3 position)
+  {
+    BoxCollider embeddedOBB = embedded.GetComponent<BoxCollider>();
+    if (null == embeddedOBB)
+    {
+      Debug.Log("ERROR: Embedded object " + embedded.name + " lacks a box collider");
+      marginVolume = null;
+      centerPointOnFrontPlane = Vector3.zero;
+      centerPointOnBackPlane = Vector3.zero;
+      return true;
+    }
+
+    /*
+     * Compute margin volume front (i.e., the actual surface) and back (onto
+     * which spatial mesh triangles will be projected) planes based on embedded
+     * object thickness.
+     *
+     * Note that the embedded object position is not in the center of the
+     * object but rather at a point flush with the surface it will be embedded
+     * in.
+     */
+    Vector3 intoSurfaceNormal = -Vector3.Normalize(embeddedOBB.transform.forward);
+    float embeddedThickness = embeddedOBB.size.z * embeddedOBB.transform.lossyScale.z + extraDisplacement;
+    float embeddedWidth = embeddedOBB.size.x * embeddedOBB.transform.lossyScale.x;
+    float embeddedHeight = embeddedOBB.size.y * embeddedOBB.transform.lossyScale.y;
+    centerPointOnFrontPlane = position;
+    centerPointOnBackPlane = centerPointOnFrontPlane + intoSurfaceNormal * embeddedThickness;
+    Vector3 centerPoint = 0.5f * (centerPointOnFrontPlane + centerPointOnBackPlane);
+
+    /*
+     * Create a game object to describe the size, position, and orientation of
+     * the margin volume we want to create.
+     * 
+     * The box collider is something of a formality. The surface mesh
+     * deformation procedure and OBB/mesh intersection tests use box colliders
+     * to describe OBBs. Here, the box collider is made the same size as the
+     * game object to which it is parented. The downstream intersection testing
+     * code knows to properly scale the box based on its parent.
+     */
+    marginVolume = new GameObject("deformation-" + embedded.name);
+    marginVolume.transform.position = centerPoint;
+    marginVolume.transform.localScale = new Vector3(embeddedWidth, embeddedHeight, embeddedThickness);
+    marginVolume.transform.rotation = embeddedOBB.transform.rotation;
+    BoxCollider obb = marginVolume.AddComponent<BoxCollider>();
+    obb.center = Vector3.zero;
+    obb.size = Vector3.one;
+    obb.enabled = false;  // we do not actually want collision detection
+
+    return false;
+  }
+
+  private void DebugVisualization(GameObject marginVolume)
+  {
+    if (debugMarginVolumes)
+    {
+      Debug.Log("pos=" + marginVolume.transform.position + ", obbpos = " + marginVolume.GetComponent<BoxCollider>().transform.position);
+      GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+      cube.transform.parent = null;
+      cube.transform.localScale = marginVolume.transform.localScale;
+      cube.transform.position = marginVolume.transform.position;
+      cube.transform.transform.rotation = marginVolume.transform.rotation;
+      cube.GetComponent<Renderer>().material = debugMaterial;
+      cube.GetComponent<Renderer>().material.color = Color.green;
+      cube.SetActive(true);
+    }
+  }
+
+  public void Embed(GameObject embedded, SurfacePlane plane)
   {
     if (null == plane)
     {
@@ -381,37 +502,52 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_taskQueue.Enqueue(new Task(plane, marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_requestQueue.Enqueue(new SurfacePlaneEmbedRequest(plane, m_marginByPlaneAndSpatialMesh, marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
     if (!m_working)
     {
       m_working = true;
       StartCoroutine(DeformSurfaceCoroutine());
     }
 
-    if (debugMarginVolumes)
+    DebugVisualization(marginVolume);
+  }
+
+  public void Embed(GameObject embedded, Vector3 position)
+  {
+    // Temporarily make the embedded object render in front of spatial mesh
+    MakeHighPriorityRenderOrder(embedded);
+
+    // Create an object describing the margin volume required for embedded
+    // object placement
+    GameObject marginVolume;
+    Vector3 centerPointOnFrontPlane;
+    Vector3 centerPointOnBackPlane;
+    if (CreateMarginVolumeObject(out marginVolume, out centerPointOnFrontPlane, out centerPointOnBackPlane, embedded, position))
     {
-      Debug.Log("pos=" + marginVolume.transform.position + ", obbpos = " + marginVolume.GetComponent<BoxCollider>().transform.position);
-      GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-      cube.transform.parent = null;
-      cube.transform.localScale = marginVolume.transform.localScale;
-      cube.transform.position = marginVolume.transform.position;
-      cube.transform.transform.rotation = marginVolume.transform.rotation;
-      cube.GetComponent<Renderer>().material = debugMaterial;
-      cube.GetComponent<Renderer>().material.color = Color.green;
-      cube.SetActive(true);
+      return;
     }
+
+    // Deform the spatial mesh to create a margin volume large enough for the
+    // embedded object
+    m_requestQueue.Enqueue(new EmbedRequest(marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    if (!m_working)
+    {
+      m_working = true;
+      StartCoroutine(DeformSurfaceCoroutine());
+    }
+
+    DebugVisualization(marginVolume);
   }
 
   public void SetSpatialMeshFilters(List<MeshFilter> spatialMeshFilters)
   {
     m_spatialMeshFilters = spatialMeshFilters;
-    m_marginByPlaneAndSpatialMesh = new Dictionary<Tuple<HoloToolkit.Unity.SpatialMapping.SurfacePlane, MeshFilter>, float>(spatialMeshFilters.Count);
+    m_marginByPlaneAndSpatialMesh = new Dictionary<Tuple<SurfacePlane, MeshFilter>, float>(spatialMeshFilters.Count);
   }
 
   private new void Awake()
   {
     base.Awake();
-    m_taskQueue = new Queue<Task>();
     if (transform.position != Vector3.zero || transform.lossyScale != Vector3.one || transform.rotation != Quaternion.identity)
     {
       Debug.Log("ERROR: SurfacePlaneDeformationManager transform is not correct!");
