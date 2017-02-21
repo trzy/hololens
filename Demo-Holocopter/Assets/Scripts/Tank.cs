@@ -105,7 +105,7 @@ public class Tank : MonoBehaviour
     // As soon as we enter the frame, start the lock-on sequence
     if (!m_lockIndicatorHelper.lockIndicator.IsActive() && m_lockIndicatorHelper.InViewFrustum(m_boxCollider.bounds))
     {
-      m_lockIndicatorHelper.lockIndicator.StartLockOnSequence();
+      //m_lockIndicatorHelper.lockIndicator.StartLockOnSequence();
     }
     
     // Animate turret
