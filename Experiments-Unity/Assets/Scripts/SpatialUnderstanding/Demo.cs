@@ -14,6 +14,9 @@ public class Demo: MonoBehaviour
   [Tooltip("Material to use when spatial mesh is being visualized")]
   public Material spatialMeshVisibleMaterial = null;
 
+  [Tooltip("Material to use when spatial understanding custom mesh is finished scanning and used for occlusion")]
+  public Material spatialUnderstandingOcclusionMaterial = null;
+
   [Tooltip("Prefab for bullet hole decal.")]
   public GameObject m_bulletHolePrefab;
 
@@ -63,10 +66,21 @@ public class Demo: MonoBehaviour
 
   private void HideSpatialMesh()
   {
+    if (m_spatialMappingManager.IsObserverRunning())
+      m_spatialMappingManager.StopObserver();
     var meshFilters = m_spatialMappingManager.GetMeshFilters();
     foreach (MeshFilter meshFilter in meshFilters)
     {
       meshFilter.gameObject.SetActive(false);
+    }
+  }
+
+  private void SetSpatialUnderstandingMaterial(Material material)
+  {
+    List<MeshFilter> meshFilters = m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters();
+    foreach (MeshFilter meshFilter in meshFilters)
+    {
+      meshFilter.gameObject.GetComponent<Renderer>().material = material;
     }
   }
 
@@ -81,7 +95,7 @@ public class Demo: MonoBehaviour
   private void DoRaycast()
   {
     Vector3 rayPos = Camera.main.transform.position;
-    Vector3 rayVec = Camera.main.transform.forward * 1f;
+    Vector3 rayVec = Camera.main.transform.forward * 10f;
     IntPtr raycastResultPtr = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticRaycastResultPtr();
     int intersection = SpatialUnderstandingDll.Imports.PlayspaceRaycast(
         rayPos.x, rayPos.y, rayPos.z, rayVec.x, rayVec.y, rayVec.z,
@@ -154,6 +168,7 @@ public class Demo: MonoBehaviour
       {
         Debug.Log("Found " + m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters().Count + " meshes (import active=" + m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive + ")");
         HideSpatialMesh();
+        SetSpatialUnderstandingMaterial(spatialUnderstandingOcclusionMaterial);
         SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
         //QueryFloorPositions();
         m_state = State.Playing;

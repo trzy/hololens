@@ -212,8 +212,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f63d84edbb7903d418a3faa2eeec3b99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualizeSpatialMesh: 1
+  visualizeSpatialMesh: 0
   spatialMeshVisibleMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a,
+    type: 2}
+  spatialUnderstandingOcclusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7,
     type: 2}
   m_bulletHolePrefab: {fileID: 1656913109857730, guid: 99f5dcd73ab48214bb75dad6746dade5,
     type: 2}
