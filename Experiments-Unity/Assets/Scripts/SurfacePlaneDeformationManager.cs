@@ -1,4 +1,5 @@
-﻿/*
+﻿//TODO: Pre-compute AABB and pass it to OBB intersection test if obb collider is disabled.
+/*
  * Singleton component for embedding small, non-collidable objects into 
  * SurfacePlane regions.
  * 
@@ -312,6 +313,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
         }
         if (intersectingTriangles.Count == 0)
         {
+          //Debug.Log("No intersecting triangles found in: " + meshFilter.gameObject.name);
           continue;
         }
 
