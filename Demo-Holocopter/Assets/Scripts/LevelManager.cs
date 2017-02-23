@@ -250,21 +250,22 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     foreach (GameObject floorObj in floors)
     {
       SurfacePlane floor = floorObj.GetComponent<SurfacePlane>();
-      List<Vector2> spawnPoints = FindFloorSpawnPoints(new Vector3(1, 0.5f, 1), new Vector2(1, 1), 0.5f, floor);
-      int numTanks = System.Math.Min(3, spawnPoints.Count);
-      List<int> indexes = new List<int>(spawnPoints.Count);
-      for (int i = 0; i < spawnPoints.Count; i++)
+      List<Vector2> spawnPoints = FindFloorSpawnPoints(new Vector3(0.25f, 0.5f, 0.25f), new Vector2(0.25f, 0.25f), 0.5f, floor);
+      int numSpawnPoints = spawnPoints.Count;
+      List<int> indexes = new List<int>(numSpawnPoints);
+      for (int i = 0; i < numSpawnPoints; i++)
       {
         indexes.Add(i);
       }
+      int numTanks = System.Math.Min(3, numSpawnPoints);
       for (int i = 0; i < numTanks; i++)
       {
-        int idx = indexes[Random.Range(0, indexes.Count)];
+        int rand = Random.Range(0, indexes.Count);
+        int idx = indexes[rand];
         indexes.Remove(idx);
         SpawnObject(tankPrefab, floor, spawnPoints[idx].x, spawnPoints[idx].y);
       }
     }
-
   }
 
   void Start()
