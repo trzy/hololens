@@ -91,8 +91,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb1fb86c6d1dda74b8c9128263eeea85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_render_queue_offset: 0
+  renderQueueOffset: 0
   delayTime: 0
-  m_ramp_up_time: 0.4
-  m_fade_out_time: 0.3
-  m_texture_scroll_time: 5
+  rampUpTime: 0.15
+  fadeOutTime: 0.2
+  textureScrollTime: 5
