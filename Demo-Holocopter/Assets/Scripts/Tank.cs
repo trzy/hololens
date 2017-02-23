@@ -256,8 +256,8 @@ public class Tank : MonoBehaviour
         {
           rb.AddExplosionForce(250, wreckage.transform.position, 0.1f, 0.1f);
         }
-        FXManager.Instance.EmitExplosion(transform.position, Vector3.up);
-        //ParticleEffectsManager.Instance.CreateExplosionBlastWave(transform.position, Vector3.up);
+        FXManager.Instance.EmitTankExplosion(transform.position);
+        ParticleEffectsManager.Instance.CreateExplosionBlastWave(transform.position, Vector3.up);
         /*
          * TODO: try using bindpose
         foreach (Transform original in transform)

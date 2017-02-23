@@ -6,26 +6,41 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
 {
   private struct EmitParams
   {
+    public ParticleSystem particleSystem;
     public float time;
     public int number;
     public Vector3 position;
-    public Vector3 up;
+    public Quaternion rotation;
 
-    public EmitParams(float t, int num, Vector3 pos, Vector3 u)
+    public EmitParams(ParticleSystem ps, float t, int num, Vector3 pos, Vector3 forward, Vector3 up)
     {
+      particleSystem = ps;
       time = t;
       number = num;
       position = pos;
-      up = u;
+      rotation = Quaternion.LookRotation(forward, up);
+    }
+
+    public EmitParams(ParticleSystem ps, float t, int num, Vector3 pos, Vector3 eulerAngles)
+    {
+      particleSystem = ps;
+      time = t;
+      number = num;
+      position = pos;
+      rotation = Quaternion.Euler(eulerAngles);
     }
   }
 
   private ParticleSystem m_impactPS;
   private ParticleSystem m_explosionPS;
-  private LinkedList<EmitParams> m_futureExplosions; // in order of ascending time
+  private ParticleSystem m_randomExplosionPS;
+  private ParticleSystem m_randomExplosionSmallPS;
+  private ParticleSystem m_flameOutPS;
+  private LinkedList<EmitParams> m_futureParticles; // in order of ascending time
 
-  private void InsertTimeSorted(LinkedList<EmitParams> list, ref EmitParams item)
+  private void InsertTimeSorted(ref EmitParams item)
   {
+    LinkedList<EmitParams> list = m_futureParticles;
     if (list.Count == 0 || list.Last.Value.time <= item.time)
     {
       list.AddLast(item);
@@ -48,31 +63,67 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
     m_impactPS.Emit(1);
   }
 
-  public void EmitExplosion(Vector3 position, Vector3 up)
+  public void EmitTankExplosion(Vector3 position)
   {
-    EmitParams emit = new EmitParams(Time.time, 5, position, up);
-    InsertTimeSorted(m_futureExplosions, ref emit);
+    // Horizontal flames
+    float t = Time.time;
+    float deltaT = .1f;
+    EmitParams emit;
+    for (int i = 0; i < 2; i++)
+    {
+      emit = new EmitParams(m_flameOutPS, t, 1, position, -Camera.main.transform.right, Camera.main.transform.up);
+      InsertTimeSorted(ref emit);
+      emit = new EmitParams(m_flameOutPS, t, 1, position, Camera.main.transform.right, Camera.main.transform.up);
+      InsertTimeSorted(ref emit);
+      t += deltaT;
+    }
+
+    // Large central explosion
+    t = Time.time;
+    Vector3 pos = position;
+    for (int i = 0; i < 2; i++)
+    {
+      t += .1f;
+      // Note: local forward is the direction of particle motion, hence to move
+      // up, we set *forward* direction to Vector3.up
+      emit = new EmitParams(m_randomExplosionPS, t, 1, pos, Vector3.up, Vector3.forward);
+      InsertTimeSorted(ref emit);
+      pos += .1f * Vector3.up;
+    }
+
+    // Occasionally, a series of small bursts after a short pause
+    float r = Random.Range(0f, 1f);
+    if (r < 0.33f) // 33% chance
+    {
+      t += 0.33f;
+      for (int i = 0; i < 5; i++)
+      {
+        emit = new EmitParams(m_randomExplosionSmallPS, t, 1, pos, Vector3.up, Vector3.forward);
+        InsertTimeSorted(ref emit);
+        t += 0.1f;
+      }
+    }
   }
 
-  private void EmitExplosionNow(EmitParams emit)
+  private void EmitParticlesNow(EmitParams emit)
   {
-    m_explosionPS.transform.position = emit.position;
-    m_explosionPS.transform.rotation.SetLookRotation(emit.up);
-    m_explosionPS.Emit(emit.number);
+    emit.particleSystem.transform.position = emit.position;
+    emit.particleSystem.transform.rotation = emit.rotation;
+    emit.particleSystem.Emit(emit.number);
   }
 
   private void Update()
   {
-    if (m_futureExplosions.Count == 0)
+    if (m_futureParticles.Count == 0)
       return;
     float now = Time.time;
-    for (LinkedListNode<EmitParams> node = m_futureExplosions.First; node != null; )
+    for (LinkedListNode<EmitParams> node = m_futureParticles.First; node != null; )
     {
       LinkedListNode<EmitParams> next = node.Next;
       if (now >= node.Value.time)
       {
-        EmitExplosionNow(node.Value);
-        m_futureExplosions.Remove(node);
+        EmitParticlesNow(node.Value);
+        m_futureParticles.Remove(node);
         node = next;
       }
       else
@@ -86,7 +137,7 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
   private new void Awake()
   {
     base.Awake();
-    m_futureExplosions = new LinkedList<EmitParams>();
+    m_futureParticles = new LinkedList<EmitParams>();
     foreach (ParticleSystem ps in GetComponentsInChildren<ParticleSystem>())
     {
       if (ps.name == "Impact")
@@ -96,6 +147,18 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
       else if (ps.name == "Explosion")
       {
         m_explosionPS = ps;
+      }
+      else if (ps.name == "RandomExplosion")
+      {
+        m_randomExplosionPS = ps;
+      }
+      else if (ps.name == "RandomExplosionSmall")
+      {
+        m_randomExplosionSmallPS = ps;
+      }
+      else if (ps.name == "FlameOut")
+      {
+        m_flameOutPS = ps;
       }
     }
   }
