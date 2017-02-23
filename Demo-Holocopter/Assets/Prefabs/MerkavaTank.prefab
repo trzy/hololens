@@ -1024,7 +1024,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c88cd06ed3f386d4282e300d2cf2bb2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifePoints: 25
+  lifePoints: 10
   maxGunAngle: -20
   minGunAngle: 0
   turretScanSpeed: 18
