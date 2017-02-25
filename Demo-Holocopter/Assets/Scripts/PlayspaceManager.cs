@@ -1,13 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.VR.WSA;
 using HoloToolkit.Unity.SpatialMapping;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 {
-  public delegate void MakePlanesCompleteDelegate();
-
   [Tooltip("Draw surface planes when running in Unity editor")]
   public bool planesVisibleInEditor = true;
 
@@ -26,9 +25,11 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   [Tooltip("Material used spatial mesh visualization during scanning")]
   public Material renderingMaterial = null;
 
+  // Called when scanning is complete and playspace is finalized
+  public Action OnScanComplete = null;
+
   private uint m_scanningTimeLimit = 0;
   private bool m_scanningComplete = false;
-  private MakePlanesCompleteDelegate m_OnMakePlanesComplete = null;
 
   //TODO: refactor -- too much duplication
   public List<GameObject> GetFloors()
@@ -62,11 +63,6 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         planes.Add(plane);
     }
     return planes;
-  }
-
-  public void SetMakePlanesCompleteCallback(MakePlanesCompleteDelegate cb)
-  {
-    m_OnMakePlanesComplete = cb;
   }
 
   //TODO: if time limited, take an optional callback
@@ -121,14 +117,14 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
       RemoveVertices(SurfaceMeshesToPlanes.Instance.ActivePlanes);
     if (!visualizeSpatialMeshes)
       SpatialMappingManager.Instance.SetSurfaceMaterial(occlusionMaterial);
-    if (m_OnMakePlanesComplete != null)
-      m_OnMakePlanesComplete();
     SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
       SetPlanesVisible(true);
 #endif
     SetPlaneTags(Layers.Instance.surfacePlaneTag);
+    if (OnScanComplete != null)
+      OnScanComplete();
   }
 
   private void CreatePlanes()

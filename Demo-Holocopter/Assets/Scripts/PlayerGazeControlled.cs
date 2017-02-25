@@ -15,6 +15,7 @@ public class PlayerGazeControlled: MonoBehaviour
   enum State
   {
     Scanning,
+    FinalizeScan,
     Playing
   };
 
@@ -28,10 +29,10 @@ public class PlayerGazeControlled: MonoBehaviour
     switch (m_state)
     {
     case State.Scanning:
-      PlayspaceManager.Instance.SetMakePlanesCompleteCallback(LevelManager.Instance.GenerateLevel);
-      SetState(State.Playing);
+      SetState(State.FinalizeScan);
       break;
     case State.Playing:
+      /*
       //TEST: place a bullet hole wherever we are looking
       float distance = 5.0f;
       int layerMask = Layers.Instance.collidableLayersMask;
@@ -41,7 +42,6 @@ public class PlayerGazeControlled: MonoBehaviour
         Debug.Log("hit point=" + hit.point);
         ParticleEffectsManager.Instance.CreateBulletHole(hit.point, hit.normal, null);
       }
-
       if (m_gazeTarget == null)
       {
       }
@@ -51,6 +51,7 @@ public class PlayerGazeControlled: MonoBehaviour
       else
       {
       }
+      */
       break;
     }
   }
@@ -62,6 +63,15 @@ public class PlayerGazeControlled: MonoBehaviour
     {
     case State.Scanning:
       PlayspaceManager.Instance.StartScanning();
+      break;
+    case State.FinalizeScan:
+      System.Action OnScanComplete = () => 
+      {
+        LevelManager.Instance.GenerateLevel();
+        SetState(State.Playing);
+      };
+      PlayspaceManager.Instance.OnScanComplete += OnScanComplete;
+      PlayspaceManager.Instance.StopScanning();
       break;
     case State.Playing:
       PlayspaceManager.Instance.StopScanning();
