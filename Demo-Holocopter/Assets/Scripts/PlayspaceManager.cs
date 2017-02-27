@@ -35,6 +35,13 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   // Called when scanning is complete and playspace is finalized
   public Action OnScanComplete = null;
 
+  public enum SortOrder
+  {
+    None,
+    Descending,
+    Ascending
+  };
+
   private SpatialMappingManager m_spatialMappingManager = null;
   private SpatialUnderstanding m_spatialUnderstanding = null;
   private bool m_scanningComplete = false;
@@ -50,29 +57,51 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   private delegate bool SurfacePlaneConstraint(SurfacePlane surfacePlane);
 
-  private List<GameObject> GetSurfacePlanes(PlaneTypes desiredTypes, SurfacePlaneConstraint Constraint)
+  private List<GameObject> GetSurfacePlanes(PlaneTypes desiredTypes, SurfacePlaneConstraint ExtraConstraints, SortOrder sortOrder)
   {
     List<GameObject> planes = new List<GameObject>();
     foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
     {
       SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
-      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && Constraint(surfacePlane))
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && ExtraConstraints(surfacePlane))
         planes.Add(plane);
     }
+    planes.Sort((plane1, plane2) =>
+    {
+      BoundedPlane bp1 = plane1.GetComponent<SurfacePlane>().Plane;
+      BoundedPlane bp2 = plane2.GetComponent<SurfacePlane>().Plane;
+      // Sort descending
+      int result = 0;
+      switch (sortOrder)
+      {
+      case SortOrder.None:
+        result = 0;
+        break;
+      case SortOrder.Descending:
+        result = bp2.Area.CompareTo(bp1.Area);
+        break;
+      case SortOrder.Ascending:
+        result = bp1.Area.CompareTo(bp2.Area);
+        break;
+      }
+      return result;
+    });
     return planes;
   }
 
-  public List<GameObject> GetFloors()
+  // SpatialMapping pathway only
+  public List<GameObject> GetFloors(SortOrder sortOrder = SortOrder.None)
   {
-    return GetSurfacePlanes(PlaneTypes.Floor, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0);
+    return GetSurfacePlanes(PlaneTypes.Floor, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0, sortOrder);
   }
 
-  public List<GameObject> GetPlatforms()
+  // SpatialMapping pathway only
+  public List<GameObject> GetPlatforms(SortOrder sortOrder = SortOrder.None)
   {
     // Only tables below eye level. SurfacePlane has the unfortunate problem
     // that it creates tables with planes oriented downwards. We ignore these
     // (but maybe we should rotate?).
-    return GetSurfacePlanes(PlaneTypes.Table, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0);
+    return GetSurfacePlanes(PlaneTypes.Table, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0, sortOrder);
   }
 
   private void OnScanStateChanged()
