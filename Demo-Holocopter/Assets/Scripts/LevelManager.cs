@@ -43,31 +43,16 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 
   private IMissionHandler m_currentMission = null;
 
-  //TODO: refactor. too much duplication
-  private List<GameObject> GetFloorsInDescendingAreaOrder()
+  private List<GameObject> GetSurfacePlanesInDescendingAreaOrder(List<GameObject> planes)
   {
-    List<GameObject> floors = PlayspaceManager.Instance.GetFloors();
-    floors.Sort((plane1, plane2) =>
+    planes.Sort((plane1, plane2) =>
     {
       BoundedPlane bp1 = plane1.GetComponent<SurfacePlane>().Plane;
       BoundedPlane bp2 = plane2.GetComponent<SurfacePlane>().Plane;
       // Sort descending
       return bp2.Area.CompareTo(bp1.Area);
     });
-    return floors;
-  }
-
-  private List<GameObject> GetPlatformsInDescendingAreaOrder()
-  {
-    List<GameObject> floors = PlayspaceManager.Instance.GetPlatforms();
-    floors.Sort((plane1, plane2) =>
-    {
-      BoundedPlane bp1 = plane1.GetComponent<SurfacePlane>().Plane;
-      BoundedPlane bp2 = plane2.GetComponent<SurfacePlane>().Plane;
-      // Sort descending
-      return bp2.Area.CompareTo(bp1.Area);
-    });
-    return floors;
+    return planes;
   }
 
   private void PlaceCube(float width, float height, float depth, Material material, Color color, SurfacePlane plane, float localX, float localZ)
@@ -207,8 +192,8 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel()
   {
-    List<GameObject> tables = GetPlatformsInDescendingAreaOrder();
-    List<GameObject> floors = GetFloorsInDescendingAreaOrder();
+    List<GameObject> tables = GetSurfacePlanesInDescendingAreaOrder(PlayspaceManager.Instance.GetPlatforms());
+    List<GameObject> floors = GetSurfacePlanesInDescendingAreaOrder(PlayspaceManager.Instance.GetFloors());
     Debug.Log("GenerateLevel(): number of floors=" + floors.Count + ", number of tables=" + tables.Count);
 
     //TODO: check if empty and take corrective action

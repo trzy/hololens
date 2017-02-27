@@ -948,6 +948,11 @@ Prefab:
       propertyPath: m_RootOrder
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 114000012099205058, guid: d41fa7615c3c85b40bcc95fc4367b607,
+        type: 2}
+      propertyPath: AutoBeginScanning
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d41fa7615c3c85b40bcc95fc4367b607, type: 2}
   m_IsPrefabParent: 0
@@ -1182,7 +1187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a4ff590285c81740bb70161542af1f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useSpatialUnderstanding: 1
+  useSpatialUnderstanding: 0
   visualizeSpatialUnderstandingMeshes: 1
   planesVisibleInEditor: 0
   visualizeSpatialMeshes: 0
