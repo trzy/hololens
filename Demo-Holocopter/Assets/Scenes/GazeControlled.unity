@@ -1195,6 +1195,7 @@ MonoBehaviour:
   removeSurfaceTriangles: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a, type: 2}
+  flatMaterial: {fileID: 2100000, guid: b11c5d3fbee9e914993710c112ef162d, type: 2}
 --- !u!114 &959206452
 MonoBehaviour:
   m_ObjectHideFlags: 0

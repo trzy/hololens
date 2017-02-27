@@ -32,6 +32,9 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   [Tooltip("Spatial Mapping mode only: Material used spatial mesh visualization during scanning")]
   public Material renderingMaterial = null;
 
+  [Tooltip("Flat-shaded material (for debugging)")]
+  public Material flatMaterial = null;
+
   // Called when scanning is complete and playspace is finalized
   public Action OnScanComplete = null;
 
@@ -102,6 +105,98 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     // that it creates tables with planes oriented downwards. We ignore these
     // (but maybe we should rotate?).
     return GetSurfacePlanes(PlaneTypes.Table, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0, sortOrder);
+  }
+
+  // SpatialMapping pathway only
+  public void SpawnObject(GameObject prefab, SurfacePlane plane, float localX, float localZ)
+  {
+    // Rotation from a coordinate system where y is up into one where z is up.
+    // This is used to orient objects in a plane-local system before applying
+    // the plane's own transform. Without this, objects end up aligned along
+    // the world's xz axes, not the plane's local xy axes.
+    Quaternion toPlaneOrientation = Quaternion.FromToRotation(Vector3.up, Vector3.forward);
+    // World xz -> Plane xy
+    float x = localX;
+    float y = localZ;
+    Vector3 origin = plane.transform.position;
+    Quaternion rotation = plane.transform.rotation;
+    if (plane.transform.forward.y < 0)  // plane is oriented upside down
+      rotation = rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward);
+    // Spawn object in plane-local coordinate system (rotation brings it into world system)
+    GameObject obj = Instantiate(prefab) as GameObject;
+    obj.transform.parent = gameObject.transform;
+    obj.transform.rotation = rotation * toPlaneOrientation;
+    obj.transform.position = origin + rotation * new Vector3(x, y, 0);
+    obj.SetActive(true);
+  }
+
+  // SpatialMapping pathway only
+  public List<Vector2> FindFloorSpawnPoints(Vector3 requiredSize, Vector2 stepSize, float clearance, SurfacePlane plane)
+  {
+    List<Vector2> places = new List<Vector2>();
+    OrientedBoundingBox bb = plane.Plane.Bounds;
+    Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
+    // Note that xy in local plane coordinate system correspond to what would be xz in global space
+    Vector3 halfExtents = new Vector3(requiredSize.x, requiredSize.z, requiredSize.y) * 0.5f;
+    // We step over the plane in step size increments but check for the
+    // required size, which ought to be larger (thereby creating overlapping points)
+    for (float y = -bb.Extents.y + halfExtents.y; y <= bb.Extents.y - halfExtents.y; y += stepSize.y)
+    {
+      for (float x = -bb.Extents.x + halfExtents.x; x <= bb.Extents.x - halfExtents.x; x += stepSize.x)
+      {
+        Vector3 center = plane.transform.position + orientation * new Vector3(x, y, halfExtents.z + clearance);
+        Collider[] colliders = Physics.OverlapBox(center, halfExtents, orientation, Layers.Instance.spatialMeshLayerMask);
+        if (colliders.Length == 0)
+          places.Add(new Vector2(x, y));
+      }
+    }
+    return places;
+  }
+
+  // SpatialMapping pathway only
+  public void DrawFloorSpawnPoints(Vector3 requiredSize, float clearance, SurfacePlane plane)
+  {
+    OrientedBoundingBox bb = plane.Plane.Bounds;
+    Quaternion orientation = (plane.transform.forward.y < 0) ? (plane.transform.rotation * Quaternion.FromToRotation(-Vector3.forward, Vector3.forward)) : plane.transform.rotation;
+    // Note that xy in local plane coordinate system correspond to what would be xz in global space
+    Vector3 halfExtents = new Vector3(requiredSize.x, requiredSize.z, requiredSize.y) * 0.5f;
+    for (float y = -bb.Extents.y + halfExtents.y; y <= bb.Extents.y - halfExtents.y; y += 2 * halfExtents.y)
+    {
+      for (float x = -bb.Extents.x + halfExtents.x; x <= bb.Extents.x - halfExtents.x; x += 2 * halfExtents.x)
+      {
+        Vector3 center = plane.transform.position + orientation * new Vector3(x, y, halfExtents.z + clearance);
+        Collider[] colliders = Physics.OverlapBox(center, halfExtents, orientation, Layers.Instance.spatialMeshLayerMask);
+        if (colliders.Length == 0)
+        {
+          GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+          cube.transform.parent = gameObject.transform; // level manager will be parent
+          cube.transform.localScale = 2 * halfExtents;
+          cube.transform.position = center;
+          cube.transform.transform.rotation = orientation;
+          cube.GetComponent<Renderer>().material = flatMaterial;
+          cube.GetComponent<Renderer>().material.color = Color.green;
+          cube.SetActive(true);
+        }
+      }
+    }
+  }
+
+  // SpatialMapping pathway only
+  public Vector2 FindNearestToPlayer(List<Vector2> places)
+  {
+    Vector2 playerPosition = new Vector2(Camera.main.transform.position.x, Camera.main.transform.position.z);
+    Vector2 bestCandidate = Vector2.zero;
+    float best_distance = float.PositiveInfinity;
+    foreach (Vector2 place in places)
+    {
+      float distance = Vector2.SqrMagnitude(playerPosition - place);
+      if (distance < best_distance)
+      {
+        best_distance = distance;
+        bestCandidate = place;
+      }
+    }
+    return bestCandidate;
   }
 
   private void OnScanStateChanged()
