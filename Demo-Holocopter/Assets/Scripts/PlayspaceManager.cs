@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.VR.WSA;
+using HoloToolkit.Unity;
 using HoloToolkit.Unity.SpatialMapping;
 using System;
 using System.Collections;
@@ -7,79 +8,117 @@ using System.Collections.Generic;
 
 public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 {
-  [Tooltip("Draw surface planes when running in Unity editor")]
+  [Tooltip("Use SpatialUnderstanding instead of SpatialMapping")]
+  public bool useSpatialUnderstanding = true;
+
+  [Tooltip("Spatial Understanding mode only: Visualize the meshes produced by Spatial Understanding by inhibiting use of the occlusion material after scanning")]
+  public bool visualizeSpatialUnderstandingMeshes = false;
+
+  [Tooltip("Spatial Mapping mode only: Draw surface planes when running in Unity editor")]
   public bool planesVisibleInEditor = true;
 
-  [Tooltip("Visualize the spatial meshes by inhibiting use of the occlusion material")]
+  [Tooltip("Visualize the spatial meshes produced by Spatial Mapping by inhibiting use of the occlusion material after scanning (can be used with Spatial Understanding)")]
   public bool visualizeSpatialMeshes = false;
 
-  [Tooltip("Render queue value to use for drawing freshly-embeded objects before spatial mesh.")]
+  [Tooltip("Render queue value to use for drawing freshly-embeded objects before spatial mesh")]
   public int highPriorityRenderQueueValue = 1000;
 
-  [Tooltip("Remove triangles that are inside of surfaces detected by plane finding algo")]
+  [Tooltip("Spatial Mapping mode only: Remove triangles that are inside of surfaces detected by plane finding algo")]
   public bool removeSurfaceTriangles = false;
 
   [Tooltip("Material used for spatial mesh occlusion during game play")]
   public Material occlusionMaterial = null;
 
-  [Tooltip("Material used spatial mesh visualization during scanning")]
+  [Tooltip("Spatial Mapping mode only: Material used spatial mesh visualization during scanning")]
   public Material renderingMaterial = null;
 
   // Called when scanning is complete and playspace is finalized
   public Action OnScanComplete = null;
 
-  private uint m_scanningTimeLimit = 0;
+  private SpatialMappingManager m_spatialMappingManager = null;
+  private SpatialUnderstanding m_spatialUnderstanding = null;
   private bool m_scanningComplete = false;
-
-  //TODO: refactor -- too much duplication
-  public List<GameObject> GetFloors()
+  private enum SpatialUnderstandingState
   {
-    PlaneTypes desiredTypes = PlaneTypes.Floor;
+    Halted,
+    Scanning,
+    FinalizeScan,
+    WaitingForScanCompletion,
+    WaitingForMeshImport
+  };
+  private SpatialUnderstandingState m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
+
+  private delegate bool SurfacePlaneConstraint(SurfacePlane surfacePlane);
+
+  private List<GameObject> GetSurfacePlanes(PlaneTypes desiredTypes, SurfacePlaneConstraint Constraint)
+  {
     List<GameObject> planes = new List<GameObject>();
     foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
     {
       SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
-      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType)
-        Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
-      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
+      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && Constraint(surfacePlane))
         planes.Add(plane);
     }
     return planes;
   }
 
-  public List<GameObject> GetTables()
+  public List<GameObject> GetFloors()
   {
-    PlaneTypes desiredTypes = PlaneTypes.Table;
-    List<GameObject> planes = new List<GameObject>();
-    foreach (GameObject plane in SurfaceMeshesToPlanes.Instance.ActivePlanes)
+    return GetSurfacePlanes(PlaneTypes.Floor, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0);
+  }
+
+  public List<GameObject> GetPlatforms()
+  {
+    // Only tables below eye level. SurfacePlane has the unfortunate problem
+    // that it creates tables with planes oriented downwards. We ignore these
+    // (but maybe we should rotate?).
+    return GetSurfacePlanes(PlaneTypes.Table, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0);
+  }
+
+  private void OnScanStateChanged()
+  {
+    if (m_spatialUnderstanding.ScanState == SpatialUnderstanding.ScanStates.Done)
     {
-      SurfacePlane surfacePlane = plane.GetComponent<SurfacePlane>();
-      // Only tables below eye level. SurfacePlane has the unfortunate problem
-      // that it creates tables with planes oriented downwards. We ignore these
-      // (but maybe we should rotate?).
-      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType)
-        Debug.Log("Found: " + surfacePlane.transform.position.ToString() + ", " + surfacePlane.Plane.Plane.normal.ToString("F2"));
-      if ((surfacePlane.PlaneType & desiredTypes) == surfacePlane.PlaneType && surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0)
-        planes.Add(plane);
+      m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForMeshImport;
     }
-    return planes;
   }
 
   //TODO: if time limited, take an optional callback
-  public void StartScanning(uint scanningTimeLimit = 0)
+  public void StartScanning()
   {
-    m_scanningTimeLimit = scanningTimeLimit;
-    if (!SpatialMappingManager.Instance.IsObserverRunning())
-      SpatialMappingManager.Instance.StartObserver();
-    SpatialMappingManager.Instance.SetSurfaceMaterial(renderingMaterial);
+    // Start spatial mapping (SpatialUnderstanding requires this, too)
+    if (!m_spatialMappingManager.IsObserverRunning())
+      m_spatialMappingManager.StartObserver();
+
+    // If we are only using spatial mapping, visualize the meshes during the scanning
+    // phase
+    if (useSpatialUnderstanding)
+    {
+      m_spatialMappingManager.DrawVisualMeshes = visualizeSpatialMeshes;
+      m_spatialUnderstanding.ScanStateChanged += OnScanStateChanged;
+      m_spatialUnderstanding.RequestBeginScanning();
+      m_spatialUnderstandingState = SpatialUnderstandingState.Scanning;
+    }
+    else
+    {
+      m_spatialMappingManager.DrawVisualMeshes = true;
+    }
+    m_spatialMappingManager.SetSurfaceMaterial(renderingMaterial);
   }
 
   public void StopScanning()
   {
-    if (SpatialMappingManager.Instance.IsObserverRunning())
-      SpatialMappingManager.Instance.StopObserver();
-    CreatePlanes();
-    m_scanningComplete = true;
+    if (m_spatialMappingManager.IsObserverRunning())
+      m_spatialMappingManager.StopObserver();
+    if (useSpatialUnderstanding)
+    {
+      m_spatialUnderstandingState = SpatialUnderstandingState.FinalizeScan;
+    }
+    else
+    {
+      CreatePlanes();
+      m_scanningComplete = true;
+    }
   }
 
   private void SetPlanesVisible(bool visible)
@@ -100,14 +139,58 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     }
   }
 
+  private void HideSpatialMappingMeshes()
+  {
+    var meshFilters = m_spatialMappingManager.GetMeshFilters();
+    foreach (MeshFilter meshFilter in meshFilters)
+    {
+      meshFilter.gameObject.SetActive(false);
+    }
+  }
+
+  private void SetSpatialUnderstandingMaterial(Material material)
+  {
+    List<MeshFilter> meshFilters = m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters();
+    foreach (MeshFilter meshFilter in meshFilters)
+    {
+      meshFilter.gameObject.GetComponent<Renderer>().material = material;
+    }
+  }
+
   private void Update()
   {
     if (m_scanningComplete)
       return;
-    // If no time limit, or if time limit but still time left, keep scanning
-    if (m_scanningTimeLimit == 0 || (Time.time - SpatialMappingManager.Instance.StartTime) < m_scanningTimeLimit)
-      return;
-    StopScanning();
+    switch (m_spatialUnderstandingState)
+    {
+    case SpatialUnderstandingState.FinalizeScan:
+      //TODO: timeout?
+      if (!m_spatialUnderstanding.ScanStatsReportStillWorking)
+      {
+        Debug.Log("Finalizing scan...");
+        m_spatialUnderstanding.RequestFinishScan();
+        m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForScanCompletion;
+      }
+      break;
+    case SpatialUnderstandingState.WaitingForMeshImport:
+      //TODO: timeout?
+      if (m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive == false)
+      {
+        Debug.Log("Found " + m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters().Count + " meshes (import active=" + m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive + ")");
+        if (!visualizeSpatialMeshes)
+          HideSpatialMappingMeshes();
+        if (!visualizeSpatialUnderstandingMeshes)
+          SetSpatialUnderstandingMaterial(occlusionMaterial);
+        SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
+        m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
+        if (OnScanComplete != null)
+          OnScanComplete();
+        m_scanningComplete = true;
+      }
+      break;
+    default:
+      break;
+    }
   }
 
   // Handler for the SurfaceMeshesToPlanes MakePlanesComplete event
@@ -116,8 +199,8 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     if (removeSurfaceTriangles)
       RemoveVertices(SurfaceMeshesToPlanes.Instance.ActivePlanes);
     if (!visualizeSpatialMeshes)
-      SpatialMappingManager.Instance.SetSurfaceMaterial(occlusionMaterial);
-    SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(SpatialMappingManager.Instance.GetMeshFilters());
+      m_spatialMappingManager.SetSurfaceMaterial(occlusionMaterial);
+    SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialMappingManager.GetMeshFilters());
 #if UNITY_EDITOR
     if (planesVisibleInEditor)
       SetPlanesVisible(true);
@@ -145,22 +228,21 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
       removeVerts.RemoveSurfaceVerticesWithinBounds(boundingObjects);
     }
   }
-/*
-  void Awake()
-  {
-  }
-  */
 
-  void Start()
+  private void Start()
   {
+    m_spatialMappingManager = SpatialMappingManager.Instance;
+    m_spatialUnderstanding = SpatialUnderstanding.Instance;
 #if UNITY_EDITOR
     // An ObjectSurfaceObserver should be attached and will be used in Unity
     // editor mode to generate spatial meshes from a pre-loaded file
-    SpatialMappingManager.Instance.SetSpatialMappingSource(GetComponent<ObjectSurfaceObserver>());
+    m_spatialMappingManager.SetSpatialMappingSource(GetComponent<ObjectSurfaceObserver>());
 #endif
     // Register for the MakePlanesComplete event
     SurfaceMeshesToPlanes.Instance.MakePlanesComplete += SurfaceMeshesToPlanes_MakePlanesComplete;
   }
+
+
 
   private void OnDestroy()
   {

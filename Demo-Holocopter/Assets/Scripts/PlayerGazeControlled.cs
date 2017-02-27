@@ -74,7 +74,6 @@ public class PlayerGazeControlled: MonoBehaviour
       PlayspaceManager.Instance.StopScanning();
       break;
     case State.Playing:
-      PlayspaceManager.Instance.StopScanning();
       helicopter.SetControlMode(Helicopter.ControlMode.Player);
       break;
     }

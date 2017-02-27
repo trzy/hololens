@@ -57,9 +57,9 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
     return floors;
   }
 
-  private List<GameObject> GetTablesInDescendingAreaOrder()
+  private List<GameObject> GetPlatformsInDescendingAreaOrder()
   {
-    List<GameObject> floors = PlayspaceManager.Instance.GetTables();
+    List<GameObject> floors = PlayspaceManager.Instance.GetPlatforms();
     floors.Sort((plane1, plane2) =>
     {
       BoundedPlane bp1 = plane1.GetComponent<SurfacePlane>().Plane;
@@ -207,7 +207,7 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel()
   {
-    List<GameObject> tables = GetTablesInDescendingAreaOrder();
+    List<GameObject> tables = GetPlatformsInDescendingAreaOrder();
     List<GameObject> floors = GetFloorsInDescendingAreaOrder();
     Debug.Log("GenerateLevel(): number of floors=" + floors.Count + ", number of tables=" + tables.Count);
 
