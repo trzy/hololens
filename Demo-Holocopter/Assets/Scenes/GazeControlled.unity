@@ -1187,7 +1187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a4ff590285c81740bb70161542af1f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useSpatialUnderstanding: 0
+  useSpatialUnderstanding: 1
   visualizeSpatialUnderstandingMeshes: 1
   planesVisibleInEditor: 0
   visualizeSpatialMeshes: 0

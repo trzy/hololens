@@ -81,6 +81,13 @@ public class LevelManager : HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel()
   {
+    Vector3 position;
+    if (m_playspaceManager.TryPlaceOnFloor(out position, 0.3f, 0.3f, 0.3f))
+      m_playspaceManager.SpawnObject(tankPrefab, position);
+    else
+      Debug.Log("FAILED TO PLACE TANK");
+    return;
+
     List<GameObject> tables = m_playspaceManager.GetPlatforms(PlayspaceManager.SortOrder.Descending);
     List<GameObject> floors = m_playspaceManager.GetFloors(PlayspaceManager.SortOrder.Descending);
     Debug.Log("GenerateLevel(): number of floors=" + floors.Count + ", number of tables=" + tables.Count);

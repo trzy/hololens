@@ -48,15 +48,80 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private SpatialMappingManager m_spatialMappingManager = null;
   private SpatialUnderstanding m_spatialUnderstanding = null;
   private bool m_scanningComplete = false;
+
   private enum SpatialUnderstandingState
   {
     Halted,
     Scanning,
     FinalizeScan,
     WaitingForScanCompletion,
-    WaitingForMeshImport
-  };
+    WaitingForMeshImport,
+    WaitingForPlacementSolverInit,
+    Finished
+  }
   private SpatialUnderstandingState m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
+  private bool m_placementSolverInitialized = false;
+
+  private struct PlacementQuery
+  {
+    public SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition;
+    public List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> placementRules;
+    public List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> placementConstraints;
+
+    public PlacementQuery(
+        SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition_,
+        List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> placementRules_ = null,
+        List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> placementConstraints_ = null)
+    {
+      placementDefinition = placementDefinition_;
+      placementRules = placementRules_;
+      placementConstraints = placementConstraints_;
+    }
+  }
+
+  private bool TryPlaceObject(
+    out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
+    string placementName,
+    PlacementQuery query)
+  {
+    placementResult = null;
+    if (!useSpatialUnderstanding)
+      return false;
+    int result = SpatialUnderstandingDllObjectPlacement.Solver_PlaceObject(
+      placementName,
+      SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementDefinition),
+        (query.placementRules != null) ? query.placementRules.Count : 0,
+        ((query.placementRules != null) && (query.placementRules.Count > 0)) ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementRules.ToArray()) : IntPtr.Zero,
+        (query.placementConstraints != null) ? query.placementConstraints.Count : 0,
+        ((query.placementConstraints != null) && (query.placementConstraints.Count > 0)) ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementConstraints.ToArray()) : IntPtr.Zero,
+        SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticObjectPlacementResultPtr());
+    if (result > 0)
+    {
+      placementResult = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticObjectPlacementResult();
+      return true;
+    }
+    return false;
+  }
+
+  public bool TryPlaceOnFloor(out Vector3 position, float sizeX, float sizeY, float sizeZ)
+  {
+    position = Vector3.zero;
+    if (!useSpatialUnderstanding)
+      return false;
+    PlacementQuery query = new PlacementQuery(
+      SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * new Vector3(sizeX, sizeY, sizeZ)),
+      new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule>()
+      {
+        SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromOtherObjects(2)
+      });
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
+    if (TryPlaceObject(out placementResult, "changeMeToSomethingUnique", query))
+    {
+      position = placementResult.Position;
+      return true;
+    }
+    return false;
+  }
 
   private delegate bool SurfacePlaneConstraint(SurfacePlane surfacePlane);
 
@@ -105,6 +170,14 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     // that it creates tables with planes oriented downwards. We ignore these
     // (but maybe we should rotate?).
     return GetSurfacePlanes(PlaneTypes.Table, (surfacePlane) => surfacePlane.transform.position.y < 0 && surfacePlane.Plane.Plane.normal.y > 0, sortOrder);
+  }
+
+  public void SpawnObject(GameObject prefab, Vector3 position)
+  {
+    GameObject obj = Instantiate(prefab) as GameObject;
+    obj.transform.parent = gameObject.transform;
+    obj.transform.position = position;
+    obj.SetActive(true);
   }
 
   // SpatialMapping pathway only
@@ -306,10 +379,22 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         if (!visualizeSpatialUnderstandingMeshes)
           SetSpatialUnderstandingMaterial(occlusionMaterial);
         SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
-        m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
-        if (OnScanComplete != null)
-          OnScanComplete();
-        m_scanningComplete = true;
+        m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForPlacementSolverInit;
+      }
+      break;
+    case SpatialUnderstandingState.WaitingForPlacementSolverInit:
+      //TODO: error checking and timeout?
+      if (!m_placementSolverInitialized)
+      {
+        m_placementSolverInitialized = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
+        Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
+        if (m_placementSolverInitialized)
+        {
+          if (OnScanComplete != null)
+            OnScanComplete();
+          m_scanningComplete = true;
+          m_spatialUnderstandingState = SpatialUnderstandingState.Finished;
+        }
       }
       break;
     default:
@@ -365,8 +450,6 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     // Register for the MakePlanesComplete event
     SurfaceMeshesToPlanes.Instance.MakePlanesComplete += SurfaceMeshesToPlanes_MakePlanesComplete;
   }
-
-
 
   private void OnDestroy()
   {
