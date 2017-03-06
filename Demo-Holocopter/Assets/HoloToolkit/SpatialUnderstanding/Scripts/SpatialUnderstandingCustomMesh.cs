@@ -33,6 +33,11 @@ namespace HoloToolkit.Unity
             get { return (MaxFrameTime / 1000); }
         }
 
+        /// <summary>
+        ///  Whether to create mesh colliders. If unchecked, mesh colliders will be empty and disabled.
+        /// </summary>
+        public bool CreateMeshColliders = true;
+
         private bool drawProcessedMesh = true;
         // Properties
         /// <summary>
@@ -98,9 +103,16 @@ namespace HoloToolkit.Unity
             public readonly Mesh MeshObject = new Mesh();
 
             /// <summary>
-            /// The MeshCollider with which this mesh is associated.
+            /// The MeshCollider with which this mesh is associated. Must be set even if
+            /// no collision mesh will be created.
             /// </summary>
             public MeshCollider SpatialCollider = null;
+
+            /// <summary>
+            /// Whether to create collision mesh. If false, the MeshCollider attached to this
+            /// object will also be disabled when Commit() is called.
+            /// </summary>
+            public bool CreateMeshCollider = false;
 
             /// <summary>
             /// Clears the geometry, but does not clear the mesh.
@@ -123,8 +135,17 @@ namespace HoloToolkit.Unity
                     MeshObject.SetTriangles(tris, 0);
                     MeshObject.RecalculateNormals();
                     MeshObject.RecalculateBounds();
+                    // The null assignment is required by Unity in order to pick up the new mesh
                     SpatialCollider.sharedMesh = null;
-                    SpatialCollider.sharedMesh = MeshObject;
+                    if (CreateMeshCollider)
+                    {
+                        SpatialCollider.sharedMesh = MeshObject;
+                        SpatialCollider.enabled = true;
+                    }
+                    else
+                    {
+                        SpatialCollider.enabled = false;
+                    }
                 }
             }
 
@@ -187,6 +208,7 @@ namespace HoloToolkit.Unity
             if (!meshSectors.TryGetValue(sector, out nextSectorData))
             {
                 nextSectorData = new MeshData();
+                nextSectorData.CreateMeshCollider = CreateMeshColliders;
 
                 int surfaceObjectIndex = SurfaceObjects.Count;
 
