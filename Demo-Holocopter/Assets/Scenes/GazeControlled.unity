@@ -953,6 +953,11 @@ Prefab:
       propertyPath: AutoBeginScanning
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114000013027790266, guid: d41fa7615c3c85b40bcc95fc4367b607,
+        type: 2}
+      propertyPath: CreateMeshColliders
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: d41fa7615c3c85b40bcc95fc4367b607, type: 2}
   m_IsPrefabParent: 0
@@ -1188,7 +1193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useSpatialUnderstanding: 1
-  visualizeSpatialUnderstandingMeshes: 1
+  visualizeSpatialUnderstandingMeshes: 0
   planesVisibleInEditor: 0
   visualizeSpatialMeshes: 0
   highPriorityRenderQueueValue: 1000

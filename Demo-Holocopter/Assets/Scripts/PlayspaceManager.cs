@@ -103,22 +103,38 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
-  public bool TryPlaceOnFloor(out Vector3 position, float sizeX, float sizeY, float sizeZ)
+  public bool TryPlaceOnFloor(out Vector3 position, Vector3 size, Vector3 nearPosition, float minDistance, float maxDistance, float minDistanceFromOtherObjects = 0.25f)
   {
     position = Vector3.zero;
-    if (!useSpatialUnderstanding)
-      return false;
-    PlacementQuery query = new PlacementQuery(
-      SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * new Vector3(sizeX, sizeY, sizeZ)),
-      new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule>()
-      {
-        SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromOtherObjects(2)
-      });
-    SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
-    if (TryPlaceObject(out placementResult, "changeMeToSomethingUnique", query))
+    if (useSpatialUnderstanding)
     {
-      position = placementResult.Position;
-      return true;
+      PlacementQuery query = new PlacementQuery(
+        SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * size),
+        minDistanceFromOtherObjects <= 0 ? null : new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule>()
+        {
+          SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromOtherObjects(minDistanceFromOtherObjects)
+        },
+        new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint>()
+        {
+          SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint.Create_NearPoint(nearPosition, minDistance, maxDistance)
+        });
+      SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
+      if (TryPlaceObject(out placementResult, "changeMeToSomethingUnique", query))
+      {
+        position = placementResult.Position;
+        return true;
+      }
+    }
+    else
+    {
+      // An incomplete fallback for Spatial Mapping pathway that just places at
+      // random point on largest floor for now. Constraints are ignored.
+      List<GameObject> floors = GetFloors(SortOrder.Descending);
+      if (floors.Count == 0)
+        return false;
+      List<Vector2> points = FindFloorSpawnPoints(size, size, size.y, floors[0].GetComponent<SurfacePlane>());
+
+
     }
     return false;
   }

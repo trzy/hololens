@@ -451,7 +451,7 @@ PlayerSettings:
   metroCertificateNotAfter: 005845b63231d301
   metroApplicationDescription: Demo-Holocopter
   wsaImages: {}
-  metroTileShortName: 
+  metroTileShortName: Demo-Holocopter
   metroCommandLineArgsFile: 
   metroTileShowName: 0
   metroMediumTileShowName: 0
