@@ -30,6 +30,7 @@ public class GeoMaker: MonoBehaviour
     private List<int> m_triangles = new List<int>();
     private List<Vector3> m_centroids = new List<Vector3>();
     private List<Vector3> m_faceNormals = new List<Vector3>();
+    private List<Tuple<Vector3, int>> m_edges = new List<Tuple<Vector3, int>>();
     private float m_offset = 2e-2f; // start off slightly offset so as not to be occluded
 
     public State state
@@ -74,6 +75,30 @@ public class GeoMaker: MonoBehaviour
       m_mesh.RecalculateBounds();
     }
 
+    private List<int> MakeSharedTriangles(List<int> triangles, Vector3[] vertices)
+    {
+      List<int> outTriangles = new List<int>(triangles.Count);
+      float tolerance = .5e-2f;
+      float tolerance2 = tolerance * tolerance;
+      foreach (int t in triangles)
+      {
+        int triIdx = t;
+        Vector3 vertex = vertices[t];
+        for (int j = 0; j < outTriangles.Count; j++)
+        {
+          Vector3 existingVertex = vertices[outTriangles[j]];
+          float sqrDist = Vector3.SqrMagnitude(vertex - existingVertex);
+          if (sqrDist <= tolerance2)
+          {
+            triIdx = outTriangles[j];
+            break;
+          }
+        }
+        outTriangles.Add(triIdx);
+      }
+      return outTriangles;
+    }
+
     private void UpdateVolumeMesh()
     { 
       int numSurfaceVertices = m_vertices.Count;
@@ -105,6 +130,11 @@ public class GeoMaker: MonoBehaviour
           int i1 = t[(j + 1) % 3];
           int i2 = t[j];
 
+          // For interior edges, we do not generate faces
+          Vector3 midpoint = 0.5f * (m_vertices[i1] + m_vertices[i2]);
+          if (IsInteriorEdge(midpoint))
+            continue;
+
           // Next two are the newly generated base, which are in the upper half
           // of the vertex array.
           int i3 = i2 + numSurfaceVertices;
@@ -124,17 +154,25 @@ public class GeoMaker: MonoBehaviour
       // Apply offset in direction of normal for the surface triangles. Surface
       // triangle vertices are stored 1:1 with the indices, so it is safe to do
       // this.
+      Vector3 avgNormal = Vector3.zero;
+      for (int i = 0; i < m_faceNormals.Count; i++)
+      {
+        avgNormal += m_faceNormals[i];
+      }
+      avgNormal /= m_faceNormals.Count;
       for (int i = 0; i < numSurfaceVertices; i++)
       {
         // We divide by 4 here because we store only one face normal for every
         // quad (two triangles)
-        vertices[i] += m_faceNormals[i / 4] * offset;
+        //vertices[i] += m_faceNormals[i / 4] * offset;
+        vertices[i] += avgNormal * offset;
       }
 
       // Update mesh
       m_mesh.vertices = vertices; // always assign vertices first
       //m_mesh.normals = normals;
       m_mesh.triangles = triangles;
+      m_mesh.RecalculateNormals();
       m_mesh.RecalculateBounds();
     }
 
@@ -146,6 +184,84 @@ public class GeoMaker: MonoBehaviour
         UpdateVolumeMesh();
     }
 
+    private bool IsInteriorEdge(Vector3 midpoint)
+    {
+      // If this edge is shared, it is not an external edge
+      foreach (Tuple<Vector3, int> edge in m_edges)
+      {
+        float sqrDist = Vector3.SqrMagnitude(edge.first - midpoint);
+        if (sqrDist <= 1e-2f * 1e-2f)
+        {
+          return edge.second > 1;
+        }
+      }
+      return false;
+    }
+
+    private void RemoveQuadEdge(Vector3 midpoint)
+    {
+      for (int i = 0; i < m_edges.Count; i++)
+      {
+        Tuple<Vector3, int> edge = m_edges[i];
+        float sqrDist = Vector3.SqrMagnitude(edge.first - midpoint);
+        if (sqrDist <= 1e-2f * 1e-2f)
+        {
+          if (edge.second <= 1)
+          {
+            m_edges.RemoveAt(i);
+            return;
+          }
+          m_edges[i] = new Tuple<Vector3, int>(edge.first, edge.second - 1);
+          return;
+        }
+      }
+    }
+
+    private void RemoveQuadEdges(int start, int numVertices)
+    {
+      for (int i = start; i < start + numVertices; i += 4)
+      {
+        RemoveQuadEdge(0.5f * (m_vertices[i + 0] + m_vertices[i + 1]));
+        RemoveQuadEdge(0.5f * (m_vertices[i + 1] + m_vertices[i + 2]));
+        RemoveQuadEdge(0.5f * (m_vertices[i + 2] + m_vertices[i + 3]));
+        RemoveQuadEdge(0.5f * (m_vertices[i + 3] + m_vertices[i + 0]));
+        // And the diagonal edges
+        RemoveQuadEdge(0.5f * (m_vertices[i + 0] + m_vertices[i + 2]));
+        RemoveQuadEdge(0.5f * (m_vertices[i + 3] + m_vertices[i + 2]));
+      }
+    }
+
+    private void AddQuadEdge(Vector3 midpoint)
+    {
+      // If edge exists already, increase ref count
+      for (int i = 0; i < m_edges.Count; i++)
+      {
+        Tuple<Vector3, int> edge = m_edges[i];
+        float sqrDist = Vector3.SqrMagnitude(edge.first - midpoint);
+        if (sqrDist <= 1e-2f * 1e-2f)
+        {
+          m_edges[i] = new Tuple<Vector3, int>(edge.first, edge.second + 1);
+          Debug.Log("found dupe edge");
+          return;
+        }
+      }
+
+      // Otherwise, insert into list
+      m_edges.Add(new Tuple<Vector3, int>(midpoint, 1));
+    }
+
+    private void AddQuadEdges(Vector3[] vertices)
+    {
+      // Compute the 4 edge midpoints and add them
+      AddQuadEdge(0.5f * (vertices[0] + vertices[1]));
+      AddQuadEdge(0.5f * (vertices[1] + vertices[2]));
+      AddQuadEdge(0.5f * (vertices[2] + vertices[3]));
+      AddQuadEdge(0.5f * (vertices[3] + vertices[0]));
+      // And the diagonal edges
+      AddQuadEdge(0.5f * (vertices[0] + vertices[2]));
+      AddQuadEdge(0.5f * (vertices[1] + vertices[3]));
+    }
+
     private void RemoveExcessQuads()
     {
       if (m_maxNumQuads <= 0)
@@ -154,6 +270,7 @@ public class GeoMaker: MonoBehaviour
       int numQuadsToRemove = numQuads - m_maxNumQuads;
       if (numQuadsToRemove > 0)
       {
+        RemoveQuadEdges(0, numQuadsToRemove * 4);
         m_vertices.RemoveRange(0, numQuadsToRemove * 4);
         m_triangles.RemoveRange(0, numQuadsToRemove * 6);
         for (int i = 0; i < m_triangles.Count; i++)
@@ -200,44 +317,60 @@ public class GeoMaker: MonoBehaviour
       }
 
       // Extract the triangle
-      Vector3[] v = new Vector3[4];
-      v[0] = colliderVertices[colliderTriangles[triangleIndex * 3 + 0]];
-      v[1] = colliderVertices[colliderTriangles[triangleIndex * 3 + 1]];
-      v[2] = colliderVertices[colliderTriangles[triangleIndex * 3 + 2]];
+      Vector3 v0 = colliderVertices[colliderTriangles[triangleIndex * 3 + 0]];
+      Vector3 v1 = colliderVertices[colliderTriangles[triangleIndex * 3 + 1]];
+      Vector3 v2 = colliderVertices[colliderTriangles[triangleIndex * 3 + 2]];
 
       // Compute edges
       Vector3[] e = new Vector3[3];
-      e[0] = v[1] - v[0];
-      e[1] = v[2] - v[0];
-      e[2] = v[2] - v[1];
+      e[0] = v1 - v0;
+      e[1] = v2 - v0;
+      e[2] = v2 - v1;
 
-      // Figure out which two edges are perpendicular (spatial understanding
-      // produces rectangular patches consisting of two triangles). If none are
-      // then discard this selection entirely. Knowing the perpendicular edges,
-      // we can compute the 4th vertex to complete the square and emit a second
-      // triangle.
+      /*
+       * Figure out which two edges are perpendicular (spatial understanding
+       * produces rectangular patches consisting of two triangles). If none are
+       * then discard this selection entirely. Knowing the perpendicular edges,
+       * we can compute the 4th vertex to complete the square and emit a second
+       * triangle.
+       * 
+       * Vertices are reordered such that the 4 vertices can be traversed in
+       * clockwise order around the square (to assist with edge calculation
+       * later on). For example:
+       * 
+       *  0 --- 1
+       *  |     |
+       *  3 --- 2
+       */
+
+      Vector3[] v = new Vector3[4];
       int[] triangles = new int[6];
-      triangles[0] = m_vertices.Count + 0;  // first triangle
-      triangles[1] = m_vertices.Count + 1;  // ...
-      triangles[2] = m_vertices.Count + 2;  // ...
-      triangles[3] = m_vertices.Count + 3;  // start of second triangle
+      triangles[0] = m_vertices.Count + 0;
+      triangles[1] = m_vertices.Count + 1;
+      triangles[2] = m_vertices.Count + 2;
+      triangles[3] = m_vertices.Count + 0;
+      triangles[4] = m_vertices.Count + 2;
+      triangles[5] = m_vertices.Count + 3;
       if (Mathf.Abs(Vector3.Dot(e[0], e[1])) < 1e-1 * Vector3.Magnitude(e[0]) * Vector3.Magnitude(e[1]))
       {
-        v[3] = v[0] + e[0] + e[1];
-        triangles[4] = triangles[2];
-        triangles[5] = triangles[1];
+        v[0] = v0;
+        v[1] = v1;
+        v[2] = v0 + e[0] + e[1];
+        v[3] = v2;
       }
       else if (Mathf.Abs(Vector3.Dot(e[0], e[2])) < 1e-1 * Vector3.Magnitude(e[0]) * Vector3.Magnitude(e[2]))
       {
-        v[3] = v[0] + e[2];
-        triangles[4] = triangles[0];
-        triangles[5] = triangles[2];
+        v[0] = v0;
+        v[1] = v1;
+        v[2] = v2;
+        v[3] = v0 + e[2];
       }
       else if (Mathf.Abs(Vector3.Dot(e[1], e[2])) < 1e-1 * Vector3.Magnitude(e[0]) * Vector3.Magnitude(e[2]))
       {
-        v[3] = v[0] - e[2];
-        triangles[4] = triangles[1];
-        triangles[5] = triangles[0];
+        v[0] = v1;
+        v[1] = v2;
+        v[2] = v0;
+        v[3] = v0 - e[2];
       }
       else
       {
@@ -252,7 +385,9 @@ public class GeoMaker: MonoBehaviour
         return false;
       }
       m_centroids.Add(centroid);
-      Debug.Log("Adding Quad");
+
+      // Add edges
+      AddQuadEdges(v);
 
       // Append this triangle and the one we generated
       m_vertices.AddRange(v);
