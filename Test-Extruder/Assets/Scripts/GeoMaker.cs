@@ -11,6 +11,11 @@ public class GeoMaker: MonoBehaviour
 
   private ControllerInput m_xboxController = null;
 
+  private GameObject m_gameObject = null;
+  private Mesh m_mesh = null;
+  private MeshRenderer m_meshRenderer = null;
+  private SurfaceQuadSelection m_surfaceQuadSelection = null;
+
   private class ExtrudableMesh
   {
     public enum State
@@ -326,6 +331,7 @@ public class GeoMaker: MonoBehaviour
       e[0] = v1 - v0;
       e[1] = v2 - v0;
       e[2] = v2 - v1;
+      //Debug.Log("e0=" + Vector3.Magnitude(e[0]) + ", e1=" + Vector3.Magnitude(e[1]) + ", e2=" + Vector3.Magnitude(e[2]));
 
       /*
        * Figure out which two edges are perpendicular (spatial understanding
@@ -502,6 +508,20 @@ public class GeoMaker: MonoBehaviour
     bool buttonB = m_xboxController.GetButtonDown(ControllerButton.B);
 #endif
 
+    m_surfaceQuadSelection.Raycast(Camera.main.transform.position, Camera.main.transform.forward);
+    Tuple<Vector3[], int[]> meshData = m_surfaceQuadSelection.GenerateMeshData();
+    if (meshData.first.Length > 0)
+    {
+      m_mesh.Clear();
+      m_mesh.vertices = meshData.first;
+      m_mesh.triangles = meshData.second;
+      //TODO: make a GetTransform function
+      m_gameObject.transform.rotation = m_surfaceQuadSelection.rotation;
+      m_gameObject.transform.position = m_surfaceQuadSelection.position;
+      m_gameObject.transform.localScale = m_surfaceQuadSelection.scale;
+    }
+
+/*
     float delta = (Mathf.Abs(ver) > 0.25f ? ver : 0) * Time.deltaTime;
 
     if (m_currentMesh == null)
@@ -527,10 +547,22 @@ public class GeoMaker: MonoBehaviour
         m_currentMesh.FinalizeMesh();
       }
     }
+*/
   }
 
   private void Awake()
   {
+    // Create reticle game object and mesh
+    m_gameObject = new GameObject("Selected-Patch");
+    m_gameObject.transform.parent = null;
+    m_mesh = m_gameObject.AddComponent<MeshFilter>().mesh;
+    m_meshRenderer = m_gameObject.AddComponent<MeshRenderer>();
+    m_meshRenderer.material = selectedMaterial;
+    m_meshRenderer.material.color = Color.white;
+    m_meshRenderer.enabled = true;
+
+    // Selection surface
+    m_surfaceQuadSelection = new SurfaceQuadSelection(100);
 #if !UNITY_EDITOR
     m_xboxController = new ControllerInput(0, 0.19f);
 #endif
