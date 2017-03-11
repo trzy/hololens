@@ -207,7 +207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b9384d1d77dfc4e99b6903bb4adf36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualizeSpatialUnderstandingMeshes: 1
+  visualizeSpatialUnderstandingMeshes: 0
   visualizeSpatialMeshes: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a, type: 2}

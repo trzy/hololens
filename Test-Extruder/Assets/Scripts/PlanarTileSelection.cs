@@ -1,11 +1,25 @@
-﻿using System.Collections.Generic;
+﻿/*
+ * Creates a planar selection mesh in a local coordinate system with centimer
+ * units. A transform can be obtained for conversion to world space. The local
+ * coordinate system has +z pointing out of the selection plane. Due to Unity's
+ * left-handed coordinate system, this means that +x is to the *left* when
+ * viewed with +z facing the camera.
+ * 
+ * TODO:
+ * -----
+ * - Optimize vertex sharing.
+ * - Optimize neighbor detection.
+ * - Figure out how to use a right-handed system and perform the conversion to
+ *   left-handed with the transform.
+ */
+
+using System.Collections.Generic;
 using UnityEngine;
 using HoloToolkit.Unity.SpatialMapping;
 
-public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or PlanarTileSelection?
+public class PlanarTileSelection
 {
-  private const int QUAD_WIDTH_CM = 10; // width of each quad in centimeters
-  private int m_maxQuads;
+  private int m_maxTiles;
 
   // Selection plane definition in world units
   private Vector3 m_xAxis = Vector3.zero;
@@ -17,29 +31,15 @@ public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or Plan
   private Plane m_plane;                    // current selection plane defined from the above
 
   // Tiles in local, centimeter units
-  private struct Tile
-  {
-    public enum Edge
-    {
-      Top = 0x1,
-      Right = 0x2,
-      Bottom = 0x4,
-      Left = 0x8
-    }
-    public IVector3 center;
-    public byte neighbors;
-
-    public Tile(IVector3 centerPosition)
-    {
-      center = centerPosition;
-      neighbors = 0;
-    }
-  }
-
-  private List<Tile> m_tiles;
+  private List<SelectionTile> m_tiles;
 
   // Selection pattern
   private IVector3[] m_pattern;
+
+  public List<SelectionTile> tiles
+  {
+    get { return m_tiles; }
+  }
 
   public Quaternion rotation
   {
@@ -152,9 +152,50 @@ public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or Plan
     return false;
   }
 
+  private void AddTile(IVector3 position)
+  {
+    SelectionTile tile = new SelectionTile(position);
+    for (int i = 0; i < m_tiles.Count; i++)
+    {
+      if (tile.center == m_tiles[i].center)
+        return;
+      SelectionTile tmp = m_tiles[i]; // annoyingly, [] is a function call that returns a copy
+      tmp.AddNeighbor(ref tile);
+      m_tiles[i] = tmp;               // write back to list
+    }
+    m_tiles.Add(tile);
+  }
+
+  //TODO: this is really pretty terrible
+  private void RemoveExcessTiles()
+  {
+    while (m_tiles.Count > m_maxTiles)
+    {
+      IVector3 position = m_tiles[0].center;
+      // Remove tile 0 and unlink it from neighbors
+      for (int i = 1; i < m_tiles.Count; i++)
+      {
+        SelectionTile tmp = m_tiles[i];
+        tmp.RemoveNeighbor(position);
+        m_tiles[i] = tmp;
+      }
+      m_tiles.RemoveAt(0);
+    }
+  }
+
+  private int FindFirstIndex(Vector3[] verts, Vector3 vert)
+  {
+    for (int i = 0; i < verts.Length; i++)
+    {
+      if (verts[i] == vert)
+        return i;
+    }
+    return 0; // should never happen
+  }
+
   public Tuple<Vector3[], int[]> GenerateMeshData()
   {
-    float halfDim = 0.5f * QUAD_WIDTH_CM;
+    float halfDim = 0.5f * SelectionTile.SIDE_CM;
     Vector3[] verts = new Vector3[m_tiles.Count * 4];
     int[] tris = new int[m_tiles.Count * 6];
     int vi = 0;
@@ -162,39 +203,34 @@ public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or Plan
     for (int i = 0; i < m_tiles.Count; i++)
     {
       /*
-       * There is a subtlety here re: left-handed vs. right-handed coordinate
-       * systems. The selection plane local system is defined in a right-handed
-       * space, where the plane normal points out from the visible side of the
-       * surface (our +z), +x is to the right, and +y is up.
-       * 
-       * Unity renders in a left-handed system, where +z would be *into* the
-       * visible surface. When +z points out, as in our case, +x is to the 
-       * *left*. This is why there is a -1 factor on the local x coordinates of
-       * each quad vertex -- to convert from the right-handed system that is
-       * natural for me to Unity's left-handed system.
-       * 
-       * Without this, the polygon winding would be backwards to what Unity 
-       * expects.
+       * Unity uses left-handed coordinates. The selection plane local system
+       * is defined with +z going out from the visible side of the surface, 
+       * which means +x is to the *left*, and +y is up. Hence for clockwise
+       * winding, the top-left corner has x = +1 and the top-right is x = -1.
        */
       Vector3 center = ToVector3(m_tiles[i].center);
-      Vector3 topLeft = center + halfDim * ToVector3(new IVector3(-1 * -1, +1));
-      Vector3 topRight = center + halfDim * ToVector3(new IVector3(-1 * +1, +1));
-      Vector3 bottomRight = center + halfDim * ToVector3(new IVector3(-1 * +1, -1));
-      Vector3 bottomLeft = center + halfDim * ToVector3(new IVector3(-1 * -1, -1));
+      Vector3 topLeft = center + halfDim * ToVector3(new IVector3(+1, +1));
+      Vector3 topRight = center + halfDim * ToVector3(new IVector3(-1, +1));
+      Vector3 bottomRight = center + halfDim * ToVector3(new IVector3(-1, -1));
+      Vector3 bottomLeft = center + halfDim * ToVector3(new IVector3(+1, -1));
        
       verts[vi + 0] = topLeft;
       verts[vi + 1] = topRight;
       verts[vi + 2] = bottomRight;
       verts[vi + 3] = bottomLeft;
 
+      //TODO: vertex sharing could be done *a lot* more efficiently by
+      //      generating vertices inside the tile structure and then linking
+      //      tiles to their neighbors
+
       // First triangle
-      tris[ti + 0] = vi + 0;
-      tris[ti + 1] = vi + 1;
-      tris[ti + 2] = vi + 2;
+      tris[ti + 0] = FindFirstIndex(verts, topLeft);
+      tris[ti + 1] = FindFirstIndex(verts, topRight);
+      tris[ti + 2] = FindFirstIndex(verts, bottomRight);
       // Second
-      tris[ti + 3] = vi + 2;
-      tris[ti + 4] = vi + 3;
-      tris[ti + 5] = vi + 0;
+      tris[ti + 3] = FindFirstIndex(verts, bottomRight);
+      tris[ti + 4] = FindFirstIndex(verts, bottomLeft);
+      tris[ti + 5] = FindFirstIndex(verts, topLeft);
 
       vi += 4;
       ti += 6;
@@ -241,13 +277,13 @@ public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or Plan
     }
     Vector3 patternCenterWorld = ray.GetPoint(distance);
     Vector3 patternCenterLocal = PointToLocal(patternCenterWorld);
-    IVector3 patternCenter = SnapXY(ToCentimeters(patternCenterLocal), QUAD_WIDTH_CM);
+    IVector3 patternCenter = SnapXY(ToCentimeters(patternCenterLocal), SelectionTile.SIDE_CM);
 
     // Generate all other selection points in local coordinate system and throw
     // away any dupes. These are the center points of our tiles.
     foreach (IVector3 offset in m_pattern)
     {
-      IVector3 tilePosition = patternCenter + QUAD_WIDTH_CM * offset;
+      IVector3 tilePosition = patternCenter + SelectionTile.SIDE_CM * offset;
       if (!TileExists(tilePosition))
       {
         // Perform actual raycasts on each tile against the spatial mesh from a
@@ -275,23 +311,25 @@ public class SurfaceQuadSelection //TODO: rename to PlanarQuadSelection? or Plan
         {
           float d = Vector3.Distance(hitPoint, rayOrigin);
           if (d >= minClearanceAbove && d < (minClearanceAbove + maxClearanceBelow))
-            m_tiles.Add(new Tile(tilePosition));
+            AddTile(tilePosition);
           //TODO: normal test?
         }
       }
     }
+
+    RemoveExcessTiles();
   }
 
-  public SurfaceQuadSelection(int maxQuads)
+  public PlanarTileSelection(int maxTiles)
 	{
-    m_maxQuads = maxQuads;
-    m_tiles = new List<Tile>(m_maxQuads);
+    m_maxTiles = maxTiles;
+    m_tiles = new List<SelectionTile>(m_maxTiles);
     // Z component should always be 0
     IVector3[] pattern =
     {
-                                                  new IVector3(+0, +2),
+                                                  //new IVector3(+0, +2),
                             new IVector3(-1, +1), new IVector3(+0, +1), new IVector3(+1, +1),
-      new IVector3(-2, +0), new IVector3(-1, +0),                       new IVector3(+1, +0), new IVector3(+2, +0),
+      new IVector3(-2, +0), new IVector3(-1, +0), new IVector3(+0, +0), //new IVector3(+1, +0), new IVector3(+2, +0),
                             new IVector3(-1, -1), new IVector3(+0, -1), new IVector3(+1, -1),
                                                   new IVector3(+0, -2)
     };
