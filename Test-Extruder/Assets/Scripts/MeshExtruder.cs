@@ -8,7 +8,7 @@ public class MeshExtruder
   private List<Vector3> m_vertices;
   private List<int> m_triangles;
 
-  public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV)
+  public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
   {
     bool textured = topUV != null && sideUV != null;
 
@@ -39,8 +39,8 @@ public class MeshExtruder
     }
 
     // Side wall UV indices
-    Vector2 sideUVTopLeft = sideUV[0];
-    Vector2 sideUVTopRight = sideUV[1];
+    Vector2 sideUVTopLeft = sideUV[0] + new Vector2(0, extrudeLengthCM / sideRepeatDistanceCM - 1);
+    Vector2 sideUVTopRight = sideUV[1] + new Vector2(0, extrudeLengthCM / sideRepeatDistanceCM - 1);
     Vector2 sideUVBottomRight = sideUV[2];
     Vector2 sideUVBottomLeft = sideUV[3];
 

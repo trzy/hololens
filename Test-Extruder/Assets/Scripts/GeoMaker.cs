@@ -78,7 +78,7 @@ public class GeoMaker: MonoBehaviour
       Vector3[] vertices;
       int[] triangles;
       Vector2[] uv;
-      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV);
+      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV, SelectionTile.SIDE_CM);
       m_mesh.Clear();
       m_mesh.vertices = vertices;
       m_mesh.uv = uv;
