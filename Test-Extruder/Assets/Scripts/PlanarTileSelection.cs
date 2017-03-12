@@ -20,6 +20,7 @@ using HoloToolkit.Unity.SpatialMapping;
 public class PlanarTileSelection
 {
   private int m_maxTiles;
+  private Vector2[] m_tileUV;
 
   // Selection plane definition in world units
   private Vector3 m_xAxis = Vector3.zero;
@@ -193,11 +194,12 @@ public class PlanarTileSelection
     return 0; // should never happen
   }
 
-  public Tuple<Vector3[], int[]> GenerateMeshData()
+  public void GenerateMeshData(out Vector3[] verts, out int[] tris, out Vector2[] uv)
   {
     float halfDim = 0.5f * SelectionTile.SIDE_CM;
-    Vector3[] verts = new Vector3[m_tiles.Count * 4];
-    int[] tris = new int[m_tiles.Count * 6];
+    verts = new Vector3[m_tiles.Count * 4];
+    tris = new int[m_tiles.Count * 6];
+    uv = (m_tileUV != null) ? new Vector2[m_tiles.Count * 4] : null;
     int vi = 0;
     int ti = 0;
     for (int i = 0; i < m_tiles.Count; i++)
@@ -219,23 +221,44 @@ public class PlanarTileSelection
       verts[vi + 2] = bottomRight;
       verts[vi + 3] = bottomLeft;
 
-      //TODO: vertex sharing could be done *a lot* more efficiently by
-      //      generating vertices inside the tile structure and then linking
-      //      tiles to their neighbors
+      if (m_tileUV == null)
+      {
+        // No textures, can use shared vertices
 
-      // First triangle
-      tris[ti + 0] = FindFirstIndex(verts, topLeft);
-      tris[ti + 1] = FindFirstIndex(verts, topRight);
-      tris[ti + 2] = FindFirstIndex(verts, bottomRight);
-      // Second
-      tris[ti + 3] = FindFirstIndex(verts, bottomRight);
-      tris[ti + 4] = FindFirstIndex(verts, bottomLeft);
-      tris[ti + 5] = FindFirstIndex(verts, topLeft);
+        //TODO: vertex sharing could be done *a lot* more efficiently by
+        //      generating vertices inside the tile structure and then linking
+        //      tiles to their neighbors
+
+        // First triangle
+        tris[ti + 0] = FindFirstIndex(verts, topLeft);
+        tris[ti + 1] = FindFirstIndex(verts, topRight);
+        tris[ti + 2] = FindFirstIndex(verts, bottomRight);
+        // Second
+        tris[ti + 3] = FindFirstIndex(verts, bottomRight);
+        tris[ti + 4] = FindFirstIndex(verts, bottomLeft);
+        tris[ti + 5] = FindFirstIndex(verts, topLeft);
+      }
+      else
+      {
+        // Texture mapping cannot coexist with independent vertices
+        // First triangle
+        tris[ti + 0] = vi + 0;
+        tris[ti + 1] = vi + 1;
+        tris[ti + 2] = vi + 2;
+        // Second
+        tris[ti + 3] = vi + 2;
+        tris[ti + 4] = vi + 3;
+        tris[ti + 5] = vi + 0;
+        // UV coordinates
+        for (int j = 0; j < 4; j++)
+        {
+          uv[vi + j] = m_tileUV[j];
+        }
+      }
 
       vi += 4;
       ti += 6;
     }
-    return new Tuple<Vector3[], int[]>(verts, tris);
   }
 
   public void Raycast(Vector3 from, Vector3 direction)
@@ -320,16 +343,17 @@ public class PlanarTileSelection
     RemoveExcessTiles();
   }
 
-  public PlanarTileSelection(int maxTiles)
-	{
+  public PlanarTileSelection(int maxTiles, Vector2[] tileUV = null)
+  {
     m_maxTiles = maxTiles;
+    m_tileUV = tileUV;
     m_tiles = new List<SelectionTile>(m_maxTiles);
     // Z component should always be 0
     IVector3[] pattern =
     {
-                                                  //new IVector3(+0, +2),
+                                                  new IVector3(+0, +2),
                             new IVector3(-1, +1), new IVector3(+0, +1), new IVector3(+1, +1),
-      new IVector3(-2, +0), new IVector3(-1, +0), new IVector3(+0, +0), //new IVector3(+1, +0), new IVector3(+2, +0),
+      new IVector3(-2, +0), new IVector3(-1, +0), new IVector3(+0, +0), new IVector3(+1, +0), new IVector3(+2, +0),
                             new IVector3(-1, -1), new IVector3(+0, -1), new IVector3(+1, -1),
                                                   new IVector3(+0, -2)
     };

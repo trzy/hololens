@@ -22,6 +22,9 @@ public class GeoMaker: MonoBehaviour
     Finished
   }
   private State m_state = State.Select;
+  private float m_extrudeLength = 0;
+  private Vector2[] m_topUV;
+  private Vector2[] m_sideUV;
 
   private void Update()
   {
@@ -47,12 +50,16 @@ public class GeoMaker: MonoBehaviour
     if (m_state == State.Select)
     {
       m_selection.Raycast(Camera.main.transform.position, Camera.main.transform.forward);
-      Tuple<Vector3[], int[]> meshData = m_selection.GenerateMeshData();
-      if (meshData.first.Length > 0)
+      Vector3[] vertices;
+      int[] triangles;
+      Vector2[] uv;
+      m_selection.GenerateMeshData(out vertices, out triangles, out uv);
+      if (vertices.Length > 0)
       {
         m_mesh.Clear();
-        m_mesh.vertices = meshData.first;
-        m_mesh.triangles = meshData.second;
+        m_mesh.vertices = vertices;
+        m_mesh.uv = uv;
+        m_mesh.triangles = triangles;
         m_mesh.RecalculateBounds();
         //TODO: make a GetTransform function
         m_gameObject.transform.rotation = m_selection.rotation;
@@ -67,11 +74,15 @@ public class GeoMaker: MonoBehaviour
     }
     else if (m_state == State.Extrude)
     {
-      m_meshExtruder.extrudeLength += delta;
-      Tuple<Vector3[], int[]> meshData = m_meshExtruder.GetMeshData();
+      m_extrudeLength += delta;
+      Vector3[] vertices;
+      int[] triangles;
+      Vector2[] uv;
+      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV);
       m_mesh.Clear();
-      m_mesh.vertices = meshData.first;
-      m_mesh.triangles = meshData.second;
+      m_mesh.vertices = vertices;
+      m_mesh.uv = uv;
+      m_mesh.triangles = triangles;
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
     }
@@ -89,7 +100,16 @@ public class GeoMaker: MonoBehaviour
     m_meshRenderer.enabled = true;
 
     // Selection surface
-    m_selection = new PlanarTileSelection(70);
+    Vector2[] tileUV =
+    {
+      (1f / 128) * new Vector2(3.5f, 128 - 3.5f),
+      (1f / 128) * new Vector2(128 - 3.5f, 128 - 3.5f),
+      (1f / 128) * new Vector2(128 - 3.5f, 3.5f),
+      (1f / 128) * new Vector2(3.5f, 3.5f)
+    };
+    m_topUV = tileUV;
+    m_sideUV = tileUV;
+    m_selection = new PlanarTileSelection(70, m_topUV);
 #if !UNITY_EDITOR
     m_xboxController = new ControllerInput(0, 0.19f);
 #endif
