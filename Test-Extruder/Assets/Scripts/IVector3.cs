@@ -56,9 +56,9 @@ public struct IVector3
   }
 
   public IVector3(int ix, int iy, int iz)
-	{
+  {
     x = ix;
     y = iy;
     z = iz;
-	}
+  }
 }
