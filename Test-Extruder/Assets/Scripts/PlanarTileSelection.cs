@@ -282,8 +282,6 @@ public class PlanarTileSelection
       }
       m_origin = position;
       m_plane = new Plane(m_normal, m_origin);
-      // The - is for right-handed -> left-handed coordinate conversion of
-      // quads in pattern, which are specified using right-handed system
       m_toWorld = Quaternion.LookRotation(m_normal, m_yAxis);
       m_toLocal = Quaternion.Inverse(m_toWorld);
     }
