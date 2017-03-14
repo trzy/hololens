@@ -8,6 +8,184 @@ public class MeshExtruder
   private List<Vector3> m_vertices;
   private List<int> m_triangles;
 
+  private void EmitCappedSideQuad(Vector3[] vertices, int vertIdx, int[] triangles, int triIdx, Vector2[] uv, Vector2[] uvTemplate, Vector3 topLeft, Vector3 topRight, Vector3 bottomRight, Vector3 bottomLeft)
+  {
+    vertices[vertIdx + 0] = topLeft;
+    vertices[vertIdx + 1] = topRight;
+    vertices[vertIdx + 2] = bottomRight;
+    vertices[vertIdx + 3] = bottomLeft;
+    // Triangle 1
+    triangles[triIdx++] = vertIdx + 0;
+    triangles[triIdx++] = vertIdx + 1;
+    triangles[triIdx++] = vertIdx + 2;
+    // Triangle 2
+    triangles[triIdx++] = vertIdx + 2;
+    triangles[triIdx++] = vertIdx + 3;
+    triangles[triIdx++] = vertIdx + 0;
+    // UV
+    for (int j = 0; j < 4; j++)
+    {
+      uv[vertIdx++] = uvTemplate[j];
+    }
+  }
+
+  /*   
+   * Selected surface. Top UVs applied here. Also refered to as the "top" or
+   * "extruded" surface.
+   *    |   
+   *    V
+   *   +----+
+   *  /    /|
+   * +----+ | <-- Crown. Fixed height.
+   * |    | +
+   * |    |/|
+   * +----+ | <-- Base. Like the side wall in ExtrudeSimple(), height varies by
+   * |    | |     extrusion length.
+   * |    | +
+   * |    |/
+   * +----+
+   */
+  public void ExtrudeCapped(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] crownUV, Vector2[] baseUV)
+  {
+    float extrudeLengthCM = 100 * extrudeLength;
+    Vector3 extrude = new Vector3(0, 0, extrudeLengthCM);
+
+    // Create mesh data arrays with enough headroom for inserted triangles
+    int extraVertsPerTile = 8 * 4;  // for each side, 4 for crown, 4 for base
+    int extraTrisPerTile = 2 * 2 * 4 * 3;
+    vertices = new Vector3[m_vertices.Count + m_tiles.Count * extraVertsPerTile];
+    uv = new Vector2[vertices.Length];
+    triangles = new int[m_triangles.Count + m_tiles.Count * extraTrisPerTile];
+    m_vertices.CopyTo(vertices);
+    m_triangles.CopyTo(triangles);
+
+    // Apply UVs to top surface
+    for (int i = 0; i < m_vertices.Count; i += 4)
+    {
+      for (int j = 0; j < 4; j++)
+      {
+        uv[i + j] = topUV[j];
+      }
+    }
+
+    // TODO: parameterize this better
+    float crownHeightCM = extrudeLengthCM * 0.25f;
+    float baseHeightCM = extrudeLengthCM * 0.75f;
+    Vector3 baseExtrude = new Vector3(0, 0, baseHeightCM);
+
+    // Go through each tile and generate side walls
+    int tile = 0;
+    int vertIdx = m_vertices.Count;
+    int triIdx = m_triangles.Count;
+    for (int i = 0; i < m_triangles.Count; i += 6, tile++)
+    {
+      // We expect the quad to be layed out in a very particular way. Note that
+      // these coordinates refer to the quad corners when looking down onto it.
+      // Not to be confused with top or bottom surfaces!
+      Vector3 topLeft = vertices[m_triangles[i + 0]];
+      Vector3 topRight = vertices[m_triangles[i + 1]];
+      Vector3 bottomRight = vertices[m_triangles[i + 2]];
+      Vector3 bottomLeft = vertices[m_triangles[i + 4]];
+
+      // Emit the sides
+      if ((m_tiles[tile].neighbors & (byte)SelectionTile.Edge.Top) == 0)
+      {
+        Vector3 crownTopLeft = topRight + extrude;
+        Vector3 crownTopRight = topLeft + extrude;
+        Vector3 crownBottomRight = topLeft + baseExtrude;
+        Vector3 crownBottomLeft = topRight + baseExtrude;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, crownUV, crownTopLeft, crownTopRight, crownBottomRight, crownBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+
+        Vector3 baseTopLeft = topRight + baseExtrude;
+        Vector3 baseTopRight = topLeft + baseExtrude;
+        Vector3 baseBottomRight = topLeft;
+        Vector3 baseBottomLeft = topRight;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, baseUV, baseTopLeft, baseTopRight, baseBottomRight, baseBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+      }
+
+      if ((m_tiles[tile].neighbors & (byte)SelectionTile.Edge.Right) == 0)
+      {
+        Vector3 crownTopLeft = bottomRight + extrude;
+        Vector3 crownTopRight = topRight + extrude;
+        Vector3 crownBottomRight = topRight + baseExtrude;
+        Vector3 crownBottomLeft = bottomRight + baseExtrude;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, crownUV, crownTopLeft, crownTopRight, crownBottomRight, crownBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+
+        Vector3 baseTopLeft = bottomRight + baseExtrude;
+        Vector3 baseTopRight = topRight + baseExtrude;
+        Vector3 baseBottomRight = topRight;
+        Vector3 baseBottomLeft = bottomRight;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, baseUV, baseTopLeft, baseTopRight, baseBottomRight, baseBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+      }
+
+      if ((m_tiles[tile].neighbors & (byte)SelectionTile.Edge.Bottom) == 0)
+      {
+        Vector3 crownTopLeft = bottomLeft + extrude;
+        Vector3 crownTopRight = bottomRight + extrude;
+        Vector3 crownBottomRight = bottomRight + baseExtrude;
+        Vector3 crownBottomLeft = bottomLeft + baseExtrude;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, crownUV, crownTopLeft, crownTopRight, crownBottomRight, crownBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+
+        Vector3 baseTopLeft = bottomLeft + baseExtrude;
+        Vector3 baseTopRight = bottomRight + baseExtrude;
+        Vector3 baseBottomRight = bottomRight;
+        Vector3 baseBottomLeft = bottomLeft;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, baseUV, baseTopLeft, baseTopRight, baseBottomRight, baseBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+      }
+
+      if ((m_tiles[tile].neighbors & (byte)SelectionTile.Edge.Left) == 0)
+      {
+        Vector3 crownTopLeft = topLeft + extrude;
+        Vector3 crownTopRight = bottomLeft + extrude;
+        Vector3 crownBottomRight = bottomLeft + baseExtrude;
+        Vector3 crownBottomLeft = topLeft + baseExtrude;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, crownUV, crownTopLeft, crownTopRight, crownBottomRight, crownBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+
+        Vector3 baseTopLeft = topLeft + baseExtrude;
+        Vector3 baseTopRight = bottomLeft + baseExtrude;
+        Vector3 baseBottomRight = bottomLeft;
+        Vector3 baseBottomLeft = topLeft;
+        EmitCappedSideQuad(vertices, vertIdx, triangles, triIdx, uv, baseUV, baseTopLeft, baseTopRight, baseBottomRight, baseBottomLeft);
+        vertIdx += 4;
+        triIdx += 6;
+      }
+    }
+
+    // Don't forget to extrude the original, top vertices
+    for (int i = 0; i < m_vertices.Count; i++)
+    {
+      vertices[i].z += extrudeLengthCM;
+    }
+  }
+
+  /*
+   * Extrudes columns from each tile, creating a single quad (two triangles)
+   * for each side wall. Interior side walls (i.e., edges where tiles are 
+   * neighbors) are not created. Works for both textured and untextured cases.
+   * 
+   * When textured, shared vertices cannot be used and the selected vertices
+   * passed into the constructor are assumed to be unique (4 vertices present
+   * per tile). An additional 4 vertices are created for each side wall. A
+   * repeat distance is specified for the side wall texture.
+   * 
+   * In the untextured case, vertices can be shared. Only two new vertices are
+   * created for each tile side wall edge, and they are connected to the top,
+   * so-called "extruded" vertices.
+   */
   public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
   {
     bool textured = topUV != null && sideUV != null;
