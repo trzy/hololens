@@ -95,6 +95,8 @@ public class GeoMaker: MonoBehaviour
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
       m_meshRenderer.material = extrudeMaterial;
+      if (buttonA)
+        m_state = State.Finished;
     }
     else if (m_state == State.ExtrudeCapped)
     {
@@ -110,6 +112,8 @@ public class GeoMaker: MonoBehaviour
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
       m_meshRenderer.material = extrudeMaterial;
+      if (buttonA)
+        m_state = State.Finished;
     }
   }
 

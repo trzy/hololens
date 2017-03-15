@@ -7,6 +7,9 @@ using System.Linq;
 
 public class Main: MonoBehaviour
 {
+  [Tooltip("Player prefab")]
+  public PlayerController m_playerPrefab = null;
+
   enum State
   {
     Init,
@@ -18,6 +21,7 @@ public class Main: MonoBehaviour
   private GestureRecognizer m_gestureRecognizer = null;
   private GameObject        m_gazeTarget = null;
   private RaycastHit        m_hit;
+  private PlayerController  m_player = null;
   private State             m_state = State.Init;
 
   private void OnTapEvent(InteractionSourceKind source, int tapCount, Ray headRay)
@@ -51,6 +55,7 @@ public class Main: MonoBehaviour
       break;
     case State.Playing:
       Debug.Log("Entered play state");
+      m_player = Instantiate(m_playerPrefab, Camera.main.transform.position + Camera.main.transform.forward, Quaternion.identity);
       break;
     }
   }
