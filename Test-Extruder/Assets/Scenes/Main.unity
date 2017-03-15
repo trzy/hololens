@@ -265,7 +265,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9ed8eb53a48bbb4386f3926a8aca428, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  selectedMaterial: {fileID: 2100000, guid: c2a1507a00ebaad498c9bf16de0cc2ca, type: 2}
+  selectionMaterial: {fileID: 2100000, guid: c2a1507a00ebaad498c9bf16de0cc2ca, type: 2}
+  extrudeMaterial: {fileID: 2100000, guid: 7e1989a6d3c0da24cade5c49f7ab9564, type: 2}
 --- !u!1 &1457124684
 GameObject:
   m_ObjectHideFlags: 0

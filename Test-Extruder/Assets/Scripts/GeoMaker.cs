@@ -7,7 +7,10 @@ using HoloLensXboxController;
 public class GeoMaker: MonoBehaviour
 {
   [Tooltip("Material to render selected patches with")]
-  public Material selectedMaterial = null;
+  public Material selectionMaterial = null;
+
+  [Tooltip("Material to render extruded meshes with")]
+  public Material extrudeMaterial = null;
 
   private ControllerInput m_xboxController = null;
   private GameObject m_gameObject = null;
@@ -18,7 +21,8 @@ public class GeoMaker: MonoBehaviour
   private enum State
   {
     Select,
-    Extrude,
+    ExtrudeSimple,
+    ExtrudeCapped,
     Finished
   }
   private State m_state = State.Select;
@@ -67,45 +71,72 @@ public class GeoMaker: MonoBehaviour
         m_gameObject.transform.localScale = m_selection.scale;
         if (buttonA)
         {
-          m_state = State.Extrude;
+          m_state = State.ExtrudeSimple;
+          m_meshExtruder = new MeshExtruder(m_selection);
+        }
+        else if (buttonB)
+        {
+          m_state = State.ExtrudeCapped;
           m_meshExtruder = new MeshExtruder(m_selection);
         }
       }
     }
-    else if (m_state == State.Extrude)
+    else if (m_state == State.ExtrudeSimple)
     {
       m_extrudeLength += delta;
       Vector3[] vertices;
       int[] triangles;
       Vector2[] uv;
-      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV, SelectionTile.SIDE_CM);
+      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV, m_extrudeLength * 100);// SelectionTile.SIDE_CM);
       m_mesh.Clear();
       m_mesh.vertices = vertices;
       m_mesh.uv = uv;
       m_mesh.triangles = triangles;
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
+      m_meshRenderer.material = extrudeMaterial;
+    }
+    else if (m_state == State.ExtrudeCapped)
+    {
+      m_extrudeLength += delta;
+      Vector3[] vertices;
+      int[] triangles;
+      Vector2[] uv;
+      m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, m_extrudeLength, m_topUV, m_sideUV, m_sideUV);
+      m_mesh.Clear();
+      m_mesh.vertices = vertices;
+      m_mesh.uv = uv;
+      m_mesh.triangles = triangles;
+      m_mesh.RecalculateBounds();
+      m_mesh.RecalculateNormals();
+      m_meshRenderer.material = extrudeMaterial;
     }
   }
 
   private void Awake()
   {
     // Create reticle game object and mesh
-    m_gameObject = new GameObject("Selected-Patch");
+    m_gameObject = new GameObject("Extruded");
     m_gameObject.transform.parent = null;
     m_mesh = m_gameObject.AddComponent<MeshFilter>().mesh;
     m_meshRenderer = m_gameObject.AddComponent<MeshRenderer>();
-    m_meshRenderer.material = selectedMaterial;
+    m_meshRenderer.material = selectionMaterial;
     m_meshRenderer.material.color = Color.white;
     m_meshRenderer.enabled = true;
 
     // Selection surface
     Vector2[] tileUV =
     {
+      new Vector2((1f/128) * 0.5f, (1f/736) * (736 - 0.5f)),
+      new Vector2((1f/128) * (128 - 0.5f), (1f/736) * (736 - 0.5f)),
+      new Vector2((1f/128) * (128 - 0.5f), (1f/736) * 0.5f),
+      new Vector2((1f/128) * 0.5f, (1f/736) * 0.5f)
+      /*
       (1f / 128) * new Vector2(3.5f, 128 - 3.5f),
       (1f / 128) * new Vector2(128 - 3.5f, 128 - 3.5f),
       (1f / 128) * new Vector2(128 - 3.5f, 3.5f),
       (1f / 128) * new Vector2(3.5f, 3.5f)
+      */
     };
     m_topUV = tileUV;
     m_sideUV = tileUV;
