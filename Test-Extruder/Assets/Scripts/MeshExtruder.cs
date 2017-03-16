@@ -196,7 +196,7 @@ public class MeshExtruder
 
     // Create mesh data arrays with enough headroom for inserted triangles
     int maxNumTriangles = m_triangles.Count + (m_triangles.Count / 6) * 4 * 6;
-    vertices = new Vector3[m_vertices.Count * 3];
+    vertices = new Vector3[(maxNumTriangles / 2) * 4];
     triangles = new int[maxNumTriangles];
     uv = new Vector2[vertices.Length];
     m_vertices.CopyTo(vertices);
