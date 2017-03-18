@@ -14,6 +14,7 @@ public class GeoMaker: MonoBehaviour
 
   private ControllerInput m_xboxController = null;
   private GameObject m_gameObject = null;
+  private MeshCollider m_meshCollider = null;
   private Mesh m_mesh = null;
   private MeshRenderer m_meshRenderer = null;
   private PlanarTileSelection m_selection = null;
@@ -95,6 +96,8 @@ public class GeoMaker: MonoBehaviour
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
       m_meshRenderer.material = extrudeMaterial;
+      m_meshCollider.sharedMesh = null;
+      m_meshCollider.sharedMesh = m_mesh;
       if (buttonA)
         m_state = State.Finished;
     }
@@ -112,6 +115,8 @@ public class GeoMaker: MonoBehaviour
       m_mesh.RecalculateBounds();
       m_mesh.RecalculateNormals();
       m_meshRenderer.material = extrudeMaterial;
+      m_meshCollider.sharedMesh = null;
+      m_meshCollider.sharedMesh = m_mesh;
       if (buttonA)
         m_state = State.Finished;
     }
@@ -122,6 +127,7 @@ public class GeoMaker: MonoBehaviour
     // Create reticle game object and mesh
     m_gameObject = new GameObject("Extruded");
     m_gameObject.transform.parent = null;
+    m_meshCollider = m_gameObject.AddComponent<MeshCollider>();
     m_mesh = m_gameObject.AddComponent<MeshFilter>().mesh;
     m_meshRenderer = m_gameObject.AddComponent<MeshRenderer>();
     m_meshRenderer.material = selectionMaterial;
