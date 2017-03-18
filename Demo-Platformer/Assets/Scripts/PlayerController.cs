@@ -25,6 +25,7 @@ public class PlayerController: MonoBehaviour
   private bool m_extrudePressed = false;
   private bool m_attackPressed = false;
 
+  // Animation callback
   public void OnShotFired()
   {
     Instantiate(bulletPrefab, transform.position + transform.forward * 0.1f + transform.up * 0.11f + transform.right * -0.01f, Quaternion.LookRotation(transform.forward));
