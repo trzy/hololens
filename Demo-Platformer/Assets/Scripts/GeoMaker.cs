@@ -27,8 +27,11 @@ public class GeoMaker
   private float m_extrudeLength = 0;
   private float m_extrudeTime = 0;
   private float m_extrudeStart = 0;
-  private Vector2[] m_topUV;
-  private Vector2[] m_sideUV;
+  private Vector2[] m_simpleTopUV;
+  private Vector2[] m_simpleSideUV;
+  private Vector2[] m_cappedTopUV;
+  private Vector2[] m_cappedCrownUV;
+  private Vector2[] m_cappedBaseUV;
 
   private void CreateNewObject(Material material)
   {
@@ -94,7 +97,8 @@ public class GeoMaker
       Vector3[] vertices;
       int[] triangles;
       Vector2[] uv;
-      m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, extrudeLength, m_topUV, m_sideUV, extrudeLength * 100);
+      //m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, extrudeLength, m_simpleTopUV, m_simpleSideUV, extrudeLength * 100);
+      m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, extrudeLength, m_cappedTopUV, m_cappedCrownUV, m_cappedBaseUV);
       m_mesh.Clear();
       m_mesh.vertices = vertices;
       m_mesh.uv = uv;
@@ -115,21 +119,55 @@ public class GeoMaker
   public GeoMaker()
   {
     // Selection surface
-    Vector2[] tileUV =
+    Vector2[] selectUV =
     {
+      /*
       new Vector2((1f/128) * 0.5f, (1f/736) * (736 - 0.5f)),
       new Vector2((1f/128) * (128 - 0.5f), (1f/736) * (736 - 0.5f)),
       new Vector2((1f/128) * (128 - 0.5f), (1f/736) * 0.5f),
       new Vector2((1f/128) * 0.5f, (1f/736) * 0.5f)
-      /*
+      */
       (1f / 128) * new Vector2(3.5f, 128 - 3.5f),
       (1f / 128) * new Vector2(128 - 3.5f, 128 - 3.5f),
       (1f / 128) * new Vector2(128 - 3.5f, 3.5f),
       (1f / 128) * new Vector2(3.5f, 3.5f)
-      */
+      
     };
-    m_topUV = tileUV;
-    m_sideUV = tileUV;
-    m_selection = new PlanarTileSelection(70, m_topUV);
+    m_simpleTopUV = new Vector2[]
+    {
+      new Vector2((1f/512) * 0.5f, (1f/1024) * (1024 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1024) * (1024 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1024) * (512 - 0.5f)),
+      new Vector2((1f/512) * 0.5f, (1f/1024) * (512 - 0.5f))
+    };
+    m_simpleSideUV = new Vector2[]
+    {
+      new Vector2((1f/512) * 0.5f, (1f/1024) * (512 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1024) * (512 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1024) * 0.5f),
+      new Vector2((1f/512) * 0.5f, (1f/1024) * 0.5f)
+    };
+    m_cappedTopUV = new Vector2[]
+    {
+      new Vector2((1f/512) * 0.5f, (1f/1536) * (1536 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * (1536 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * (1024 - 0.5f)),
+      new Vector2((1f/512) * 0.5f, (1f/1536) * (1024 - 0.5f))
+    };
+    m_cappedCrownUV = new Vector2[]
+    {
+      new Vector2((1f/512) * 0.5f, (1f/1536) * (1024 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * (1024 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * (512 - 0.5f)),
+      new Vector2((1f/512) * 0.5f, (1f/1536) * (512 - 0.5f))
+    };
+    m_cappedBaseUV = new Vector2[]
+    {
+      new Vector2((1f/512) * 0.5f, (1f/1536) * (512 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * (512 - 0.5f)),
+      new Vector2((1f/512) * (512 - 0.5f), (1f/1536) * 0.5f),
+      new Vector2((1f/512) * 0.5f, (1f/1536) * 0.5f)
+    };
+    m_selection = new PlanarTileSelection(70, selectUV);
   }
 }

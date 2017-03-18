@@ -138,6 +138,7 @@ public class Main: MonoBehaviour
     bool pressedX = Input.GetKeyDown(KeyCode.LeftShift);
     bool pressedY = Input.GetKeyDown(KeyCode.Tab);
 #else
+    m_xboxController.Update();
     float horAxis = m_xboxController.GetAxisLeftThumbstickX();
     bool pressedLeft = m_xboxController.GetButtonDown(ControllerButton.DPadLeft);
     bool pressedRight = m_xboxController.GetButtonDown(ControllerButton.DPadRight);

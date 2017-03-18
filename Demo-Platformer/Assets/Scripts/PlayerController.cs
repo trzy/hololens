@@ -5,6 +5,7 @@ using HoloLensXboxController;
 
 public class PlayerController: MonoBehaviour
 {
+  public Bullet bulletPrefab;
   public Material selectionMaterial;
   public Material extrudeMaterial;
 
@@ -14,6 +15,7 @@ public class PlayerController: MonoBehaviour
   private int m_animRunning = Animator.StringToHash("Running");
   private int m_animJump = Animator.StringToHash("Jump");
   private int m_animOnGround = Animator.StringToHash("OnGround");
+  private int m_animAttack = Animator.StringToHash("Attack");
   private int m_jumpFrames = 0;
   private Animator m_anim;
   private Vector3 m_horAxis = Vector3.zero;
@@ -21,6 +23,12 @@ public class PlayerController: MonoBehaviour
   private Vector3 m_motionInput = Vector3.zero;
   private bool m_jumpActive = false;
   private bool m_extrudePressed = false;
+  private bool m_attackPressed = false;
+
+  public void OnShotFired()
+  {
+    Instantiate(bulletPrefab, transform.position + transform.forward * 0.1f + transform.up * 0.11f + transform.right * -0.01f, Quaternion.LookRotation(transform.forward));
+  }
 
   private void OnCollisionEnter(Collision other)
   {
@@ -76,10 +84,12 @@ public class PlayerController: MonoBehaviour
 #if UNITY_EDITOR
     m_jumpActive = Input.GetKey(KeyCode.Joystick1Button0);
     m_extrudePressed |= Input.GetKeyDown(KeyCode.Joystick1Button1);
+    m_attackPressed |= Input.GetKeyDown(KeyCode.Joystick1Button3);
 #else
     m_xboxController.Update();
     m_jumpActive = m_xboxController.GetButton(ControllerButton.A);
     m_extrudePressed |= m_xboxController.GetButtonDown(ControllerButton.B);
+    m_attackPressed |= m_xboxController.GetButtonDown(ControllerButton.X);
 #endif
     m_motionInput = GetMotionInput();
   }
@@ -88,18 +98,25 @@ public class PlayerController: MonoBehaviour
   {
     bool running = m_motionInput != Vector3.zero;
     m_anim.SetBool(m_animRunning, running);
+
     if (running)
     {
       m_rb.MovePosition(transform.position + 0.5f * m_motionInput * Time.deltaTime);
       Quaternion targetRotation = Quaternion.LookRotation(m_motionInput, Vector3.up);
       m_rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, targetRotation, 10));
     }
+
     if (m_jumpFrames < 3 && m_jumpActive)
     {
       if (m_jumpFrames == 0)
         m_anim.SetTrigger(m_animJump);
       m_rb.AddForce(Vector3.up, ForceMode.VelocityChange);
       ++m_jumpFrames;
+    }
+
+    if (m_attackPressed)
+    {
+      m_anim.SetTrigger(m_animAttack);
     }
 
     if (m_extrudePressed)
@@ -109,11 +126,12 @@ public class PlayerController: MonoBehaviour
       else if (m_geo.state == GeoMaker.State.Select)
         m_geo.FinishSelection(extrudeMaterial, null);
     }
-    if (0 == m_jumpFrames)
+    if (0 == m_jumpFrames || m_geo.state == GeoMaker.State.AnimatedExtrude)
       m_geo.Update(transform.position + transform.up * 0.1f, -transform.up, 0.2f);
 
     // Clear single-press inputs
     m_extrudePressed = false;
+    m_attackPressed = false;
   }
 
   private void Awake()

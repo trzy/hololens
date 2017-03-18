@@ -1380,7 +1380,7 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1439334832656774}
-  m_LocalRotation: {x: 0.7071067, y: 0.00025581897, z: 0.70710677, w: -0.0002579844}
+  m_LocalRotation: {x: 0.7071067, y: 0.00025581897, z: 0.70710677, w: -0.00025798441}
   m_LocalPosition: {x: 41.452503, y: -28.12747, z: -47.780437}
   m_LocalScale: {x: 0.99999994, y: 0.99999994, z: 0.99999994}
   m_Children:
@@ -2393,8 +2393,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c880b03d4b352c34388952565706a376, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bulletPrefab: {fileID: 114075319720193676, guid: c3bd8fd3c090773468cf50fdc56f8a6e,
+    type: 2}
   selectionMaterial: {fileID: 2100000, guid: c2a1507a00ebaad498c9bf16de0cc2ca, type: 2}
-  extrudeMaterial: {fileID: 2100000, guid: 7e1989a6d3c0da24cade5c49f7ab9564, type: 2}
+  extrudeMaterial: {fileID: 2100000, guid: c5f7eedcb46e13b4ab3bd753e32df8bc, type: 2}
 --- !u!136 &136784066008083654
 CapsuleCollider:
   m_ObjectHideFlags: 1

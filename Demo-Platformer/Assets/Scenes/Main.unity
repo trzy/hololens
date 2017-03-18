@@ -207,7 +207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b9384d1d77dfc4e99b6903bb4adf36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualizeSpatialUnderstandingMeshes: 1
+  visualizeSpatialUnderstandingMeshes: 0
   visualizeSpatialMeshes: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a, type: 2}
@@ -321,7 +321,17 @@ MonoBehaviour:
   placeablePrefabs:
   - {fileID: 1818107172832660, guid: 02e4ca4032e7445478e30d185b5a78e0, type: 2}
   - {fileID: 1409466120018934, guid: b489a0f7d38550d4a9765dea601d4129, type: 2}
-  - {fileID: 1671411521291578, guid: 78361a5a6ed3b2e4b8ec5eb3a9062de5, type: 2}
+  - {fileID: 141264, guid: ca1b325afa208104d8ef19eb5d4af934, type: 2}
+  - {fileID: 169126, guid: 614507eb1cf9bb64fab3e2742eae61e4, type: 2}
+  - {fileID: 146544, guid: ec22f1ec2e1222a4fafdea3dda455208, type: 2}
+  - {fileID: 161334, guid: 082d04f9fb0729543bfb8d7a8cb84cb4, type: 2}
+  - {fileID: 162150, guid: c692f5275dd17c643aaf994374d24387, type: 2}
+  - {fileID: 160034, guid: 92788332d37e53548b51b766bea3eb83, type: 2}
+  - {fileID: 1000012006197310, guid: 465c505844950da499dcf096a6da4409, type: 2}
+  - {fileID: 1000012174300454, guid: 8a4fca54c9faa3449bcff12193992420, type: 2}
+  - {fileID: 1000012258839112, guid: c36865a7da8627b42a5d8dae1b1a98bb, type: 2}
+  - {fileID: 1000010378282670, guid: 913c474af4fed6e45bc3725b21e84f11, type: 2}
+  - {fileID: 1000011222192992, guid: 9b3a643ca887918468955b42c4531666, type: 2}
 --- !u!4 &1550308319
 Transform:
   m_ObjectHideFlags: 0
@@ -341,10 +351,10 @@ AudioSource:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1550308317}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 354a3d9cb4db51048ba6caec35f24b4a, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 5c50612446536154aa5cf918eacf9075, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
