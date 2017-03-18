@@ -29,6 +29,7 @@ public class PlanarTileSelection
   private Vector3 m_origin = Vector3.zero;  // along with the normal defines the current selection plane
   private Quaternion m_toWorld;
   private Quaternion m_toLocal;
+  private Vector3 m_lastTrackedPosition;
   private Plane m_plane;                    // current selection plane defined from the above
 
   // Tiles in local, centimeter units
@@ -302,6 +303,7 @@ public class PlanarTileSelection
 
     // Generate all other selection points in local coordinate system and throw
     // away any dupes. These are the center points of our tiles.
+    int numTilesCreated = 0;
     foreach (IVector3 offset in m_pattern)
     {
       IVector3 tilePosition = patternCenter + SelectionTile.SIDE_CM * offset;
@@ -332,11 +334,29 @@ public class PlanarTileSelection
         {
           float d = Vector3.Distance(hitPoint, rayOrigin);
           if (d >= minClearanceAbove && d < (minClearanceAbove + maxClearanceBelow))
+          {
             AddTile(tilePosition);
+            numTilesCreated++;
+          }
           //TODO: normal test?
         }
       }
     }
+
+    // If we haven't been able to create any tiles, and have strayed too far,
+    // clear everything out and start over
+    if (numTilesCreated == 0)
+    {
+      float distanceStrayed = Vector3.Magnitude(patternCenterWorld - m_lastTrackedPosition);
+      Debug.Log("strayed " + distanceStrayed + " m");
+      if (distanceStrayed > 0.2f)
+      {
+        m_tiles.Clear();
+        return;
+      }
+    }
+    else
+      m_lastTrackedPosition = patternCenterWorld;
 
     RemoveExcessTiles();
   }
