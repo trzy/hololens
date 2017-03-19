@@ -172,21 +172,7 @@ public class MeshExtruder
     }
   }
 
-  /*
-   * Extrudes columns from each tile, creating a single quad (two triangles)
-   * for each side wall. Interior side walls (i.e., edges where tiles are 
-   * neighbors) are not created. Works for both textured and untextured cases.
-   * 
-   * When textured, shared vertices cannot be used and the selected vertices
-   * passed into the constructor are assumed to be unique (4 vertices present
-   * per tile). An additional 4 vertices are created for each side wall. A
-   * repeat distance is specified for the side wall texture.
-   * 
-   * In the untextured case, vertices can be shared. Only two new vertices are
-   * created for each tile side wall edge, and they are connected to the top,
-   * so-called "extruded" vertices.
-   */
-  public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
+  private void ExtrudeSimpleWithBottom(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM, bool hasBottomSurface)
   {
     bool textured = topUV != null && sideUV != null;
 
@@ -195,7 +181,8 @@ public class MeshExtruder
     Vector3 extrude = new Vector3(0, 0, extrudeLengthCM);
 
     // Create mesh data arrays with enough headroom for inserted triangles
-    int maxNumTriangles = m_triangles.Count + (m_triangles.Count / 6) * 4 * 6;
+    int maxNumTriangles = m_triangles.Count + (m_triangles.Count / 6) * 4 * 6;  // top surface plus side walls
+    maxNumTriangles += hasBottomSurface ? m_triangles.Count : 0;                // optional bottom surface
     vertices = new Vector3[(maxNumTriangles / 2) * 4];
     triangles = new int[maxNumTriangles];
     uv = new Vector2[vertices.Length];
@@ -366,11 +353,62 @@ public class MeshExtruder
       }
     }
 
+    // Because I'm lazy, I duplicate the original top surface vertices again
+    // to create a bottom side. We *could* share the outer vertices but we
+    // would have to generate interior ones anyway, so it doesn't save much.
+    if (hasBottomSurface)
+    {
+      for (int i = 0; i < m_vertices.Count; i += 4)
+      {
+        for (int j = 0; j < 4; j++)
+        {
+          vertices[vertIdx + j] = vertices[i + j];
+          uv[vertIdx + j] = topUV[j];
+        }
+        // Triangle 1 (reverse winding to be visible from bottom)
+        triangles[triIdx++] = vertIdx + 2;
+        triangles[triIdx++] = vertIdx + 1;
+        triangles[triIdx++] = vertIdx + 0;
+        // Second
+        triangles[triIdx++] = vertIdx + 0;
+        triangles[triIdx++] = vertIdx + 3;
+        triangles[triIdx++] = vertIdx + 2;
+        vertIdx += 4;
+      }
+    }
+
     // Don't forget to extrude the original, top vertices
     for (int i = 0; i < m_vertices.Count; i++)
     {
       vertices[i].z += extrudeLengthCM;
     }
+  }
+
+  /*
+   * Extrudes columns from each tile, creating a single quad (two triangles)
+   * for each side wall. Interior side walls (i.e., edges where tiles are 
+   * neighbors) are not created. Works for both textured and untextured cases.
+   * 
+   * When textured, shared vertices cannot be used and the selected vertices
+   * passed into the constructor are assumed to be unique (4 vertices present
+   * per tile). An additional 4 vertices are created for each side wall. A
+   * repeat distance is specified for the side wall texture.
+   * 
+   * In the untextured case, vertices can be shared. Only two new vertices are
+   * created for each tile side wall edge, and they are connected to the top,
+   * so-called "extruded" vertices.
+   * 
+   * If a bottom surface is requested, all vertices from the top surfaces are
+   * simply duplicated.
+   */
+  public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
+  {
+    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, sideRepeatDistanceCM, false);
+  }
+
+  public void ExtrudeSimpleWithBottom(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
+  {
+    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, sideRepeatDistanceCM, true);
   }
 
   public MeshExtruder(PlanarTileSelection selection)
