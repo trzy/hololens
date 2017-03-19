@@ -8,7 +8,17 @@ public class MeshExtruder
   private List<Vector3> m_vertices;
   private List<int> m_triangles;
 
-  private void EmitCappedSideQuad(Vector3[] vertices, int vertIdx, int[] triangles, int triIdx, Vector2[] uv, Vector2[] uvTemplate, Vector3 topLeft, Vector3 topRight, Vector3 bottomRight, Vector3 bottomLeft)
+  private void EmitCappedSideQuad(
+    Vector3[] vertices,
+    int vertIdx,
+    int[] triangles,
+    int triIdx,
+    Vector2[] uv,
+    Vector2[] uvTemplate,
+    Vector3 topLeft,
+    Vector3 topRight,
+    Vector3 bottomRight,
+    Vector3 bottomLeft)
   {
     vertices[vertIdx + 0] = topLeft;
     vertices[vertIdx + 1] = topRight;
@@ -45,7 +55,14 @@ public class MeshExtruder
    * |    |/
    * +----+
    */
-  public void ExtrudeCapped(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] crownUV, Vector2[] baseUV)
+  public void ExtrudeCapped(
+    out Vector3[] vertices,
+    out int[] triangles,
+    out Vector2[] uv,
+    float extrudeLength,
+    Vector2[] topUV,
+    Vector2[] crownUV,
+    Vector2[] baseUV)
   {
     float extrudeLengthCM = 100 * extrudeLength;
     Vector3 extrude = new Vector3(0, 0, extrudeLengthCM);
@@ -172,7 +189,16 @@ public class MeshExtruder
     }
   }
 
-  private void ExtrudeSimpleWithBottom(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM, bool hasBottomSurface)
+  private void ExtrudeSimpleWithBottom(
+    out Vector3[] vertices,
+    out int[] triangles,
+    out Vector2[] uv,
+    float extrudeLength,
+    Vector2[] topUV,
+    Vector2[] sideUV,
+    Vector2[] bottomUV,
+    float sideRepeatDistanceCM,
+    bool hasBottomSurface)
   {
     bool textured = topUV != null && sideUV != null;
 
@@ -363,7 +389,7 @@ public class MeshExtruder
         for (int j = 0; j < 4; j++)
         {
           vertices[vertIdx + j] = vertices[i + j];
-          uv[vertIdx + j] = topUV[j];
+          uv[vertIdx + j] = bottomUV[j];
         }
         // Triangle 1 (reverse winding to be visible from bottom)
         triangles[triIdx++] = vertIdx + 2;
@@ -401,14 +427,29 @@ public class MeshExtruder
    * If a bottom surface is requested, all vertices from the top surfaces are
    * simply duplicated.
    */
-  public void ExtrudeSimple(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
+  public void ExtrudeSimple(
+    out Vector3[] vertices,
+    out int[] triangles,
+    out Vector2[] uv,
+    float extrudeLength,
+    Vector2[] topUV,
+    Vector2[] sideUV,
+    float sideRepeatDistanceCM)
   {
-    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, sideRepeatDistanceCM, false);
+    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, null, sideRepeatDistanceCM, false);
   }
 
-  public void ExtrudeSimpleWithBottom(out Vector3[] vertices, out int[] triangles, out Vector2[] uv, float extrudeLength, Vector2[] topUV, Vector2[] sideUV, float sideRepeatDistanceCM)
+  public void ExtrudeSimpleWithBottom(
+    out Vector3[] vertices,
+    out int[] triangles,
+    out Vector2[] uv,
+    float extrudeLength,
+    Vector2[] topUV,
+    Vector2[] sideUV,
+    Vector2[] bottomUV,
+    float sideRepeatDistanceCM)
   {
-    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, sideRepeatDistanceCM, true);
+    ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, topUV, sideUV, bottomUV, sideRepeatDistanceCM, true);
   }
 
   public MeshExtruder(PlanarTileSelection selection)
