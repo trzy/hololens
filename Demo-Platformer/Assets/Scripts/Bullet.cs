@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿//TODO: spatial understanding meshes do not have PhysicsLayer set! This should be set when
+//      colliders are enabled on them. Need to create a git pull request.
+using UnityEngine;
+using HoloToolkit.Unity.SpatialMapping;
 using System.Collections;
 
 public class Bullet: MonoBehaviour
@@ -8,41 +11,6 @@ public class Bullet: MonoBehaviour
 
   private float m_t0;
   private bool m_collided = false;  // once true, the object will be destroyed once audio is complete
-
-  private void CreateSurfaceHitFX(GameObject hitObject, Vector3 hitPoint, Vector3 hitNormal)
-  {
-    /*
-    if (hitObject.CompareTag(Layers.Instance.surfacePlaneTag))
-    {
-      ParticleEffectsManager.Instance.CreateBulletImpact(hitPoint, hitNormal);
-      HoloToolkit.Unity.SpatialMapping.SurfacePlane plane = hitObject.GetComponent<HoloToolkit.Unity.SpatialMapping.SurfacePlane>();
-      switch (plane.PlaneType)
-      {
-      case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Wall:
-        ParticleEffectsManager.Instance.CreateBulletImpactDebris(hitPoint, hitNormal, 0.1f, 3, 0);
-        ParticleEffectsManager.Instance.CreateBulletHole(hitPoint, hitNormal, plane);
-        break;
-      case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Floor:
-        ParticleEffectsManager.Instance.CreateLingeringFireball(hitPoint, hitNormal, 0);
-        ParticleEffectsManager.Instance.CreateCrater(hitPoint, hitNormal);
-        break;
-      default:
-        break;
-      }
-    }
-    else
-    {
-      ParticleEffectsManager.Instance.CreateBulletImpact(hitPoint, hitNormal);
-      float cos80 = 0.1736f;
-      if (Mathf.Abs(Vector3.Dot(hitNormal, Vector3.right)) > cos80 &&
-          Mathf.Abs(Vector3.Dot(hitNormal, Vector3.up)) > cos80 &&
-          Mathf.Abs(Vector3.Dot(hitNormal, Vector3.forward)) > cos80)
-      {
-        PlayRicochetSound();
-      }
-    }
-    */
-  }
 
   private void Disable()
   {
@@ -64,17 +32,17 @@ public class Bullet: MonoBehaviour
     // Any object that wishes to react to bullets should implement its own
     // collision callback. Spatial mesh collisions, however, are handled here
     // directly.
-    GameObject target = collision.collider.gameObject;
+    GameObject hitObject= collision.collider.gameObject;
 
     // We are responsible for collisions with the spatial mesh (which includes SurfacePlanes)
-    /*
-    if (Layers.Instance.IsSpatialMeshLayer(target.layer))
+    if (hitObject.layer == SpatialMappingManager.Instance.PhysicsLayer)
     {
-      // Create a blast effect
       ContactPoint contact = collision.contacts[0];
-      CreateSurfaceHitFX(target, contact.point, contact.normal);
+      Debug.Log("hit surface");
+      FXManager.Instance.CreateBulletImpact(contact.point, contact.normal);
     }
-    */
+    else
+      Debug.Log("hit something else: " + hitObject.layer);
 
     // If we hit a collidable object, the bullet should be destroyed
     //if (Layers.Instance.IsCollidableLayer(target.layer))
