@@ -19,6 +19,15 @@ using HoloToolkit.Unity.SpatialMapping;
 
 public class PlanarTileSelection
 {
+  public readonly IVector3[] defaultPattern =
+  {
+                                                new IVector3(+0, +2),
+                          new IVector3(-1, +1), new IVector3(+0, +1), new IVector3(+1, +1),
+    new IVector3(-2, +0), new IVector3(-1, +0), new IVector3(+0, +0), new IVector3(+1, +0), new IVector3(+2, +0),
+                          new IVector3(-1, -1), new IVector3(+0, -1), new IVector3(+1, -1),
+                                                new IVector3(+0, -2)
+  };
+
   private int m_maxTiles;
   private Vector2[] m_tileUV;
 
@@ -365,20 +374,12 @@ public class PlanarTileSelection
     m_tiles.Clear();
   }
 
-  public PlanarTileSelection(int maxTiles, Vector2[] tileUV = null)
+  // Selection pattern Z component should always be 0
+  public PlanarTileSelection(int maxTiles, Vector2[] tileUV = null, IVector3[] pattern = null)
   {
     m_maxTiles = maxTiles;
     m_tileUV = tileUV;
     m_tiles = new List<SelectionTile>(m_maxTiles);
-    // Z component should always be 0
-    IVector3[] pattern =
-    {
-                                                  new IVector3(+0, +2),
-                            new IVector3(-1, +1), new IVector3(+0, +1), new IVector3(+1, +1),
-      new IVector3(-2, +0), new IVector3(-1, +0), new IVector3(+0, +0), new IVector3(+1, +0), new IVector3(+2, +0),
-                            new IVector3(-1, -1), new IVector3(+0, -1), new IVector3(+1, -1),
-                                                  new IVector3(+0, -2)
-    };
-    m_pattern = pattern;
+    m_pattern = pattern == null ? defaultPattern : pattern;
   }
 }
