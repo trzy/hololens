@@ -374,12 +374,17 @@ public class PlanarTileSelection
     m_tiles.Clear();
   }
 
+  public void SetPattern(int maxTiles, IVector3[] pattern)
+  {
+    m_maxTiles = maxTiles;
+    m_pattern = pattern == null ? defaultPattern : pattern;
+  }
+
   // Selection pattern Z component should always be 0
   public PlanarTileSelection(int maxTiles, Vector2[] tileUV = null, IVector3[] pattern = null)
   {
-    m_maxTiles = maxTiles;
     m_tileUV = tileUV;
     m_tiles = new List<SelectionTile>(m_maxTiles);
-    m_pattern = pattern == null ? defaultPattern : pattern;
+    SetPattern(maxTiles, pattern);
   }
 }
