@@ -123,7 +123,7 @@ public class PlayerController: MonoBehaviour
     if (m_extrudePressed)
     {
       if (m_geo.state == GeoMaker.State.Idle)
-        m_geo.StartSelection(selectionMaterial);
+        m_geo.StartSelection(GeoMaker.PlatformType.Floating, selectionMaterial);
       else if (m_geo.state == GeoMaker.State.Select)
         m_geo.FinishSelection(extrudeMaterial, null);
     }

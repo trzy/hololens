@@ -5,22 +5,31 @@ using HoloToolkit.Unity.SpatialMapping;
 
 public class GeoMaker
 {
+  public enum PlatformType
+  {
+    Raised,
+    Floating
+  }
+
   public enum State
   {
     Idle,
     Select,
     AnimatedExtrude
   }
+
   public State state
   {
     get { return m_state; }
   }
+
   private State m_state = State.Idle;
   private List<GameObject> m_gameObjects = new List<GameObject>();
   private GameObject m_gameObject = null;
   private MeshCollider m_meshCollider;
   private Mesh m_mesh;
   private MeshRenderer m_meshRenderer;
+  private PlatformType m_platformType;
   private PlanarTileSelection m_selection;
   private MeshExtruder m_meshExtruder;
   private Material m_extrudeMaterial;
@@ -46,10 +55,11 @@ public class GeoMaker
     m_gameObjects.Add(m_gameObject);
   }
 
-  public void StartSelection(Material material)
+  public void StartSelection(PlatformType type, Material material)
   {
     if (m_state != State.Idle)
       return;
+    m_platformType = type;
     CreateNewObject(material);
     m_selection.Reset();
     m_state = State.Select;
@@ -64,7 +74,6 @@ public class GeoMaker
     m_extrudeLength = 0.3f;
     m_extrudeTime = 2;
     m_extrudeStart = Time.time;
-    m_gameObject = null;
     Debug.Log("Finish selection");
   }
 
@@ -98,7 +107,8 @@ public class GeoMaker
       int[] triangles;
       Vector2[] uv;
       //m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, extrudeLength, m_simpleTopUV, m_simpleSideUV, extrudeLength * 100);
-      m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, extrudeLength, m_cappedTopUV, m_cappedCrownUV, m_cappedBaseUV);
+      //m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, extrudeLength, m_cappedTopUV, m_cappedCrownUV, m_cappedBaseUV);
+      m_meshExtruder.ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, m_simpleTopUV, m_simpleSideUV, extrudeLength * 100);
       m_mesh.Clear();
       m_mesh.vertices = vertices;
       m_mesh.uv = uv;
@@ -110,7 +120,16 @@ public class GeoMaker
       m_meshCollider.sharedMesh = m_mesh;
       if (delta >= m_extrudeTime)
       {
+        switch (m_platformType)
+        {
+          case PlatformType.Raised:
+            break;
+          case PlatformType.Floating:
+            m_gameObject.AddComponent<FloatingPlatform>();
+            break;
+        }
         m_state = State.Idle;
+        m_gameObject = null;
         //TODO: call OnFinished()
       }
     }
