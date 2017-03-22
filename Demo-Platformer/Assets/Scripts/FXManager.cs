@@ -10,6 +10,17 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
   [Tooltip("Prefab for the bullet impact's outward spray/blast effect.")]
   public BulletImpactSpray bulletImpactSprayPrefab;
 
+  [Tooltip("Prefab for blast wave effect.")]
+  public ExplosionSphere blastHemispherePrefab;
+
+  [Tooltip("Explosion sounds.")]
+  public AudioClip[] explosionSounds;
+
+  [Tooltip("Large explosion sound.")]
+  public AudioClip bigExplosionSound;
+
+  private AudioSource m_audioSource;
+
   private struct EmitParams
   {
     public ParticleSystem particleSystem;
@@ -44,6 +55,21 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
   private ParticleSystem m_flameOutPS;
   private LinkedList<EmitParams> m_futureParticles; // in order of ascending time
 
+  public void PlayExplosionSound()
+  {
+    m_audioSource.PlayOneShot(explosionSounds[Random.Range(0, explosionSounds.Length)]);
+  }
+
+  public void PlayBigExplosionSound()
+  {
+    m_audioSource.PlayOneShot(bigExplosionSound);
+  }
+
+  public void PlaySound(AudioClip clip)
+  {
+    m_audioSource.PlayOneShot(clip);
+  }
+
   public void CreateBulletImpact(Vector3 position, Vector3 normal)
   {
     BulletImpactFlash flash = Instantiate(bulletImpactFlashPrefab, position + normal * 0.01f, Quaternion.LookRotation(normal)) as BulletImpactFlash;
@@ -51,6 +77,13 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
     spray.transform.localScale = new Vector3(0.03f, 0.03f, 0.03f);  // scale down to real world size
     flash.transform.parent = this.transform;
     spray.transform.parent = this.transform;
+  }
+
+  public void CreateExplosionBlastWave(Vector3 groundPosition, Vector3 normal, float delayTime = 0)
+  {
+    ExplosionSphere blast = Instantiate(blastHemispherePrefab, groundPosition, Quaternion.LookRotation(normal)) as ExplosionSphere;
+    blast.delayTime = delayTime;
+    blast.transform.parent = this.transform;
   }
 
   private void InsertTimeSorted(ref EmitParams item)
@@ -118,6 +151,9 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
         t += 0.1f;
       }
     }
+
+    // Blast wave
+    CreateExplosionBlastWave(position, Vector3.up);
   }
 
   private void EmitParticlesNow(EmitParams emit)
@@ -152,6 +188,7 @@ public class FXManager: HoloToolkit.Unity.Singleton<FXManager>
   private new void Awake()
   {
     base.Awake();
+    m_audioSource = GetComponent<AudioSource>();
     m_futureParticles = new LinkedList<EmitParams>();
     foreach (ParticleSystem ps in GetComponentsInChildren<ParticleSystem>())
     {

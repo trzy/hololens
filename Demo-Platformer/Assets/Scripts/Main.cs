@@ -210,6 +210,13 @@ public class Main: MonoBehaviour
     {
       GameObject newObj = Instantiate(placeablePrefabs[m_objectIdx], preview.transform.position, preview.transform.rotation);
       m_objects.Add(newObj);
+      // Hack for passing player position to certain objects
+      DroidController droid = newObj.GetComponent<DroidController>();
+      if (droid != null)
+        droid.SetPlayer(m_player.gameObject);
+      BayController bay = newObj.GetComponent<BayController>();
+      if (bay != null)
+        bay.SetPlayer(m_player.gameObject);
     }
   }
 

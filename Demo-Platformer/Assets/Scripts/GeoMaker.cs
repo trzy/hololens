@@ -8,7 +8,8 @@ public class GeoMaker
   public enum PlatformType
   {
     Raised,
-    Floating
+    Floating,
+    Wall
   }
 
   public enum State
@@ -59,7 +60,7 @@ public class GeoMaker
     m_gameObjects.Add(m_gameObject);
   }
 
-  public void StartSelection(PlatformType type, Material material)
+  public void StartSelection(PlatformType type, Material material, float extrudeLength)
   {
     if (m_state != State.Idle)
       return;
@@ -70,11 +71,22 @@ public class GeoMaker
     {
       case PlatformType.Raised:
         m_selection.SetPattern(70, m_selection.defaultPattern);
-        m_extrudeLength = 0.3f;
+        m_extrudeLength = extrudeLength;
         break;
       case PlatformType.Floating:
         m_selection.SetPattern(1, new IVector3[] { new IVector3(0, 0) } );
-        m_extrudeLength = 0.03f;
+        m_extrudeLength = extrudeLength; // 0.03f;
+        break;
+      case PlatformType.Wall:
+        IVector3[] wallPattern =
+        {
+          new IVector3(-1, 0),
+          new IVector3(0, 0),
+          new IVector3(+1, 0)
+        };
+        m_selection.SetPattern(wallPattern.Length, wallPattern);
+        m_selection.SetWallMode(true);
+        m_extrudeLength = extrudeLength;
         break;
     }
     m_state = State.Select;
@@ -120,9 +132,17 @@ public class GeoMaker
       Vector3[] vertices;
       int[] triangles;
       Vector2[] uv;
-      //m_meshExtruder.ExtrudeSimple(out vertices, out triangles, out uv, extrudeLength, m_simpleTopUV, m_simpleSideUV, extrudeLength * 100);
-      //m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, extrudeLength, m_cappedTopUV, m_cappedCrownUV, m_cappedBaseUV);
-      m_meshExtruder.ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, m_movingTopUV, m_movingSideUV, m_movingBottomUV, extrudeLength * 100);
+      switch (m_platformType)
+      {
+        default:
+        case PlatformType.Raised:
+          m_meshExtruder.ExtrudeCapped(out vertices, out triangles, out uv, extrudeLength, m_cappedTopUV, m_cappedCrownUV, m_cappedBaseUV);
+          break;
+        case PlatformType.Floating:
+        case PlatformType.Wall:
+          m_meshExtruder.ExtrudeSimpleWithBottom(out vertices, out triangles, out uv, extrudeLength, m_movingTopUV, m_movingSideUV, m_movingBottomUV, extrudeLength * 100);
+          break;
+      }
       m_mesh.Clear();
       m_mesh.vertices = vertices;
       m_mesh.uv = uv;

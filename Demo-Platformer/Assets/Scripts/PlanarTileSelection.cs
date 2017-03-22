@@ -30,6 +30,7 @@ public class PlanarTileSelection
 
   private int m_maxTiles;
   private Vector2[] m_tileUV;
+  private bool m_wallMode = false;
 
   // Selection plane definition in world units
   private Vector3 m_xAxis = Vector3.zero;
@@ -146,9 +147,20 @@ public class PlanarTileSelection
     int[] tris = mesh.GetTriangles(0);
     int t0 = tris[hit.triangleIndex * 3 + 0];
     int t1 = tris[hit.triangleIndex * 3 + 1];
-    x = Vector3.Normalize(verts[t1] - verts[t0]);
-    z = hit.normal;
-    y = Vector3.Cross(x, z);
+    if (m_wallMode)
+    {
+      // This is a hack for platforms extruded out of walls. We want to make
+      // sure they are aligned with ground by forcing the Y vector to point up.
+      z = hit.normal;
+      y = Vector3.up;
+      x = Vector3.Cross(z, y);
+    }
+    else
+    {
+      x = Vector3.Normalize(verts[t1] - verts[t0]);
+      z = hit.normal;
+      y = Vector3.Cross(x, z);
+    }
     return true;
   }
 
@@ -372,12 +384,18 @@ public class PlanarTileSelection
   public void Reset()
   {
     m_tiles.Clear();
+    m_wallMode = false;
   }
 
   public void SetPattern(int maxTiles, IVector3[] pattern)
   {
     m_maxTiles = maxTiles;
     m_pattern = pattern == null ? defaultPattern : pattern;
+  }
+
+  public void SetWallMode(bool wallMode)
+  {
+    m_wallMode = wallMode;
   }
 
   // Selection pattern Z component should always be 0

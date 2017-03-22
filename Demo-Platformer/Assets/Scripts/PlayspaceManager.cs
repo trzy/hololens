@@ -193,7 +193,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
           HideSpatialMappingMeshes();
         if (!visualizeSpatialUnderstandingMeshes)
           SetSpatialUnderstandingMaterial(occlusionMaterial);
-        //SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
+        SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
         m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForPlacementSolverInit;
       }
       break;

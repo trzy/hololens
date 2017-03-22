@@ -2352,7 +2352,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 112
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!65 &65710119196016780
 BoxCollider:
   m_ObjectHideFlags: 1
@@ -2395,8 +2395,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletPrefab: {fileID: 114075319720193676, guid: c3bd8fd3c090773468cf50fdc56f8a6e,
     type: 2}
+  platformBulletPrefab: {fileID: 114344966130457514, guid: 8bec55716ea250e43b49c3ae49f3ff41,
+    type: 2}
   selectionMaterial: {fileID: 2100000, guid: c2a1507a00ebaad498c9bf16de0cc2ca, type: 2}
-  extrudeMaterial: {fileID: 2100000, guid: c5f7eedcb46e13b4ab3bd753e32df8bc, type: 2}
+  extrudeMaterial: {fileID: 2100000, guid: 4ede484ed084e7b4db0ad6515805a920, type: 2}
+  gunSound: {fileID: 8300000, guid: cc8d1bbeca6a77943a39da21b8d77ef4, type: 3}
+  platformGunSound: {fileID: 8300000, guid: 5982d8e5cfada4041aaa91a26b6bf4dd, type: 3}
+  jumpSound: {fileID: 8300000, guid: 2dc654756bd233f438d87d5ff18c0c47, type: 3}
 --- !u!136 &136784066008083654
 CapsuleCollider:
   m_ObjectHideFlags: 1
