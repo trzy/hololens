@@ -26,12 +26,56 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   // Called when scanning is complete and playspace is finalized
   public Action OnScanComplete = null;
 
-  public enum SortOrder
+  public struct Rule
   {
-    None,
-    Descending,
-    Ascending
-  };
+    public enum TypeFlags
+    {
+      None = 0,
+      Rule = 1,
+      Constraint = 2,
+      Both = 3
+    }
+
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule rule;
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint constraint;
+    byte type;
+
+    public void AddTo(List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> rules)
+    {
+      if ((type & (byte)TypeFlags.Rule) != 0)
+        rules.Add(rule);
+    }
+
+    public void AddTo(List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> constraints)
+    {
+      if ((type & (byte)TypeFlags.Constraint) != 0)
+        constraints.Add(constraint);
+    }
+
+    public static Rule AwayFromOthers(float minDistanceFromOtherObjects)
+    {
+      Rule rule = new Rule();
+      rule.rule = SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromOtherObjects(minDistanceFromOtherObjects);
+      rule.type = (byte)TypeFlags.Rule;
+      return rule;
+    }
+
+    public static Rule Nearby(Vector3 position, float minDistance = 0, float maxDistance = 0)
+    {
+      Rule rule = new Rule();
+      rule.constraint = SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint.Create_NearPoint(position, minDistance, maxDistance);
+      rule.type = (byte)TypeFlags.Constraint;
+      return rule;
+    }
+
+    public static Rule AwayFrom(Vector3 position, float minDistance = 0)
+    {
+      Rule rule = new Rule();
+      rule.rule = SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromPosition(position, minDistance);
+      rule.type = (byte)TypeFlags.Rule;
+      return rule;
+    }
+  }
 
   private SpatialMappingManager m_spatialMappingManager = null;
   private SpatialUnderstanding m_spatialUnderstanding = null;
@@ -47,40 +91,37 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     WaitingForPlacementSolverInit,
     Finished
   }
+
   private SpatialUnderstandingState m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
   private bool m_placementSolverInitialized = false;
-
-  private struct PlacementQuery
-  {
-    public SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition;
-    public List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> placementRules;
-    public List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> placementConstraints;
-
-    public PlacementQuery(
-        SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition_,
-        List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> placementRules_ = null,
-        List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> placementConstraints_ = null)
-    {
-      placementDefinition = placementDefinition_;
-      placementRules = placementRules_;
-      placementConstraints = placementConstraints_;
-    }
-  }
+  private int m_uniquePlacementID = 0;
+  private SpatialUnderstandingDllTopology.TopologyResult[] m_topologyResults = new SpatialUnderstandingDllTopology.TopologyResult[2048];
 
   private bool TryPlaceObject(
     out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
     string placementName,
-    PlacementQuery query)
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition,
+    List<Rule> rules = null)
   {
     placementResult = null;
+    List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule> placementRules = new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule>();
+    List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint> placementConstraints = new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint>();
+    if (rules != null)
+    {
+      foreach (Rule rule in rules)
+      {
+        rule.AddTo(placementRules);
+        rule.AddTo(placementConstraints);
+      }
+    }
     int result = SpatialUnderstandingDllObjectPlacement.Solver_PlaceObject(
       placementName,
-      SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementDefinition),
-        (query.placementRules != null) ? query.placementRules.Count : 0,
-        ((query.placementRules != null) && (query.placementRules.Count > 0)) ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementRules.ToArray()) : IntPtr.Zero,
-        (query.placementConstraints != null) ? query.placementConstraints.Count : 0,
-        ((query.placementConstraints != null) && (query.placementConstraints.Count > 0)) ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(query.placementConstraints.ToArray()) : IntPtr.Zero,
-        SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticObjectPlacementResultPtr());
+      SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(placementDefinition),
+      placementRules.Count,
+      placementRules.Count > 0 ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(placementRules.ToArray()) : IntPtr.Zero,
+      placementConstraints.Count,
+      placementConstraints.Count > 0 ? SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(placementConstraints.ToArray()) : IntPtr.Zero,
+      SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticObjectPlacementResultPtr());
     if (result > 0)
     {
       placementResult = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticObjectPlacementResult();
@@ -89,21 +130,13 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
-  public bool TryPlaceOnFloor(out Vector3 position, Vector3 size, Vector3 nearPosition, float minDistance, float maxDistance, float minDistanceFromOtherObjects = 0.25f)
+  public bool TryPlaceOnFloor(out Vector3 position, Vector3 size, List<Rule> rules = null)
   {
     position = Vector3.zero;
-    PlacementQuery query = new PlacementQuery(
-      SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * size),
-      minDistanceFromOtherObjects <= 0 ? null : new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule>()
-      {
-        SpatialUnderstandingDllObjectPlacement.ObjectPlacementRule.Create_AwayFromOtherObjects(minDistanceFromOtherObjects)
-      },
-      new List<SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint>()
-      {
-        SpatialUnderstandingDllObjectPlacement.ObjectPlacementConstraint.Create_NearPoint(nearPosition, minDistance, maxDistance)
-      });
+    string token = "Floor-" + m_uniquePlacementID++;
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition = SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * size);
     SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
-    if (TryPlaceObject(out placementResult, "changeMeToSomethingUnique", query))
+    if (TryPlaceObject(out placementResult, token, placementDefinition, rules))
     {
       position = placementResult.Position;
       return true;
@@ -111,12 +144,36 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
-  public void SpawnObject(GameObject prefab, Vector3 position)
+  public bool TryPlaceOnPlatformEdge(out Vector3 position, Vector3 size, List<Rule> rules = null)
   {
-    GameObject obj = Instantiate(prefab) as GameObject;
-    obj.transform.parent = gameObject.transform;
-    obj.transform.position = position;
-    obj.SetActive(true);
+    position = Vector3.zero;
+    string token = "Edge-" + m_uniquePlacementID++;
+    //TODO: unsure of what halfDimsBottom really means
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition = SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnEdge(0.5f * size, 0.5f * new Vector3(size.x, size.y, size.z));
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
+    if (TryPlaceObject(out placementResult, token, placementDefinition, rules))
+    {
+      position = placementResult.Position;
+      return true;
+    }
+    return false;
+  }
+
+  public bool TryPlaceOnPlatform(out Vector3 position, float minHeight, float maxHeight, float minWidth)
+  {
+    position = Vector3.zero;
+    IntPtr resultsTopologyPtr = SpatialUnderstanding.Instance.UnderstandingDLL.PinObject(m_topologyResults);
+    int numResults = SpatialUnderstandingDllTopology.QueryTopology_FindLargePositionsSittable(minHeight, maxHeight, 1, minWidth, m_topologyResults.Length, resultsTopologyPtr);
+    if (numResults == 0)
+      return false;
+    position = m_topologyResults[0].position;
+    return true;
+  }
+
+  //TODO: add a function to remove individual placements based on token
+  public void ClearPlacements()
+  {
+    SpatialUnderstandingDllObjectPlacement.Solver_RemoveAllObjects();
   }
 
   private void OnScanStateChanged()

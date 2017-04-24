@@ -14,6 +14,18 @@ public class Main: MonoBehaviour
   [Tooltip("Assortment of prefabs to place")]
   public GameObject[] placeablePrefabs = null;
 
+  [Tooltip("Fortress")]
+  public GameObject fortressPrefab = null;
+
+  [Tooltip("Crystals")]
+  public GameObject crystalPrefab = null;
+
+  [Tooltip("Red droid (drops short platform powerup)")]
+  public GameObject redDroidPrefab = null;
+
+  [Tooltip("White droid (mystery powerup)")]
+  public GameObject whiteDroidPrefab = null;
+
   enum State
   {
     Init,
@@ -39,6 +51,80 @@ public class Main: MonoBehaviour
   private State             m_state = State.Init;
   private PlacementMode     m_placementMode = PlacementMode.Free;
 
+  private List<GameObject> GenerateObjectCluster(GameObject prefab, Vector3 nearby, int numClusters, int objectsPerCluster)
+  {
+    List<GameObject> objects = new List<GameObject>(numClusters * objectsPerCluster);
+    Vector3 size = new Vector3(0.1f, 0, 0.1f);
+    List<PlayspaceManager.Rule> clusterRules = new List<PlayspaceManager.Rule>()
+    {
+      PlayspaceManager.Rule.Nearby(nearby, 0.5f, 1.5f)
+    };
+
+    for (int i = 0; i < numClusters; i++)
+    {
+      Vector3 clusterPosition;
+
+      if (PlayspaceManager.Instance.TryPlaceOnFloor(out clusterPosition, size, clusterRules))
+      {
+        // Place first object in cluster
+        objects.Add(Instantiate(prefab, clusterPosition, Quaternion.identity));
+
+        // Place remaining objects nearby
+        for (int j = 1; j < objectsPerCluster; j++)
+        {
+          Vector3 position;
+          List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>()
+          {
+            PlayspaceManager.Rule.Nearby(clusterPosition, 0, 1)
+          };
+          if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, size, rules))
+            objects.Add(Instantiate(prefab, position, Quaternion.identity));
+        }
+      }
+
+      // Don't want next cluster near this one
+      clusterRules.Add(PlayspaceManager.Rule.AwayFrom(clusterPosition, 1));
+    }
+
+    return objects;
+  }
+
+  private void GenerateLevel()
+  {
+    List<GameObject> droids = new List<GameObject>();
+    Vector3 position;
+
+    // Fortress with player inside
+    // TODO: orient fortress towards user
+    if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(1, 0, 1)))
+    {
+      GameObject fortress = Instantiate(fortressPrefab, position, Quaternion.identity);
+      m_player = Instantiate(playerPrefab, fortress.transform.position + 0.4f * fortress.transform.forward, fortress.transform.rotation);
+      GenerateObjectCluster(crystalPrefab, fortress.transform.position, 2, 3);
+      droids.AddRange(GenerateObjectCluster(redDroidPrefab, fortress.transform.position, 1, 2));
+    }
+    else
+      m_player = Instantiate(playerPrefab, Camera.main.transform.position + Camera.main.transform.forward, Quaternion.identity);
+
+    // White droid on a platform
+    bool success = false;
+    /*
+    success = PlayspaceManager.Instance.TryPlaceOnPlatformEdge(out position, new Vector3(0.5f, 0.1f, 0.5f));
+    if (!success)
+      success = PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(0.5f, 0.1f, 0.5f));
+    */
+    success = PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.25f);
+
+    if (success)
+      droids.Add(Instantiate(whiteDroidPrefab, position, Quaternion.identity));
+
+    // Attach player to all droids
+    foreach (GameObject droid in droids)
+    {
+      droid.GetComponent<DroidController>().SetPlayer(m_player.gameObject);
+    }
+  }
+
   private void OnTapEvent(InteractionSourceKind source, int tapCount, Ray headRay)
   {
     switch (m_state)
@@ -62,7 +148,7 @@ public class Main: MonoBehaviour
     case State.FinalizeScan:
       System.Action OnScanComplete = () => 
       {
-        //LevelManager.Instance.GenerateLevel();
+        /*LevelManager.Instance.*/GenerateLevel();
         SetState(State.Playing);
       };
       PlayspaceManager.Instance.OnScanComplete += OnScanComplete;
@@ -70,7 +156,6 @@ public class Main: MonoBehaviour
       break;
     case State.Playing:
       Debug.Log("Entered play state");
-      m_player = Instantiate(playerPrefab, Camera.main.transform.position + Camera.main.transform.forward, Quaternion.identity);
       GetComponent<AudioSource>().Play();
       break;
     }
