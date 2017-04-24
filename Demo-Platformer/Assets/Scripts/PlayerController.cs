@@ -137,7 +137,6 @@ public class PlayerController: MonoBehaviour
       Quaternion targetRotation = Quaternion.LookRotation(m_motionInput, Vector3.up);
       m_rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, targetRotation, 10));
     }
-
     
     if (m_jumpFrames < 3 && m_jumpActive)
     {
