@@ -8,6 +8,9 @@ using HoloLensXboxController;
 
 public class Main: MonoBehaviour
 {
+  [Tooltip("Debug mode (manual object placement support)")]
+  public bool debugMode = false;
+
   [Tooltip("Player prefab")]
   public PlayerController playerPrefab = null;
 
@@ -26,6 +29,15 @@ public class Main: MonoBehaviour
   [Tooltip("White droid (mystery powerup)")]
   public GameObject whiteDroidPrefab = null;
 
+  [Tooltip("Yellow droid (floating platform powerup")]
+  public GameObject yellowDroidPrefab = null;
+
+  [Tooltip("Tall platform powerup")]
+  public GameObject tallPlatformPowerupPrefab = null;
+
+  [Tooltip("Gun turret")]
+  public GameObject[] gunTurretPrefabs = null;
+
   enum State
   {
     Init,
@@ -43,6 +55,7 @@ public class Main: MonoBehaviour
 
   private ControllerInput   m_xboxController = null;
   private GestureRecognizer m_gestureRecognizer = null;
+  private AudioSource       m_audioSource = null;
   private PlayerController  m_player = null;
   private GameObject[]      m_placeableObjects = null;
   private int               m_objectIdx = 0;
@@ -50,6 +63,13 @@ public class Main: MonoBehaviour
   private List<GameObject>  m_objects = new List<GameObject>();
   private State             m_state = State.Init;
   private PlacementMode     m_placementMode = PlacementMode.Free;
+
+  private Quaternion FacingPlayer(Vector3 placementPosition)
+  {
+    Vector3 toPlayer = Camera.main.transform.position - placementPosition;
+    toPlayer = new Vector3(toPlayer.x, 0, toPlayer.z);
+    return Quaternion.LookRotation(toPlayer, Vector3.up);
+  }
 
   private List<GameObject> GenerateObjectCluster(GameObject prefab, Vector3 nearby, int numClusters, int objectsPerCluster)
   {
@@ -94,11 +114,11 @@ public class Main: MonoBehaviour
     List<GameObject> droids = new List<GameObject>();
     Vector3 position;
 
-    // Fortress with player inside
+    // Fortress with player inside and red droids nearby
     // TODO: orient fortress towards user
     if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(1, 0, 1)))
     {
-      GameObject fortress = Instantiate(fortressPrefab, position, Quaternion.identity);
+      GameObject fortress = Instantiate(fortressPrefab, position, FacingPlayer(position));
       m_player = Instantiate(playerPrefab, fortress.transform.position + 0.4f * fortress.transform.forward, fortress.transform.rotation);
       GenerateObjectCluster(crystalPrefab, fortress.transform.position, 2, 3);
       droids.AddRange(GenerateObjectCluster(redDroidPrefab, fortress.transform.position, 1, 2));
@@ -106,15 +126,26 @@ public class Main: MonoBehaviour
     else
       m_player = Instantiate(playerPrefab, Camera.main.transform.position + Camera.main.transform.forward, Quaternion.identity);
 
-    // White droid on a platform
+    // Yellow droid on a platform and blue powerup above him
     bool success = false;
+    success = PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.2f);
+    if (!success)
+      success = PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(0.2f, 1.0f, 0.2f));
+    if (success)
+    {
+      droids.Add(Instantiate(yellowDroidPrefab, position, Quaternion.identity));
+      Instantiate(tallPlatformPowerupPrefab, position + Vector3.up * 1.0f, Quaternion.identity);
+    }
+
+    // White droid on a platform
     /*
     success = PlayspaceManager.Instance.TryPlaceOnPlatformEdge(out position, new Vector3(0.5f, 0.1f, 0.5f));
     if (!success)
       success = PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(0.5f, 0.1f, 0.5f));
     */
-    success = PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.25f);
-
+    success = PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.2f);
+    if (!success)
+      success = PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(0.2f, 1.0f, 0.2f));
     if (success)
       droids.Add(Instantiate(whiteDroidPrefab, position, Quaternion.identity));
 
@@ -123,6 +154,26 @@ public class Main: MonoBehaviour
     {
       droid.GetComponent<DroidController>().SetPlayer(m_player.gameObject);
     }
+
+    // Gun turrets
+    for (int i = 0; i < 2; i++)
+    {
+      success = PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.25f);
+      if (!success)
+        success = PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(0.25f, 1.0f, 0.25f));
+      if (success)
+        Instantiate(gunTurretPrefabs[UnityEngine.Random.Range(0, gunTurretPrefabs.Length)], position, FacingPlayer(position));
+    }
+
+    // Sprinkle a few crystals around on platforms
+    for (int i = 0; i < 6; i++)
+    {
+      if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.0f, 0.1f))
+        Instantiate(crystalPrefab, position, FacingPlayer(position));
+    }
+
+    // Place hidden bay in wall with robot inside and powerup nearby
+    //TODO: write me
   }
 
   private void OnTapEvent(InteractionSourceKind source, int tapCount, Ray headRay)
@@ -148,7 +199,7 @@ public class Main: MonoBehaviour
     case State.FinalizeScan:
       System.Action OnScanComplete = () => 
       {
-        /*LevelManager.Instance.*/GenerateLevel();
+        GenerateLevel();
         SetState(State.Playing);
       };
       PlayspaceManager.Instance.OnScanComplete += OnScanComplete;
@@ -156,7 +207,6 @@ public class Main: MonoBehaviour
       break;
     case State.Playing:
       Debug.Log("Entered play state");
-      GetComponent<AudioSource>().Play();
       break;
     }
   }
@@ -187,6 +237,7 @@ public class Main: MonoBehaviour
     m_gestureRecognizer.SetRecognizableGestures(GestureSettings.Tap);
     m_gestureRecognizer.TappedEvent += OnTapEvent;
     m_gestureRecognizer.StartCapturingGestures();
+    m_audioSource = GetComponent<AudioSource>();
     CreatePrefabPreviews();
   }
 
@@ -206,13 +257,13 @@ public class Main: MonoBehaviour
   {
     if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 5))
     {
-      Debug.Log("Hit: " + hit.collider.gameObject.name);
+      //Debug.Log("Hit: " + hit.collider.gameObject.name);
       return true;
     }
     return false;
   }
 
-  private void PlacementUpdate()
+  private void DebugModePlacementUpdate()
   {
 #if UNITY_EDITOR
     float horAxis = Input.GetAxis("Horizontal");
@@ -309,7 +360,15 @@ public class Main: MonoBehaviour
   {
     UnityEditorUpdate();
     if (m_state == State.Playing)
-      PlacementUpdate();
+    {
+      if (debugMode)
+        DebugModePlacementUpdate();
+      else
+      {
+        if (m_player.hasMoved && !m_audioSource.isPlaying)
+          GetComponent<AudioSource>().Play();
+      }
+    }
     else if (m_state == State.Init)
       SetState(State.Scanning);
   }

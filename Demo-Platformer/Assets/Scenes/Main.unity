@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.49641317, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
@@ -304,7 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5b9384d1d77dfc4e99b6903bb4adf36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualizeSpatialUnderstandingMeshes: 1
+  visualizeSpatialUnderstandingMeshes: 0
   visualizeSpatialMeshes: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a, type: 2}
@@ -444,6 +444,15 @@ MonoBehaviour:
   redDroidPrefab: {fileID: 120290, guid: f9aa5767d3a25984eb7e4b4515fa756a, type: 2}
   whiteDroidPrefab: {fileID: 1271934413236068, guid: 90bbd58fadc3b0a40b6755c07c8dbfef,
     type: 2}
+  yellowDroidPrefab: {fileID: 1605227184435298, guid: 764fb29fcd4ca074caaca1882bbc19e9,
+    type: 2}
+  tallPlatformPowerupPrefab: {fileID: 1848440298324834, guid: d0b42fcaa0664c841970d5cfe14bfa0f,
+    type: 2}
+  gunTurretPrefabs:
+  - {fileID: 1000012174300454, guid: 8a4fca54c9faa3449bcff12193992420, type: 2}
+  - {fileID: 1000012258839112, guid: c36865a7da8627b42a5d8dae1b1a98bb, type: 2}
+  - {fileID: 1000010378282670, guid: 913c474af4fed6e45bc3725b21e84f11, type: 2}
+  - {fileID: 1000011222192992, guid: 9b3a643ca887918468955b42c4531666, type: 2}
 --- !u!4 &1550308319
 Transform:
   m_ObjectHideFlags: 0

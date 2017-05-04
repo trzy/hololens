@@ -13,6 +13,11 @@ public class PlayerController: MonoBehaviour
   public AudioClip platformGunSound;
   public AudioClip jumpSound;
 
+  public bool hasMoved
+  {
+    get { return m_moved; }
+  }
+
   private Rigidbody m_rb;
   private GeoMaker m_geo = new GeoMaker();
   private PlatformPowerup m_platformPowerup = null;
@@ -27,6 +32,7 @@ public class PlayerController: MonoBehaviour
   private Vector3 m_horAxis = Vector3.zero;
   private Vector3 m_verAxis = Vector3.zero;
   private Vector3 m_motionInput = Vector3.zero;
+  private bool m_moved = false;
   private bool m_jumpActive = false;
   private bool m_extrudePressed = false;
   private bool m_attackPressed = false;
@@ -124,6 +130,8 @@ public class PlayerController: MonoBehaviour
     m_platformGunPressed |= m_xboxController.GetButtonDown(ControllerButton.LeftShoulder);
 #endif
     m_motionInput = GetMotionInput();
+    if (m_motionInput != Vector3.zero)
+      m_moved = true;
   }
 
   private void FixedUpdate()

@@ -96,6 +96,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private bool m_placementSolverInitialized = false;
   private int m_uniquePlacementID = 0;
   private SpatialUnderstandingDllTopology.TopologyResult[] m_topologyResults = new SpatialUnderstandingDllTopology.TopologyResult[2048];
+  private List<Tuple<Vector3, Vector3>> m_platformPlacements = new List<Tuple<Vector3, Vector3>>();
 
   private bool TryPlaceObject(
     out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
@@ -159,6 +160,40 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
+  // We only crudely check overlap in xz plane
+  private bool Overlaps(SpatialUnderstandingDllTopology.TopologyResult result, float width)
+  {
+    float halfWidth = 0.5f * width;
+    foreach (Tuple<Vector3, Vector3> placement in m_platformPlacements)
+    {
+      Vector3 position = placement.first;
+      Vector3 halfSize = 0.5f * placement.second;
+      if (result.position.x + halfWidth < (position.x - halfSize.x))
+        continue;
+      if (result.position.x - halfWidth > (position.x + halfSize.x))
+        continue;
+      if (result.position.x + halfWidth < (position.x - halfSize.x))
+        continue;
+      if (result.position.z - halfWidth > (position.z + halfSize.z))
+        continue;
+      if (result.position.z + halfWidth < (position.z - halfSize.z))
+        continue;
+      return true;
+    }
+    return false;
+  }
+
+  private void Shuffle(int[] a)
+  {
+    for (int i = 0; i < a.Length; i++)
+    {
+      int tmp = a[i];
+      int r = UnityEngine.Random.Range(0, a.Length);
+      a[i] = a[r];
+      a[r] = tmp;
+    }
+  }
+
   public bool TryPlaceOnPlatform(out Vector3 position, float minHeight, float maxHeight, float minWidth)
   {
     position = Vector3.zero;
@@ -166,14 +201,35 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     int numResults = SpatialUnderstandingDllTopology.QueryTopology_FindLargePositionsSittable(minHeight, maxHeight, 1, minWidth, m_topologyResults.Length, resultsTopologyPtr);
     if (numResults == 0)
       return false;
-    position = m_topologyResults[0].position;
-    return true;
+
+    // Pick randomly by shuffling indices
+    int[] placementIdxs = new int[numResults];
+    for (int i = 0; i < placementIdxs.Length; i++)
+    {
+      placementIdxs[i] = i;
+    }
+    Shuffle(placementIdxs);
+
+    // We have to keep track of our own placements
+    foreach (int idx in placementIdxs)
+    {
+      SpatialUnderstandingDllTopology.TopologyResult result = m_topologyResults[idx];
+      if (!Overlaps(result, minWidth))
+      {
+        position = result.position;
+        Vector3 size = new Vector3(minWidth, 0, minWidth);  // we ignore height for now
+        m_platformPlacements.Add(new Tuple<Vector3, Vector3>(position, size));
+        return true;
+      }
+    }
+    return false;
   }
 
   //TODO: add a function to remove individual placements based on token
   public void ClearPlacements()
   {
     SpatialUnderstandingDllObjectPlacement.Solver_RemoveAllObjects();
+    m_platformPlacements.Clear();
   }
 
   private void OnScanStateChanged()
