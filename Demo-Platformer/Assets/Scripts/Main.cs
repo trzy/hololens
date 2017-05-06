@@ -115,7 +115,6 @@ public class Main: MonoBehaviour
     Vector3 position;
 
     // Fortress with player inside and red droids nearby
-    // TODO: orient fortress towards user
     if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, new Vector3(1, 0, 1)))
     {
       GameObject fortress = Instantiate(fortressPrefab, position, FacingPlayer(position));
