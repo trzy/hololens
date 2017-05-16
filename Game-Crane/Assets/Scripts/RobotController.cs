@@ -63,6 +63,12 @@ public class RobotController: MonoBehaviour, IMagnetic
   [Tooltip("Turning speed (deg/s)")]
   public float turnSpeed = 360 / 5;
 
+  [Tooltip("Number of seconds of continuous contact with a single collider (OnCollisionStay) required after a fall before waking up again.")]
+  public float wakeTimePostCollisionStay = 3.25f;
+
+  [Tooltip("Number of seconds after we started to fall to force a wake up, regardless of collision state.")]
+  public float wakeTimeout = 10;
+
   [Tooltip ("Maximum directional error when heading toward target (degrees).")]
   public float maxHeadingError = 1;
 
@@ -70,31 +76,55 @@ public class RobotController: MonoBehaviour, IMagnetic
   {
     Idle,
     WalkToTarget,
-    FreeFall
+    StuckToMagnet,
+    FreeFall,
+    StandUp
   }
 
   private Rigidbody m_rb;
   private Animator m_anim;
+  private int m_animIdle = Animator.StringToHash("Idle");
   private int m_animWalking = Animator.StringToHash("Walking");
+  private int m_animFalling = Animator.StringToHash("Falling");
+  private int m_animStandUp = Animator.StringToHash("StandUp");
   private State m_state = State.Idle;
   private GameObject m_target = null;
+  private bool m_collisionStay = false;
+  private float m_collisionStayTime;
+  private float m_stateBeginTime;
+  private Quaternion m_startingPose = Quaternion.identity;
+  private Quaternion m_targetPose = Quaternion.identity;
 
   public void OnMagnet(bool on)
   {
     Debug.Log("Magnet: " + on);
-    FreeFallState();
+    StuckToMagnetState();
   }
 
   private void OnCollisionEnter(Collision collision)
   {
     GameObject other = collision.collider.gameObject;
-    if (other.name == "WreckingBall")
+    if (other.name == "WreckingBall" && m_state != State.StuckToMagnet && !m_rb.isKinematic)
     {
       Rigidbody ball = collision.rigidbody;
       m_rb.AddForce(ball.velocity.magnitude * Vector3.up, ForceMode.VelocityChange);
-      //m_rb.AddForce(Ground(ball.velocity), ForceMode.VelocityChange);
       FreeFallState();
     }
+    m_collisionStay = false;
+  }
+
+  private void OnCollisionStay(Collision collision)
+  {
+    if (!m_collisionStay)
+    {
+      m_collisionStay = true;
+      m_collisionStayTime = Time.time;
+    }
+  }
+
+  private void OnCollisionExit(Collision collision)
+  {
+    m_collisionStay = false;
   }
 
   private Vector3 Ground(Vector3 v)
@@ -114,11 +144,15 @@ public class RobotController: MonoBehaviour, IMagnetic
   private void FixedUpdate()
   {
     if (m_state == State.FreeFall)
-      return;
-
-    float distance = Ground(m_target.transform.position - transform.position).magnitude;
-
-    if (m_state == State.WalkToTarget || m_state == State.Idle)
+    {
+      // Get up after we've been colliding continuously for a given time or
+      // seemingly stuck in this state for too long
+      float timeColliding = Time.time - m_collisionStayTime;
+      float timeFreeFalling = Time.time - m_stateBeginTime;
+      if ((m_collisionStay && timeColliding > wakeTimePostCollisionStay) || timeFreeFalling > wakeTimeout)
+        StandUpState();
+    }
+    else if (m_state == State.WalkToTarget || m_state == State.Idle)
     {
       // Track the player
       float headingError = HeadingError(m_target.transform.position);
@@ -129,48 +163,120 @@ public class RobotController: MonoBehaviour, IMagnetic
       m_rb.AddTorque(angularError * Vector3.up, ForceMode.VelocityChange);
 
       // Maintain velocity
+      float distance = Ground(m_target.transform.position - transform.position).magnitude;
       Vector3 currentVelocity = Ground(m_rb.velocity);
       Vector3 targetVelocity = Ground(transform.forward) * ((distance > 1) ? walkSpeed : 0);
       Vector3 error = targetVelocity - currentVelocity;
       m_rb.AddForce(error, ForceMode.VelocityChange);
+      
+      // Update state if needed
+      if (distance > 1)
+        WalkToTargetState(m_target);
+      else
+        IdleState();
     }
+  }
 
-    // Update state if needed
-    if (distance > 1)
-      WalkToTargetState(m_target);
-    else
-      IdleState();
+  private void Update()
+  {
+    if (m_state == State.StandUp)
+    {
+      float t = (Time.time - m_stateBeginTime) / 0.25f;
+      if (t < 1)
+      {
+        // Turn over
+        transform.rotation = Quaternion.Lerp(m_startingPose, m_targetPose, t);
+      }
+      else if (m_anim.GetBool(m_animStandUp) == false)
+      {
+        // Once we have finished flipping over, we can stand up. The stand up
+        // animation is in the normal, standing orientation with y == up. At
+        // this point, we are lying down, so to stand up, we want the axis
+        // our feet are pointing into to become the forward direction.
+        m_anim.SetBool(m_animStandUp, true);
+        transform.rotation = Quaternion.LookRotation(-transform.up, Vector3.up);
+      }
+    }
+  }
+
+  // Animation callback: fired when "get-up" animation is finished
+  public void OnStandUpComplete()
+  {
+    IdleState();
   }
 
   private void IdleState()
   {
+    m_anim.SetBool(m_animIdle, true);
     m_anim.SetBool(m_animWalking, false);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false);
+    Kinematic(false);
     LockRotation(true);
     m_state = State.Idle;
   }
 
   private void WalkToTargetState(GameObject target)
   {
+    m_anim.SetBool(m_animIdle, false);
     m_anim.SetBool(m_animWalking, true);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false);
+    Kinematic(false);
     LockRotation(true);
     m_state = State.WalkToTarget;
     m_target = target;
   }
 
+  private void StuckToMagnetState()
+  {
+    m_anim.SetBool(m_animIdle, true);
+    m_anim.SetBool(m_animWalking, false);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false);
+    Kinematic(false);
+    LockRotation(false);
+    m_state = State.StuckToMagnet;
+  }
+
   private void FreeFallState()
   {
+    m_anim.SetBool(m_animIdle, false);
     m_anim.SetBool(m_animWalking, false);
+    m_anim.SetBool(m_animFalling, true);
+    m_anim.SetBool(m_animStandUp, false);
+    Kinematic(false);
     LockRotation(false);
+    if (m_state != State.FreeFall)
+      m_stateBeginTime = Time.time;
     m_state = State.FreeFall;
+  }
+
+  private void StandUpState()
+  {
+    m_anim.SetBool(m_animIdle, false);
+    m_anim.SetBool(m_animWalking, false);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false); // not yet
+    Kinematic(true);
+    LockRotation(true);
+    if (m_state != State.StandUp)
+      m_stateBeginTime = Time.time;
+    m_state = State.StandUp;
+
+    // First, flip over so we are on our back
+    m_startingPose = transform.rotation;
+    m_targetPose = Quaternion.FromToRotation(transform.forward, Vector3.up) * transform.rotation;
+  }
+
+  private void Kinematic(bool kinematic)
+  {
+    m_rb.isKinematic = kinematic;
   }
 
   private void LockRotation(bool lockRotation)
   {
     m_rb.freezeRotation = lockRotation;
-  }
-
-  private void Update()
-  {
   }
 
   private void Start()
