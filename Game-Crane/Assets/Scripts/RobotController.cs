@@ -74,6 +74,7 @@ public class RobotController: MonoBehaviour, IMagnetic
 
   private enum State
   {
+    None,
     Idle,
     WalkToTarget,
     StuckToMagnet,
@@ -87,7 +88,8 @@ public class RobotController: MonoBehaviour, IMagnetic
   private int m_animWalking = Animator.StringToHash("Walking");
   private int m_animFalling = Animator.StringToHash("Falling");
   private int m_animStandUp = Animator.StringToHash("StandUp");
-  private State m_state = State.Idle;
+  private State m_state = State.None;
+  private bool m_waitForNextAnimationState = false;
   private GameObject m_target = null;
   private bool m_collisionStay = false;
   private float m_collisionStayTime;
@@ -143,6 +145,13 @@ public class RobotController: MonoBehaviour, IMagnetic
 
   private void FixedUpdate()
   {
+    // When we change states, we detect a change in animation state by waiting
+    // for a callback to lower this flag. This is to prevent us from trying to
+    // change states multiple times while an animation is still playing, which
+    // can make subsequent state transitions fail.
+    if (m_waitForNextAnimationState)
+      return;
+
     if (m_state == State.FreeFall)
     {
       // Get up after we've been colliding continuously for a given time or
@@ -199,7 +208,16 @@ public class RobotController: MonoBehaviour, IMagnetic
     }
   }
 
+  // Called from StateMachineBehaviour script
+  public void OnAnimationStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+  {
+    m_waitForNextAnimationState = false;
+  }
+
   // Animation callback: fired when "get-up" animation is finished
+  //TODO: this could actually be done using OnAnimationStateExit() and an
+  // unconditional transition out of StandUp. We could detect IdleState there
+  // and wait for OnStateEnter().
   public void OnStandUpComplete()
   {
     IdleState();
@@ -213,7 +231,11 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animStandUp, false);
     Kinematic(false);
     LockRotation(true);
-    m_state = State.Idle;
+    if (m_state != State.Idle)
+    {
+      m_state = State.Idle;
+      m_waitForNextAnimationState = true;
+    }
   }
 
   private void WalkToTargetState(GameObject target)
@@ -224,7 +246,11 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animStandUp, false);
     Kinematic(false);
     LockRotation(true);
-    m_state = State.WalkToTarget;
+    if (m_state != State.WalkToTarget)
+    {
+      m_state = State.WalkToTarget;
+      m_waitForNextAnimationState = true;
+    }
     m_target = target;
   }
 
@@ -236,7 +262,11 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animStandUp, false);
     Kinematic(false);
     LockRotation(false);
-    m_state = State.StuckToMagnet;
+    if (m_state != State.StuckToMagnet)
+    {
+      m_state = State.StuckToMagnet;
+      m_waitForNextAnimationState = true;
+    }
   }
 
   private void FreeFallState()
@@ -248,8 +278,11 @@ public class RobotController: MonoBehaviour, IMagnetic
     Kinematic(false);
     LockRotation(false);
     if (m_state != State.FreeFall)
+    {
       m_stateBeginTime = Time.time;
-    m_state = State.FreeFall;
+      m_state = State.FreeFall;
+      m_waitForNextAnimationState = true;
+    }
   }
 
   private void StandUpState()
@@ -261,8 +294,11 @@ public class RobotController: MonoBehaviour, IMagnetic
     Kinematic(true);
     LockRotation(true);
     if (m_state != State.StandUp)
+    {
       m_stateBeginTime = Time.time;
-    m_state = State.StandUp;
+      m_state = State.StandUp;
+      m_waitForNextAnimationState = true;
+    }
 
     // First, flip over so we are on our back
     m_startingPose = transform.rotation;
