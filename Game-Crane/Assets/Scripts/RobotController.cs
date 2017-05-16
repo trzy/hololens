@@ -77,9 +77,52 @@ public class RobotController: MonoBehaviour, IMagnetic
     None,
     Idle,
     WalkToTarget,
+    CarryToTarget,
     StuckToMagnet,
     FreeFall,
     StandUp
+  }
+
+  private struct Target
+  {
+    public delegate Vector3 PositionCallback();
+
+    public Vector3 position
+    {
+      get
+      {
+        if (m_positionCallback != null)
+          return m_positionCallback();
+        if (m_transform != null)
+          return m_transform.position;
+        return m_position;
+      }
+    }
+
+    public Target(PositionCallback cb)
+    {
+      m_positionCallback = cb;
+      m_transform = null;
+      m_position = Vector3.zero;
+    }
+
+    public Target(Transform t)
+    {
+      m_positionCallback = null;
+      m_transform = t;
+      m_position = Vector3.zero;
+    }
+
+    public Target(Vector3 p)
+    {
+      m_positionCallback = null;
+      m_transform = null;
+      m_position = p;
+    }
+
+    private PositionCallback m_positionCallback;
+    private Transform m_transform;
+    private Vector3 m_position;
   }
 
   private Rigidbody m_rb;
@@ -88,9 +131,10 @@ public class RobotController: MonoBehaviour, IMagnetic
   private int m_animWalking = Animator.StringToHash("Walking");
   private int m_animFalling = Animator.StringToHash("Falling");
   private int m_animStandUp = Animator.StringToHash("StandUp");
+  private int m_animCarry = Animator.StringToHash("Carry");
   private State m_state = State.None;
   private bool m_waitForNextAnimationState = false;
-  private GameObject m_target = null;
+  private Target m_target = new Target(Vector3.zero);
   private bool m_collisionStay = false;
   private float m_collisionStayTime;
   private float m_stateBeginTime;
@@ -161,10 +205,12 @@ public class RobotController: MonoBehaviour, IMagnetic
       if ((m_collisionStay && timeColliding > wakeTimePostCollisionStay) || timeFreeFalling > wakeTimeout)
         StandUpState();
     }
-    else if (m_state == State.WalkToTarget || m_state == State.Idle)
+    else if (m_state == State.Idle || m_state == State.WalkToTarget || m_state == State.CarryToTarget)
     {
-      // Track the player
-      float headingError = HeadingError(m_target.transform.position);
+      float closeEnough = .01f;
+
+      // Track the target
+      float headingError = HeadingError(m_target.position);
       float targetDirection = -Mathf.Sign(headingError);
       float targetTurnSpeed = targetDirection * (Mathf.Abs(headingError) > maxHeadingError ? (Mathf.Deg2Rad * turnSpeed) : 0);
       float currentTurnSpeed = m_rb.angularVelocity.y;
@@ -172,17 +218,25 @@ public class RobotController: MonoBehaviour, IMagnetic
       m_rb.AddTorque(angularError * Vector3.up, ForceMode.VelocityChange);
 
       // Maintain velocity
-      float distance = Ground(m_target.transform.position - transform.position).magnitude;
+      float distance = Ground(m_target.position - transform.position).magnitude;
       Vector3 currentVelocity = Ground(m_rb.velocity);
-      Vector3 targetVelocity = Ground(transform.forward) * ((distance > 1) ? walkSpeed : 0);
+      Vector3 targetVelocity = Ground(transform.forward) * ((distance > closeEnough) ? walkSpeed : 0);
       Vector3 error = targetVelocity - currentVelocity;
       m_rb.AddForce(error, ForceMode.VelocityChange);
-      
+
       // Update state if needed
-      if (distance > 1)
-        WalkToTargetState(m_target);
+      if (m_state != State.CarryToTarget)
+      {
+        if (distance > closeEnough)
+          WalkToTargetState(m_target);
+        else
+          IdleState();
+      }
       else
-        IdleState();
+      {
+        if (distance <= closeEnough)
+          WalkToTargetState(new Target(Ground(Camera.main.transform.position + Camera.main.transform.forward * 2f)));
+      }
     }
   }
 
@@ -229,6 +283,7 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animWalking, false);
     m_anim.SetBool(m_animFalling, false);
     m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, false);
     Kinematic(false);
     LockRotation(true);
     if (m_state != State.Idle)
@@ -238,12 +293,13 @@ public class RobotController: MonoBehaviour, IMagnetic
     }
   }
 
-  private void WalkToTargetState(GameObject target)
+  private void WalkToTargetState(Target target)
   {
     m_anim.SetBool(m_animIdle, false);
     m_anim.SetBool(m_animWalking, true);
     m_anim.SetBool(m_animFalling, false);
     m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, false);
     Kinematic(false);
     LockRotation(true);
     if (m_state != State.WalkToTarget)
@@ -260,6 +316,7 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animWalking, false);
     m_anim.SetBool(m_animFalling, false);
     m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, false);
     Kinematic(false);
     LockRotation(false);
     if (m_state != State.StuckToMagnet)
@@ -275,6 +332,7 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animWalking, false);
     m_anim.SetBool(m_animFalling, true);
     m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, false);
     Kinematic(false);
     LockRotation(false);
     if (m_state != State.FreeFall)
@@ -291,6 +349,7 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_anim.SetBool(m_animWalking, false);
     m_anim.SetBool(m_animFalling, false);
     m_anim.SetBool(m_animStandUp, false); // not yet
+    m_anim.SetBool(m_animCarry, false);
     Kinematic(true);
     LockRotation(true);
     if (m_state != State.StandUp)
@@ -303,6 +362,23 @@ public class RobotController: MonoBehaviour, IMagnetic
     // First, flip over so we are on our back
     m_startingPose = transform.rotation;
     m_targetPose = Quaternion.FromToRotation(transform.forward, Vector3.up) * transform.rotation;
+  }
+
+  private void CarryToTargetState(Target target)
+  {
+    m_anim.SetBool(m_animIdle, false);
+    m_anim.SetBool(m_animWalking, false);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, true);
+    Kinematic(false);
+    LockRotation(true);
+    if (m_state != State.CarryToTarget)
+    {
+      m_state = State.CarryToTarget;
+      m_waitForNextAnimationState = true;
+    }
+    m_target = target;
   }
 
   private void Kinematic(bool kinematic)
@@ -319,6 +395,7 @@ public class RobotController: MonoBehaviour, IMagnetic
   {
     m_rb = GetComponent<Rigidbody>();
     m_anim = GetComponent<Animator>();
-    WalkToTargetState(Camera.main.gameObject);
+    //WalkToTargetState(new Target(Camera.main.transform));
+    CarryToTargetState(new Target(Camera.main.transform));
   }
 }

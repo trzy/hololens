@@ -1168,6 +1168,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   walkSpeed: 0.25
   turnSpeed: 72
+  wakeTimePostCollisionStay: 3
+  wakeTimeout: 10
   maxHeadingError: 1
 --- !u!136 &136437417814895288
 CapsuleCollider:
