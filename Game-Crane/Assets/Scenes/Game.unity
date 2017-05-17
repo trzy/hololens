@@ -204,6 +204,7 @@ MonoBehaviour:
   cubePrefab: {fileID: 1859475634681184, guid: 94cee6ae9cab72e498088ecbac892cca, type: 2}
   robotPrefab: {fileID: 1672729348892728, guid: 430311c101b9cb940963515fb124e738,
     type: 2}
+  bombPrefab: {fileID: 1626562039154378, guid: a979c32293c1f4c46ac316c1ba2d5296, type: 2}
   stabilizationTargets:
   - {fileID: 1383014278}
 --- !u!4 &638987565

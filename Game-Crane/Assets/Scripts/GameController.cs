@@ -16,6 +16,9 @@ public class GameController: MonoBehaviour, IInputClickHandler
   [Tooltip("Enemy robot.")]
   public GameObject robotPrefab;
 
+  [Tooltip("Bomb.")]
+  public GameObject bombPrefab;
+
   [Tooltip("Objects to set stabilization plane at (average position is used).")]
   public GameObject[] stabilizationTargets;
 
@@ -45,7 +48,12 @@ public class GameController: MonoBehaviour, IInputClickHandler
     for (int i = 0; i < 3; i++)
     {
       if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 0.25f))
-        Instantiate(robotPrefab, position, Quaternion.identity);
+      {
+        GameObject bomb = Instantiate(bombPrefab);
+        GameObject obj = Instantiate(robotPrefab, position, Quaternion.identity);
+        RobotController robot = obj.GetComponent<RobotController>();
+        robot.AddBomb(bomb);
+      }
     }
   }
 

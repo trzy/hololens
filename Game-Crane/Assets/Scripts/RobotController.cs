@@ -57,6 +57,12 @@ using UnityEngine;
 
 public class RobotController: MonoBehaviour, IMagnetic
 {
+  [Tooltip("Left hand bone.")]
+  public Transform leftHand;
+
+  [Tooltip("Right hand bone.")]
+  public Transform rightHand;
+
   [Tooltip("Walking speed (m/s).")]
   public float walkSpeed = 0.25f;
 
@@ -140,6 +146,7 @@ public class RobotController: MonoBehaviour, IMagnetic
   private float m_stateBeginTime;
   private Quaternion m_startingPose = Quaternion.identity;
   private Quaternion m_targetPose = Quaternion.identity;
+  private GameObject m_bomb = null;
 
   public void OnMagnet(bool on)
   {
@@ -242,7 +249,11 @@ public class RobotController: MonoBehaviour, IMagnetic
 
   private void Update()
   {
-    if (m_state == State.StandUp)
+    if (m_state == State.CarryToTarget && m_bomb != null)
+    {
+      m_bomb.transform.position = 0.5f * (leftHand.position + rightHand.position);
+    }
+    else if (m_state == State.StandUp)
     {
       float t = (Time.time - m_stateBeginTime) / 0.25f;
       if (t < 1)
@@ -266,6 +277,12 @@ public class RobotController: MonoBehaviour, IMagnetic
   public void OnAnimationStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
   {
     m_waitForNextAnimationState = false;
+    if (stateInfo.shortNameHash == m_animCarry)
+    {
+      // When we leave the carry state for any reason, bomb is detached
+      BombKinematic(false);
+      m_bomb.transform.parent = null;
+    }
   }
 
   // Animation callback: fired when "get-up" animation is finished
@@ -379,6 +396,7 @@ public class RobotController: MonoBehaviour, IMagnetic
       m_waitForNextAnimationState = true;
     }
     m_target = target;
+    BombKinematic(true);
   }
 
   private void Kinematic(bool kinematic)
@@ -395,7 +413,28 @@ public class RobotController: MonoBehaviour, IMagnetic
   {
     m_rb = GetComponent<Rigidbody>();
     m_anim = GetComponent<Animator>();
-    //WalkToTargetState(new Target(Camera.main.transform));
-    CarryToTargetState(new Target(Camera.main.transform));
+    WalkToTargetState(new Target(Camera.main.transform));
+    if (m_bomb)
+      CarryToTargetState(new Target(Camera.main.transform));
+  }
+
+  private void BombKinematic(bool kinematic)
+  {
+    if (m_bomb == null)
+      return;
+
+    // If kinematic, make rigid body kinematic and disable collider
+    Collider collider = m_bomb.GetComponent<Collider>();
+    if (collider != null)
+      collider.enabled = !kinematic;
+    Rigidbody rb = m_bomb.GetComponent<Rigidbody>();
+    if (rb != null)
+      rb.isKinematic = kinematic;
+  }
+
+  // Call after instantiation (executes after Awake() but before Start())
+  public void AddBomb(GameObject bomb)
+  {
+    m_bomb = bomb;
   }
 }
