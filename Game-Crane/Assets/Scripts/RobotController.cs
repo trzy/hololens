@@ -159,6 +159,8 @@ public class RobotController: MonoBehaviour, IMagnetic
     GameObject other = collision.collider.gameObject;
     if (other.name == "WreckingBall" && m_state != State.StuckToMagnet && !m_rb.isKinematic)
     {
+      if (m_waitForNextAnimationState)
+        return; // guard against multiple transitions that leave us stuck
       Rigidbody ball = collision.rigidbody;
       m_rb.AddForce(ball.velocity.magnitude * Vector3.up, ForceMode.VelocityChange);
       FreeFallState();
