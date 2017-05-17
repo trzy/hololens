@@ -242,6 +242,11 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return obj.layer == HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer;
   }
 
+  public static int spatialLayerMask
+  {
+    get { return 1 << HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer; }
+  }
+
   private void OnScanStateChanged()
   {
     if (m_spatialUnderstanding.ScanState == SpatialUnderstanding.ScanStates.Done)

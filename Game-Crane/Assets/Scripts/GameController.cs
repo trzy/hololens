@@ -163,5 +163,15 @@ public class GameController: MonoBehaviour, IInputClickHandler
   {
     InputManager.Instance.AddGlobalListener(this.gameObject);
     SetState(State.Scanning);
+
+    //
+    int ignoreMask = LayerMask.GetMask(new string[] { "NeverStabilize" });
+    Debug.Log("ignoreMask=" + ignoreMask);
+    int secondaryMask = 1 << magnet.layer;  // GazeManager should ignore head-attached objects if anything else can be found first
+    int primaryMask = ((Physics.DefaultRaycastLayers & ~PlayspaceManager.spatialLayerMask) & ~secondaryMask) & ~ignoreMask;
+    if (ignoreMask != secondaryMask)
+      GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask, secondaryMask };
+    else
+      GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask };
   }
 }
