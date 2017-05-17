@@ -22,6 +22,9 @@ public class GameController: MonoBehaviour, IInputClickHandler
   [Tooltip("Objects to set stabilization plane at (average position is used).")]
   public GameObject[] stabilizationTargets;
 
+  [Tooltip("A gizmo used to highlight debug items of interest.")]
+  public GameObject gizmoPrefab;
+
   enum State
   {
     Init,
@@ -33,6 +36,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
   private State m_state = State.Init;
   private bool m_magnetOn = false;
   private List<GameObject> m_magnetObjects = new List<GameObject>();
+  private GameObject m_gizmo = null;
 
   private void PlaceObjects()
   {
@@ -153,10 +157,68 @@ public class GameController: MonoBehaviour, IInputClickHandler
   }
 #endif
 
+  private void DebugDraw(GameObject obj)
+  {
+    if (obj == null)
+    {
+      if (m_gizmo != null)
+        m_gizmo.SetActive(false);
+      return;
+    }
+
+    if (m_gizmo == null)
+      m_gizmo = Instantiate(gizmoPrefab);
+    m_gizmo.SetActive(true);
+    m_gizmo.transform.position = obj.transform.position;
+  }
+
   private void LateUpdate()
   {
-    //GameObject target = stabilizationTargets[0];
-    //HolographicSettings.SetFocusPointForFrame(Camera.main.transform.position + Camera.main.transform.forward * 1f, -Camera.main.transform.forward);
+    /*
+     * Notes:
+     * 
+     * For this to work, make sure things like InputManager are not assigned to Default layers.
+     * We also don't want to stabilize on things that are too close (~1m). May want to refine this
+     * by measuring distance *to* stabilization plane.
+     * 
+     * When tracking is used, it's not clear what the normal is. I think GazeManager is used,
+     * however, which lead to incorrect settings.
+     * 
+     * TODO:
+     * -----
+     * Put game objects in an explicit Game layer and simply tell GazeManager to use that.
+     */
+    MonoBehaviour[] objects = FindObjectsOfType<MonoBehaviour>();
+    GameObject bestCandidate = null;
+    //List<MonoBehaviour> visibleObjects = new List<MonoBehaviour>(objects.Length);
+    foreach (MonoBehaviour obj in objects)
+    {
+      Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+      foreach (Renderer renderer in renderers)
+      //Renderer renderer = obj.gameObject.GetComponent<Renderer>();
+      //if (renderer != null)
+      {
+        if (renderer.isVisible)
+        {
+          if (obj.gameObject.layer != LayerMask.NameToLayer("NeverStabilize") && obj.gameObject.layer != LayerMask.NameToLayer("SecondaryStabilize") && obj.gameObject.layer != HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer && (obj.transform.position - Camera.main.transform.position).magnitude > 0.25f)
+          {
+            if (bestCandidate == null)
+              bestCandidate = obj.gameObject;
+            else
+            {
+              float distance = (Camera.main.transform.position - obj.transform.position).magnitude;
+              float bestDistance = (Camera.main.transform.position - obj.transform.position).magnitude;
+              if (distance > 1 && distance < bestDistance)
+                bestCandidate = obj.gameObject;
+            }
+          }
+          break;
+        }
+      }
+    }
+    HoloToolkit.Unity.StabilizationPlaneModifier.Instance.TargetOverride = (bestCandidate == null) ? null : bestCandidate.transform;
+    //DebugDraw(bestCandidate);
+    //Debug.Log("Best candidate=" + ((bestCandidate == null) ? "none" : bestCandidate.name));
   }
 
   private void Start()
@@ -164,9 +226,9 @@ public class GameController: MonoBehaviour, IInputClickHandler
     InputManager.Instance.AddGlobalListener(this.gameObject);
     SetState(State.Scanning);
 
-    //
+    // GazeManager should ignore head-attached objects (marked mostly as NeverStabilize but some may be SecondaryStabilize)
+    // if anything else can first be found
     int ignoreMask = LayerMask.GetMask(new string[] { "NeverStabilize" });
-    Debug.Log("ignoreMask=" + ignoreMask);
     int secondaryMask = 1 << magnet.layer;  // GazeManager should ignore head-attached objects if anything else can be found first
     int primaryMask = ((Physics.DefaultRaycastLayers & ~PlayspaceManager.spatialLayerMask) & ~secondaryMask) & ~ignoreMask;
     if (ignoreMask != secondaryMask)
