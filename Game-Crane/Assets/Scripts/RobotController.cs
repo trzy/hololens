@@ -1,4 +1,6 @@
-﻿/*
+﻿//TODO: better to just have a walktotarget state and then indicate an action 
+//      to take within specified vicinity of target
+/*
  * How AddForce() works:
  * ---------------------
  * 
@@ -84,6 +86,7 @@ public class RobotController: MonoBehaviour, IMagnetic
     Idle,
     WalkToTarget,
     CarryToTarget,
+    WalkToBomb,
     StuckToMagnet,
     FreeFall,
     StandUp
@@ -146,7 +149,7 @@ public class RobotController: MonoBehaviour, IMagnetic
   private float m_stateBeginTime;
   private Quaternion m_startingPose = Quaternion.identity;
   private Quaternion m_targetPose = Quaternion.identity;
-  private GameObject m_bomb = null;
+  private GameObject m_bomb = null; // bomb we are either carrying or seeking
 
   public void OnMagnet(bool on)
   {
@@ -214,7 +217,7 @@ public class RobotController: MonoBehaviour, IMagnetic
       if ((m_collisionStay && timeColliding > wakeTimePostCollisionStay) || timeFreeFalling > wakeTimeout)
         StandUpState();
     }
-    else if (m_state == State.Idle || m_state == State.WalkToTarget || m_state == State.CarryToTarget)
+    else if (m_state == State.Idle || m_state == State.WalkToTarget || m_state == State.CarryToTarget || m_state == State.WalkToBomb)
     {
       float closeEnough = .01f;
 
@@ -329,6 +332,23 @@ public class RobotController: MonoBehaviour, IMagnetic
     m_target = target;
   }
 
+  private void WalkToBombState()
+  {
+    m_anim.SetBool(m_animIdle, false);
+    m_anim.SetBool(m_animWalking, true);
+    m_anim.SetBool(m_animFalling, false);
+    m_anim.SetBool(m_animStandUp, false);
+    m_anim.SetBool(m_animCarry, false);
+    Kinematic(false);
+    LockRotation(true);
+    if (m_state != State.WalkToBomb)
+    {
+      m_state = State.WalkToBomb;
+      m_waitForNextAnimationState = true;
+    }
+    m_target = new Target(m_bomb.transform);
+  }
+
   private void StuckToMagnetState()
   {
     m_anim.SetBool(m_animIdle, true);
@@ -415,9 +435,15 @@ public class RobotController: MonoBehaviour, IMagnetic
   {
     m_rb = GetComponent<Rigidbody>();
     m_anim = GetComponent<Animator>();
-    WalkToTargetState(new Target(Camera.main.transform));
     if (m_bomb)
-      CarryToTargetState(new Target(Camera.main.transform));
+    {
+      if (m_state == State.CarryToTarget)
+        CarryToTargetState(new Target(Camera.main.transform));
+      else if (m_state == State.WalkToBomb)
+        WalkToBombState();
+    }
+    else
+      WalkToTargetState(new Target(Camera.main.transform));
   }
 
   private void BombKinematic(bool kinematic)
@@ -435,8 +461,15 @@ public class RobotController: MonoBehaviour, IMagnetic
   }
 
   // Call after instantiation (executes after Awake() but before Start())
-  public void AddBomb(GameObject bomb)
+  public void InitWithBomb(GameObject bomb)
   {
     m_bomb = bomb;
+    m_state = State.CarryToTarget;
+  }
+
+  public void InitSeekingBomb(GameObject bomb)
+  {
+    m_bomb = bomb;
+    m_state = State.WalkToBomb;
   }
 }
