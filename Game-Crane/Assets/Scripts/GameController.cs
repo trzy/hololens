@@ -19,8 +19,8 @@ public class GameController: MonoBehaviour, IInputClickHandler
   [Tooltip("Bomb.")]
   public GameObject bombPrefab;
 
-  [Tooltip("Objects to set stabilization plane at (average position is used).")]
-  public GameObject[] stabilizationTargets;
+  [Tooltip("Whether to set the stabilization plane.")]
+  public bool setStabilizationPlane = false;
 
   [Tooltip("A gizmo used to highlight debug items of interest.")]
   public GameObject gizmoPrefab;
@@ -48,16 +48,39 @@ public class GameController: MonoBehaviour, IInputClickHandler
     if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, cubePrefab.transform.localScale.x))
       Instantiate(cubePrefab, position + cubePrefab.transform.localScale.y * Vector3.up, Quaternion.identity);
 
-    // Chibi-robot!
+    // Place bombs
+    List<GameObject> bombs = new List<GameObject>();
+    for (int i = 0; i < 4; i++)
+    {
+      if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, 0.25f * Vector3.one))
+        bombs.Add(Instantiate(bombPrefab, position, Quaternion.identity));
+    }
+
+    // Chibi-robots
+    List<RobotController> robots = new List<RobotController>();
     for (int i = 0; i < 3; i++)
     {
+      // On platform, carrying bombs
       if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 0.25f))
       {
         GameObject bomb = Instantiate(bombPrefab);
         GameObject obj = Instantiate(robotPrefab, position, Quaternion.identity);
         RobotController robot = obj.GetComponent<RobotController>();
-        robot.AddBomb(bomb);
+        robot.InitWithBomb(bomb);
       }
+
+      // On floor, without bombs
+      if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, 0.25f * Vector3.one))
+      {
+        GameObject obj = Instantiate(robotPrefab, position, Quaternion.identity);
+        robots.Add(obj.GetComponent<RobotController>());
+      }
+    }
+
+    // Assign placed bombs to robots
+    for (int i = 0; i < System.Math.Min(robots.Count, bombs.Count); i++)
+    {
+      robots[i].InitSeekingBomb(bombs[i]);
     }
   }
 
@@ -174,6 +197,9 @@ public class GameController: MonoBehaviour, IInputClickHandler
 
   private void LateUpdate()
   {
+    if (!setStabilizationPlane)
+      return;
+
     /*
      * Notes:
      * 
@@ -223,17 +249,21 @@ public class GameController: MonoBehaviour, IInputClickHandler
 
   private void Start()
   {
-    InputManager.Instance.AddGlobalListener(this.gameObject);
     SetState(State.Scanning);
 
-    // GazeManager should ignore head-attached objects (marked mostly as NeverStabilize but some may be SecondaryStabilize)
-    // if anything else can first be found
-    int ignoreMask = LayerMask.GetMask(new string[] { "NeverStabilize" });
-    int secondaryMask = 1 << magnet.layer;  // GazeManager should ignore head-attached objects if anything else can be found first
-    int primaryMask = ((Physics.DefaultRaycastLayers & ~PlayspaceManager.spatialLayerMask) & ~secondaryMask) & ~ignoreMask;
-    if (ignoreMask != secondaryMask)
-      GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask, secondaryMask };
-    else
-      GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask };
+    if (setStabilizationPlane)
+    {
+      InputManager.Instance.AddGlobalListener(this.gameObject);
+
+      // GazeManager should ignore head-attached objects (marked mostly as NeverStabilize but some may be SecondaryStabilize)
+      // if anything else can first be found
+      int ignoreMask = LayerMask.GetMask(new string[] { "NeverStabilize" });
+      int secondaryMask = 1 << magnet.layer;  // GazeManager should ignore head-attached objects if anything else can be found first
+      int primaryMask = ((Physics.DefaultRaycastLayers & ~PlayspaceManager.spatialLayerMask) & ~secondaryMask) & ~ignoreMask;
+      if (ignoreMask != secondaryMask)
+        GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask, secondaryMask };
+      else
+        GazeManager.Instance.RaycastLayerMasks = new LayerMask[] { primaryMask };
+    }
   }
 }
