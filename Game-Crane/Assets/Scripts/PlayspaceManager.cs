@@ -85,7 +85,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private SpatialUnderstanding m_spatialUnderstanding = null;
   private bool m_scanningComplete = false;
 
-  private enum SpatialUnderstandingState
+  private enum State
   {
     Halted,
     StartScanning,
@@ -97,8 +97,9 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     Finished
   }
 
-  private SpatialUnderstandingState m_spatialUnderstandingState = SpatialUnderstandingState.Halted;
-  private bool m_placementSolverInitialized = false;
+  private State m_spatialUnderstandingState = State.Halted;
+  private bool m_solverInitCalled = false;
+  private bool m_solverInitialized = false;
   private int m_uniquePlacementID = 0;
   private SpatialUnderstandingDllTopology.TopologyResult[] m_topologyResults = new SpatialUnderstandingDllTopology.TopologyResult[2048];
   private List<Tuple<Vector3, Vector3>> m_platformPlacements = new List<Tuple<Vector3, Vector3>>();
@@ -237,6 +238,19 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     m_platformPlacements.Clear();
   }
 
+  private IEnumerator InitSolverCoroutine()
+  {
+    int retval = 0;
+    Job job = new Job(() => { retval = SpatialUnderstandingDllObjectPlacement.Solver_Init(); });
+    job.Execute();
+    while (!job.Finished())
+    {
+      yield return null;
+    }
+    Debug.Log("Placement Solver initialization " + (retval == 1 ? "succeeded" : "FAILED"));
+    m_solverInitialized = true;
+  }
+
   public bool IsSpatialLayer(GameObject obj)
   { 
     return obj.layer == HoloToolkit.Unity.SpatialMapping.SpatialMappingManager.Instance.PhysicsLayer;
@@ -251,7 +265,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   {
     if (m_spatialUnderstanding.ScanState == SpatialUnderstanding.ScanStates.Done)
     {
-      m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForMeshImport;
+      m_spatialUnderstandingState = State.WaitingForMeshImport;
     }
   }
 
@@ -259,14 +273,14 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   {
     // So that this can be called from within another object's Start() method
     // (possibly before our own Start() function is called)
-    m_spatialUnderstandingState = SpatialUnderstandingState.StartScanning;
+    m_spatialUnderstandingState = State.StartScanning;
   }
 
   public void StopScanning()
   {
     if (m_spatialMappingManager.IsObserverRunning())
       m_spatialMappingManager.StopObserver();
-    m_spatialUnderstandingState = SpatialUnderstandingState.FinalizeScan;
+    m_spatialUnderstandingState = State.FinalizeScan;
   }
 
   public bool IsScanningComplete()
@@ -338,7 +352,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
       return;
     switch (m_spatialUnderstandingState)
     {
-      case SpatialUnderstandingState.StartScanning:
+      case State.StartScanning:
         // Start spatial mapping (SpatialUnderstanding requires this, too)
         if (!m_spatialMappingManager.IsObserverRunning())
           m_spatialMappingManager.StartObserver();
@@ -346,18 +360,18 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         m_spatialUnderstanding.ScanStateChanged += OnScanStateChanged;
         m_spatialUnderstanding.RequestBeginScanning();
         m_spatialMappingManager.SetSurfaceMaterial(renderingMaterial);
-        m_spatialUnderstandingState = SpatialUnderstandingState.Scanning;
+        m_spatialUnderstandingState = State.Scanning;
         break;
-      case SpatialUnderstandingState.FinalizeScan:
+      case State.FinalizeScan:
         //TODO: timeout?
         if (!m_spatialUnderstanding.ScanStatsReportStillWorking)
         {
           Debug.Log("Finalizing scan...");
           m_spatialUnderstanding.RequestFinishScan();
-          m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForScanCompletion;
+          m_spatialUnderstandingState = State.WaitingForScanCompletion;
         }
         break;
-      case SpatialUnderstandingState.WaitingForMeshImport:
+      case State.WaitingForMeshImport:
         //TODO: timeout?
         if (m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive == false)
         {
@@ -366,22 +380,24 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
             DisableSpatialMappingMeshes();
           ApplyVisualizationSettings();
           //SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
-          m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForPlacementSolverInit;
+          m_spatialUnderstandingState = State.WaitingForPlacementSolverInit;
         }
         break;
-      case SpatialUnderstandingState.WaitingForPlacementSolverInit:
+      case State.WaitingForPlacementSolverInit:
         //TODO: error checking and timeout?
-        if (!m_placementSolverInitialized)
+        if (!m_solverInitCalled)
         {
-          m_placementSolverInitialized = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
-          Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
-          if (m_placementSolverInitialized)
-          {
-            if (OnScanComplete != null)
-              OnScanComplete();
-            m_scanningComplete = true;
-            m_spatialUnderstandingState = SpatialUnderstandingState.Finished;
-          }
+          m_solverInitCalled = true;
+          StartCoroutine(InitSolverCoroutine());
+        }
+        else if (m_solverInitialized)
+        {
+          //       m_placementSolverInitialized = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
+          //Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
+          if (OnScanComplete != null)
+            OnScanComplete();
+          m_scanningComplete = true;
+          m_spatialUnderstandingState = State.Finished;
         }
         break;
       default:
