@@ -392,8 +392,6 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         }
         else if (m_solverInitialized)
         {
-          //       m_placementSolverInitialized = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
-          //Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
           if (OnScanComplete != null)
             OnScanComplete();
           m_scanningComplete = true;
