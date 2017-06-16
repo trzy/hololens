@@ -2,6 +2,7 @@
 
 #if NETFX_CORE
 using Windows.System.Threading;
+using Windows.Foundation;
 #else
 using System.Threading;
 #endif
@@ -11,19 +12,24 @@ public class Job
   private bool m_finished = false;
   private object m_lock = new object();
 #if NETFX_CORE
-  private Windows.Foundation.IAsyncAction m_asyncAction = null;
+  private IAsyncAction m_workItem = null;
 #else
   private Thread m_thread = null;
 #endif
-  private Action m_function;
+  private Action m_OnBackgroundThread;
+  private Action m_OnComplete;
 
   private void Run()
   {
-    m_function();
+    m_OnBackgroundThread();
     lock (m_lock)
     {
       m_finished = true;
     }
+#if !NETFX_CORE
+    if (m_OnComplete != null)
+      m_OnComplete();
+#endif
   }
 
   public bool Finished()
@@ -39,7 +45,10 @@ public class Job
 #if !NETFX_CORE
     m_thread.Abort();
 #else
-    //TODO: write me
+    //TODO: not sure if this is correct. Cancel() requires user's delegate to
+    //      cooperate and recognize the cancelation request.
+    m_workItem.Cancel();
+    Join();
 #endif
   }
 
@@ -48,7 +57,8 @@ public class Job
 #if !NETFX_CORE
     m_thread.Join();
 #else
-    //TODO: write me
+    if (m_workItem != null)
+      m_workItem.AsTask().Wait();
 #endif
   }
 
@@ -57,13 +67,26 @@ public class Job
 #if !NETFX_CORE
     m_thread.Start();
 #else
-    m_asyncAction = ThreadPool.RunAsync((workItem) => { Run(); });
+    m_workItem = ThreadPool.RunAsync(
+      (workItem) => 
+      {
+        Run(); 
+      });
+    m_workItem.Completed = new AsyncActionCompletedHandler(
+      (IAsyncAction workItem, AsyncStatus asyncStatus) =>
+      {
+        if (asyncStatus == AsyncStatus.Canceled)
+          return;
+        if (m_OnComplete != null)
+          m_OnComplete();
+      });
 #endif
   }
 
-  public Job(Action function)
+  public Job(Action OnBackgroundThread, Action OnComplete = null)
 	{
-    m_function = function;
+    m_OnBackgroundThread = OnBackgroundThread;
+    m_OnComplete = OnComplete;
 #if !NETFX_CORE
     m_thread = new Thread(Run);
 #endif

@@ -241,13 +241,20 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private IEnumerator InitSolverCoroutine()
   {
     int retval = 0;
-    Job job = new Job(() => { retval = SpatialUnderstandingDllObjectPlacement.Solver_Init(); });
+    Job job = new Job(
+      () =>
+      {
+        retval = SpatialUnderstandingDllObjectPlacement.Solver_Init();
+      },
+      () =>
+      {
+        Debug.Log("Placement Solver initialization " + (retval == 1 ? "succeeded" : "FAILED"));
+      });
     job.Execute();
     while (!job.Finished())
     {
       yield return null;
     }
-    Debug.Log("Placement Solver initialization " + (retval == 1 ? "succeeded" : "FAILED"));
     m_solverInitialized = true;
   }
 
