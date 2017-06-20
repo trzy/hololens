@@ -65,6 +65,7 @@ public class DynamicNavMeshBuilder
   {
     // Navmesh settings
     NavMeshBuildSettings settings = NavMesh.GetSettingsByID(0);
+    settings.minRegionArea = 0;
 
     // Bounds set to be enormous to ensure all areas are covered
     Bounds bounds = new Bounds(Vector3.zero, 1000 * Vector3.one);
