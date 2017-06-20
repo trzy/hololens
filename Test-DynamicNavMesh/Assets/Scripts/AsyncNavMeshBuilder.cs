@@ -1,6 +1,6 @@
 ﻿/*
- * Notes on dynamic NavMesh construction
- * -------------------------------------
+ * Notes on dynamic and asynchronous NavMesh construction
+ * ------------------------------------------------------
  * - A NavMesh must be built before any NavMeshAgent can be instantiated.
  *   If NavMeshAgents are present in the scene hierarchy, this NavMesh builder
  *   must be run first (Init()) with some initial meshes. Its parent object can
@@ -32,7 +32,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class DynamicNavMeshBuilder
+public class AsyncNavMeshBuilder
 {
   private List<NavMeshBuildSource> m_navMeshSources = new List<NavMeshBuildSource>();
   private NavMeshData m_navMeshData;

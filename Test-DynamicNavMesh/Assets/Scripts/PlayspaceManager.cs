@@ -108,7 +108,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   private SpatialUnderstandingDllTopology.TopologyResult[] m_topologyResults = new SpatialUnderstandingDllTopology.TopologyResult[2048];
   private List<Tuple<Vector3, Vector3>> m_platformPlacements = new List<Tuple<Vector3, Vector3>>();
 
-  private DynamicNavMeshBuilder m_navMeshBuilder = new DynamicNavMeshBuilder();
+  private AsyncNavMeshBuilder m_navMeshBuilder = new AsyncNavMeshBuilder();
 
   private bool TryPlaceObject(
     out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
