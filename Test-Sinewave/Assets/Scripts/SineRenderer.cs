@@ -11,7 +11,7 @@ public class SineRenderer: MonoBehaviour
     Bounded
   }
 
-  [Tooltip("Whether to grow without limit or fixed to a maximum length.")]
+  [Tooltip("Whether to grow without limit or fixed to a maximum length. This setting is only parsed at start-up.")]
   public Mode mode = Mode.Unbounded;
 
   [Tooltip("In bounded mode, how many periods to plot before removing old points.")]
@@ -31,6 +31,15 @@ public class SineRenderer: MonoBehaviour
 
   [Tooltip("Pauses updates.")]
   public bool paused = false;
+
+  public Vector3 lastPosition
+  {
+    get
+    {
+      // World space
+      return transform.localToWorldMatrix * new Vector3(m_lastTimeSampled, Sin(m_lastTimeSampled), 0);
+    }
+  }
 
   private List<Vector3> m_points = new List<Vector3>();
   private Vector3[] m_boundedPoints;
