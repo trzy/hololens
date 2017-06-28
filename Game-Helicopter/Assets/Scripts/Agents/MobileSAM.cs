@@ -1,5 +1,4 @@
-﻿//TODO: aggregate all behaviors into a list and write a function to disable all at once
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
