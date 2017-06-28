@@ -63,6 +63,7 @@ GameObject:
   - component: {fileID: 114481825248620084}
   - component: {fileID: 114662150275606368}
   - component: {fileID: 114130872707770940}
+  - component: {fileID: 114808222512873324}
   - component: {fileID: 114857562274587602}
   m_Layer: 0
   m_Name: Tank
@@ -315,12 +316,29 @@ MonoBehaviour:
   moveTo: {fileID: 114481825248620084}
   patrol: {fileID: 114662150275606368}
   follow: {fileID: 114130872707770940}
+  scan: {fileID: 0}
   track: {fileID: 114857562274587602}
-  stopFollowBehavior: 0
-  startFollowDistance: 0.75
+  stopFollowBehavior: 1
+  startFollowDistance: 1
   stopFollowDistance: 2
   startTrackDistance: 2
-  stopTrackDistance: 2
+  stopTrackDistance: 3
+--- !u!114 &114808222512873324
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1562602078146906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf8faa7bc406bcd40a78532c929ca451, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  scanningObject: {fileID: 4595108739386136}
+  mode: 1
+  scanningSpeed: 18
+  clockwise: 1
+  lingerTime: 1
 --- !u!114 &114857562274587602
 MonoBehaviour:
   m_ObjectHideFlags: 1
