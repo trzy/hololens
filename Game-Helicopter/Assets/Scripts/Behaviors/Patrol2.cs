@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
-class Patrol2: MonoBehaviour
+public class Patrol2: MonoBehaviour
 {
   private NavMeshAgent m_agent;
   private NavMeshHit m_hit = new NavMeshHit();

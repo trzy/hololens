@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-class Track: MonoBehaviour
+public class Track: MonoBehaviour
 {
   [Tooltip("Object to track.")]
   public Transform target = null;
@@ -23,17 +23,11 @@ class Track: MonoBehaviour
 
   private float m_sinMaxErrorDegrees;
 
-  // Project onto ground plane (xz-plane)
-  private Vector3 GroundVector(Vector3 v)
-  {
-    return new Vector3(v.x, 0, v.z);
-  }
-
   private void Update()
   {
     Vector3 targetPosition = target == null ? Camera.main.transform.position : target.position;
-    Vector3 targetLocalPosition = GroundVector(azimuthalTrackingObject.transform.InverseTransformPoint(targetPosition));
-    float sinAngle = Vector3.Cross(Vector3.forward, targetLocalPosition.normalized).y;  // only the y component will be valid and we want it signed
+    Vector3 targetLocalPosition = MathHelpers.GroundVector(azimuthalTrackingObject.transform.InverseTransformPoint(targetPosition));
+    float sinAngle = MathHelpers.CrossY(Vector3.forward, targetLocalPosition.normalized); // only the y component will be valid and we want it signed
     if (Mathf.Abs(sinAngle) > m_sinMaxErrorDegrees)
     {
       float direction = Mathf.Sign(sinAngle);

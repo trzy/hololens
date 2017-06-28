@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
-class Patrol1: MonoBehaviour
+public class Patrol1: MonoBehaviour
 {
   private const int NUM_SAMPLES = 6;
   private const float DEGREES_PER_SAMPLE = 360f / NUM_SAMPLES;

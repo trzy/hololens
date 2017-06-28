@@ -69,7 +69,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
         if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
           position = hit.position;
         GameObject agent = Instantiate(agentPrefab2, position, Quaternion.identity);
-        agent.GetComponent<Follow>().target = Camera.main.gameObject;
+        agent.GetComponent<Follow>().target = Camera.main.transform;
       }
     }
   }

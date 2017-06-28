@@ -59,6 +59,9 @@ GameObject:
   - component: {fileID: 65157199927622976}
   - component: {fileID: 23535395373616052}
   - component: {fileID: 195488062139165166}
+  - component: {fileID: 114675136306723366}
+  - component: {fileID: 114481825248620084}
+  - component: {fileID: 114662150275606368}
   - component: {fileID: 114130872707770940}
   - component: {fileID: 114857562274587602}
   m_Layer: 0
@@ -276,6 +279,48 @@ MonoBehaviour:
   target: {fileID: 0}
   targetDistance: 0.5
   secondsBetweenPathChanges: 0
+--- !u!114 &114481825248620084
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1562602078146906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 576f8b5bdd4553d44a10637d2324c6ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &114662150275606368
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1562602078146906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f83ed839fb830304ab1cf945c46df6a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &114675136306723366
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1562602078146906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1acee3dc2cf610c40a85977912288c03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveTo: {fileID: 114481825248620084}
+  patrol: {fileID: 114662150275606368}
+  follow: {fileID: 114130872707770940}
+  track: {fileID: 114857562274587602}
+  stopFollowBehavior: 0
+  startFollowDistance: 0.75
+  stopFollowDistance: 2
+  startTrackDistance: 2
+  stopTrackDistance: 2
 --- !u!114 &114857562274587602
 MonoBehaviour:
   m_ObjectHideFlags: 1
