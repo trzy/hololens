@@ -155,6 +155,55 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 5748bd6759d77d8409df5d42be6ef349, type: 2}
   m_IsPrefabParent: 0
+--- !u!1 &900386731
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 900386733}
+  - component: {fileID: 900386732}
+  m_Layer: 0
+  m_Name: Tunnel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &900386732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 900386731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 358a49978b171b5449352c05c355d318, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vehiclePrefab: {fileID: 1562602078146906, guid: 29578ae37cd64ba4c8749cf74a80b1da,
+    type: 2}
+  vehiclesInTunnel: 2
+  rampAngle: 15
+  tunnelHeadroom: 0.75
+  tunnelWiggleroom: 0.5
+  tunnelVehicleSpacing: 0.25
+  tunnelMaterial: {fileID: 2100000, guid: 4450a3589e2acce4a977da4e83d8c048, type: 2}
+  occlusionMaterial: {fileID: 2100000, guid: 47e1f584a3bf80d4f89f23a89f2d8aff, type: 2}
+--- !u!4 &900386733
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 900386731}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &959460400
 GameObject:
   m_ObjectHideFlags: 0

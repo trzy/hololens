@@ -336,9 +336,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   scanningObject: {fileID: 4595108739386136}
   mode: 1
-  scanningSpeed: 18
+  scanningSpeed: 40
   clockwise: 1
-  lingerTime: 1
+  lingerTime: 1.5
 --- !u!114 &114857562274587602
 MonoBehaviour:
   m_ObjectHideFlags: 1
