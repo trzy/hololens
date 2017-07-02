@@ -8,6 +8,9 @@ using System;
 
 public class Demo: MonoBehaviour
 {
+  [Tooltip("Visualize spatial understanding mesh after scanning is complete; otherwise, occlude.")]
+  public bool spatialUnderstandingMeshVisible = true;
+
   [Tooltip("Draw spatial mesh independently of the spatial understanding module while scanning (useful in editor)")]
   public bool visualizeSpatialMesh = false;
 
@@ -87,7 +90,6 @@ public class Demo: MonoBehaviour
   private void CreateBulletHole(Vector3 position, Vector3 normal)
   {
     GameObject bulletHole = Instantiate(m_bulletHolePrefab, position, Quaternion.LookRotation(normal)) as GameObject;
-    //bulletHole.AddComponent<WorldAnchor>(); // does this do anything?
     bulletHole.transform.parent = this.transform;
     SurfacePlaneDeformationManager.Instance.Embed(bulletHole, position);
   }
@@ -168,7 +170,8 @@ public class Demo: MonoBehaviour
       {
         Debug.Log("Found " + m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters().Count + " meshes (import active=" + m_spatialUnderstanding.UnderstandingCustomMesh.IsImportActive + ")");
         HideSpatialMesh();
-        SetSpatialUnderstandingMaterial(spatialUnderstandingOcclusionMaterial);
+        if (!spatialUnderstandingMeshVisible)
+          SetSpatialUnderstandingMaterial(spatialUnderstandingOcclusionMaterial);
         SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
         //QueryFloorPositions();
         m_state = State.Playing;
