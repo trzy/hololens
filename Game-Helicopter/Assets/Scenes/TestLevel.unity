@@ -186,26 +186,28 @@ MonoBehaviour:
     type: 2}
   maxVehiclesInTunnel: 3
   numVehiclesToSpawn: 1
-  rampAngle: 20
-  tunnelHeadroom: 1
-  tunnelWiggleroom: 1
+  type: 2
+  rampAngle: 30
+  numRampSegments: 3
+  tunnelHeadroom: 0.1
+  tunnelWiggleroom: 0.2
   tunnelVehicleSpacing: 0.25
   layerName: Tunnel
   tunnelMaterial: {fileID: 2100000, guid: 4450a3589e2acce4a977da4e83d8c048, type: 2}
-  occlusionMaterial: {fileID: 2100000, guid: 47e1f584a3bf80d4f89f23a89f2d8aff, type: 2}
+  occlusionMaterial: {fileID: 2100000, guid: 4450a3589e2acce4a977da4e83d8c048, type: 2}
 --- !u!4 &900386733
 Transform:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 900386731}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0.38268343, z: 0, w: 0.92387956}
   m_LocalPosition: {x: 0.755, y: 0, z: 1.046}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
 --- !u!1 &959460400
 GameObject:
   m_ObjectHideFlags: 0
