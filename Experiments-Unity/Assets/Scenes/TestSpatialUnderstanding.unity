@@ -229,6 +229,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f63d84edbb7903d418a3faa2eeec3b99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spatialUnderstandingMeshVisible: 1
   visualizeSpatialMesh: 0
   spatialMeshVisibleMaterial: {fileID: 2100000, guid: d698790d3facd3d4289a13fa1243030a,
     type: 2}
@@ -292,7 +293,7 @@ Prefab:
     - target: {fileID: 114228605629207424, guid: 38070312f7f6b8740aaedfb988318001,
         type: 2}
       propertyPath: debugMarginVolumes
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 38070312f7f6b8740aaedfb988318001, type: 2}

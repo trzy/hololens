@@ -8,12 +8,12 @@
  * - Pivot point of the object is assumed to be flush with the surface in which
  *   it is being embedded. That is, when placing the object, its transform 
  *   position should be set to a point on the surface.
- * - Z (forward) axis must be oriented normal to the surface. It is assumed
- *   that this will have been determined by a collision with a surface plane
- *   and therefore will be consistent for all points on the surface plane.
- * - A BoxCollider must be present. Its z-axis length defines the thickness of
- *   the object, which is also the required spatial mesh margin (discussed
- *   further below) that will be created.
+ * - There are no requirements on the orientation of the object itself. Rather,
+ *   an OrientedBoundingBox must be supplied in world space units with the z
+ *   (forward) axis oriented normal to the surface, even if the object's z axis
+ *   is *not* oriented this way. The z axis length defines the thickness of the
+ *   object, which is also the required spatial mesh margin (discussed further
+ *   below) that will be created.
  * - No instanced materials. Objects should use only the shared materials they
  *   are instantiated with in the first place.
  * - SharedMaterialHelper must be attached to the object.
@@ -60,13 +60,13 @@
  *  2. Compute object thickness. This is the required margin necessary to
  *     "push back" spatial mesh triangles by, so that none overlap with the
  *     embedded object.
- *  3. Create a "margin volume" game object. The margin volume has a thickness
- *     equal to the object thickness (plus an extra displacement if desired),
- *     and width and height equal to the surface plane. This will cause the 
+ *  3. Encode the margin volume as points on the front and back sides (along
+ *     the axis pointing into the surface). The difference between these two
+ *     points is the object "thickness"  plus an optional extra displacement.
+ *     The width and height of the deformation volume are equal to the surface
+ *     plane into which the object is being embedded. This will cause the
  *     entire surface plane volume to be adjusted at once allowing subsequent
- *     objects to be embedded readily. A BoxCollider is attached to the margin
- *     volume object because the OBB/mesh intersection testing routine requires
- *     it.
+ *     objects to be embedded readily.
  *  4. For each spatial mesh, check whether it has already been deformed and
  *     whether the margin is sufficient to accomodate placing the new embedded
  *     object. If so, no need to process this mesh.
@@ -119,7 +119,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
   private class EmbedRequest
   {
-    public GameObject marginVolume;
+    public OrientedBoundingBox obb;
     public Vector3 centerPointOnFrontPlane;
     public Vector3 centerPointOnBackPlane;
     public GameObject embedded;
@@ -135,9 +135,9 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     {
     }
 
-    public EmbedRequest(GameObject pMarginVolume, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    public EmbedRequest(OrientedBoundingBox pObb, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
     {
-      marginVolume = pMarginVolume;
+      obb = pObb;
       centerPointOnFrontPlane = pCenterPointOnFrontPlane;
       centerPointOnBackPlane = pCenterPointOnBackPlane;
       embedded = pEmbedded;
@@ -169,11 +169,11 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     public SurfacePlaneEmbedRequest(
       SurfacePlane pPlane,
       Dictionary<Tuple<SurfacePlane, MeshFilter>, float> marginByPlaneAndSpatialMesh,
-      GameObject pMarginVolume,
+      OrientedBoundingBox pObb,
       Vector3 pCenterPointOnFrontPlane,
       Vector3 pCenterPointOnBackPlane,
       GameObject pEmbedded)
-      : base(pMarginVolume, pCenterPointOnFrontPlane, pCenterPointOnBackPlane, pEmbedded)
+      : base(pObb, pCenterPointOnFrontPlane, pCenterPointOnBackPlane, pEmbedded)
     {
       plane = pPlane;
       m_marginByPlaneAndSpatialMesh = marginByPlaneAndSpatialMesh;
@@ -253,13 +253,10 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     {
       // Dequeue
       EmbedRequest request = m_requestQueue.Dequeue();
-      GameObject marginVolume = request.marginVolume;
+      OrientedBoundingBox obb = request.obb;
       Vector3 marginFrontPlanePoint = request.centerPointOnFrontPlane;
       Vector3 marginBackPlanePoint = request.centerPointOnBackPlane;
       GameObject embedded = request.embedded;
-
-      // Get the OBB that describes the margin volume we want to create
-      BoxCollider obb = marginVolume.GetComponent<BoxCollider>();
 
       /*
        * Compute a back-plane located directly behind the embedded object. 
@@ -353,25 +350,14 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       // that margin exists in the spatial mesh. Clean up temporary objects.
       // Destroy temporary object
       embedded.GetComponent<SharedMaterialHelper>().RestoreSharedMaterials();
-      Object.Destroy(marginVolume.GetComponent<BoxCollider>());
-      Object.Destroy(marginVolume);
     }
 
     m_working = false;
     yield break;
   }
 
-  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, SurfacePlane plane)
+  private void ComputeDepthBounds(out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, OrientedBoundingBox obb, Vector3 position, SurfacePlane plane)
   {
-    BoxCollider embeddedOBB = embedded.GetComponent<BoxCollider>();
-    if (null == embeddedOBB)
-    {
-      Debug.Log("ERROR: Embedded object " + embedded.name + " lacks a box collider");
-      marginVolume = null;
-      centerPointOnFrontPlane = Vector3.zero;
-      centerPointOnBackPlane = Vector3.zero;
-      return true;
-    }
     OrientedBoundingBox surfaceBounds = plane.Plane.Bounds;
 
     /*
@@ -383,50 +369,19 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
      * object but rather at a point flush with the surface it will be embedded
      * in.
      */
-    Vector3 intoSurfaceNormal = -Vector3.Normalize(embeddedOBB.transform.forward);
-    float embeddedThickness = embeddedOBB.size.z * embeddedOBB.transform.lossyScale.z + extraDisplacement;
-    Vector3 embeddedPosOnPlane = plane.transform.InverseTransformPoint(embedded.transform.position);
+    Vector3 forward = obb.Rotation * Vector3.forward;
+    Vector3 size = 2 * obb.Extents;
+    Vector3 intoSurfaceNormal = -Vector3.Normalize(forward);
+    float embeddedThickness = size.z + extraDisplacement;
+    Vector3 embeddedPosOnPlane = plane.transform.InverseTransformPoint(position);
     embeddedPosOnPlane.x = 0;
     embeddedPosOnPlane.y = 0;
     centerPointOnFrontPlane = plane.transform.TransformPoint(embeddedPosOnPlane);
     centerPointOnBackPlane = centerPointOnFrontPlane + intoSurfaceNormal * embeddedThickness;
-    Vector3 centerPoint = 0.5f * (centerPointOnFrontPlane + centerPointOnBackPlane);
-    //Debug.Log("*** PlanePos: " + plane.transform.position + ", PlaneFwd: " + plane.transform.forward + ", Embed Point: " + embedded.transform.position.ToString("F2") + ", IntoNorm: " + intoSurfaceNormal.ToString("F2") + ", thick: " + embeddedThickness + ", embeddedPosOnPlane: " + embeddedPosOnPlane.ToString("F2") + ", centerFront: " + centerPointOnFrontPlane.ToString("F2") + ", centerBack: " + centerPointOnBackPlane.ToString("F2"));
-
-    /*
-     * Create a game object to describe the size, position, and orientation of
-     * the margin volume we want to create.
-     * 
-     * The box collider is something of a formality. The surface mesh
-     * deformation procedure and OBB/mesh intersection tests use box colliders
-     * to describe OBBs. Here, the box collider is made the same size as the
-     * game object to which it is parented. The downstream intersection testing
-     * code knows to properly scale the box based on its parent.
-     */
-    marginVolume = new GameObject("deformation-" + embedded.name);
-    marginVolume.transform.position = centerPoint;
-    marginVolume.transform.localScale = new Vector3(2 * surfaceBounds.Extents.x, 2 * surfaceBounds.Extents.y, embeddedThickness);
-    marginVolume.transform.rotation = surfaceBounds.Rotation;  // need to use surface plane rotation because x, y differ from obj's
-    BoxCollider obb = marginVolume.AddComponent<BoxCollider>();
-    obb.center = Vector3.zero;
-    obb.size = Vector3.one;
-    obb.enabled = false;  // we do not actually want collision detection
-
-    return false;
   }
 
-  private bool CreateMarginVolumeObject(out GameObject marginVolume, out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, GameObject embedded, Vector3 position)
+  private void ComputeDepthBounds(out Vector3 centerPointOnFrontPlane, out Vector3 centerPointOnBackPlane, OrientedBoundingBox obb, Vector3 position)
   {
-    BoxCollider embeddedOBB = embedded.GetComponent<BoxCollider>();
-    if (null == embeddedOBB)
-    {
-      Debug.Log("ERROR: Embedded object " + embedded.name + " lacks a box collider");
-      marginVolume = null;
-      centerPointOnFrontPlane = Vector3.zero;
-      centerPointOnBackPlane = Vector3.zero;
-      return true;
-    }
-
     /*
      * Compute margin volume front (i.e., the actual surface) and back (onto
      * which spatial mesh triangles will be projected) planes based on embedded
@@ -436,53 +391,30 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
      * object but rather at a point flush with the surface it will be embedded
      * in.
      */
-    Vector3 intoSurfaceNormal = -Vector3.Normalize(embeddedOBB.transform.forward);
-    float embeddedThickness = embeddedOBB.size.z * embeddedOBB.transform.lossyScale.z + extraDisplacement;
-    float embeddedWidth = embeddedOBB.size.x * embeddedOBB.transform.lossyScale.x;
-    float embeddedHeight = embeddedOBB.size.y * embeddedOBB.transform.lossyScale.y;
+    Vector3 forward = obb.Rotation * Vector3.forward;
+    Vector3 size = 2 * obb.Extents;
+    Vector3 intoSurfaceNormal = -Vector3.Normalize(forward);
+    float embeddedThickness = size.z + extraDisplacement;
     centerPointOnFrontPlane = position;
-    centerPointOnBackPlane = centerPointOnFrontPlane + intoSurfaceNormal * embeddedThickness;
-    Vector3 centerPoint = 0.5f * (centerPointOnFrontPlane + centerPointOnBackPlane);
-
-    /*
-     * Create a game object to describe the size, position, and orientation of
-     * the margin volume we want to create.
-     * 
-     * The box collider is something of a formality. The surface mesh
-     * deformation procedure and OBB/mesh intersection tests use box colliders
-     * to describe OBBs. Here, the box collider is made the same size as the
-     * game object to which it is parented. The downstream intersection testing
-     * code knows to properly scale the box based on its parent.
-     */
-    marginVolume = new GameObject("deformation-" + embedded.name);
-    marginVolume.transform.position = centerPoint;
-    marginVolume.transform.localScale = new Vector3(embeddedWidth, embeddedHeight, embeddedThickness);
-    marginVolume.transform.rotation = embeddedOBB.transform.rotation;
-    BoxCollider obb = marginVolume.AddComponent<BoxCollider>();
-    obb.center = Vector3.zero;
-    obb.size = Vector3.one;
-    obb.enabled = false;  // we do not actually want collision detection
-
-    return false;
+    centerPointOnBackPlane = centerPointOnFrontPlane + intoSurfaceNormal * embeddedThickness;    
   }
 
-  private void DebugVisualization(GameObject marginVolume)
+  private void DebugVisualization(OrientedBoundingBox obb)
   {
     if (debugMarginVolumes)
     {
-      Debug.Log("pos=" + marginVolume.transform.position + ", obbpos = " + marginVolume.GetComponent<BoxCollider>().transform.position);
       GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
       cube.transform.parent = null;
-      cube.transform.localScale = marginVolume.transform.localScale;
-      cube.transform.position = marginVolume.transform.position;
-      cube.transform.transform.rotation = marginVolume.transform.rotation;
+      cube.transform.localScale = 2 * obb.Extents;
+      cube.transform.position = obb.Center;
+      cube.transform.transform.rotation = obb.Rotation;
       cube.GetComponent<Renderer>().material = debugMaterial;
       cube.GetComponent<Renderer>().material.color = Color.green;
       cube.SetActive(true);
     }
   }
 
-  public void Embed(GameObject embedded, SurfacePlane plane)
+  public void Embed(GameObject embedded, OrientedBoundingBox obb, SurfacePlane plane)
   {
     if (null == plane)
     {
@@ -492,53 +424,45 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     // Temporarily make the embedded object render in front of spatial mesh
     MakeHighPriorityRenderOrder(embedded);
 
-    // Create an object describing the margin volume required for embedded
-    // object placement
-    GameObject marginVolume;
+    // Compute the front (pivot point of embedded object flush with surface)
+    // and back planes of the object to be embedded
     Vector3 centerPointOnFrontPlane;
     Vector3 centerPointOnBackPlane;
-    if (CreateMarginVolumeObject(out marginVolume, out centerPointOnFrontPlane, out centerPointOnBackPlane, embedded, plane))
-    {
-      return;
-    }
+    ComputeDepthBounds(out centerPointOnFrontPlane, out centerPointOnBackPlane, obb, embedded.transform.position, plane);
 
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_requestQueue.Enqueue(new SurfacePlaneEmbedRequest(plane, m_marginByPlaneAndSpatialMesh, marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_requestQueue.Enqueue(new SurfacePlaneEmbedRequest(plane, m_marginByPlaneAndSpatialMesh, obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
     if (!m_working)
     {
       m_working = true;
       StartCoroutine(DeformSurfaceCoroutine());
     }
 
-    DebugVisualization(marginVolume);
+    DebugVisualization(obb);
   }
 
-  public void Embed(GameObject embedded, Vector3 position)
+  public void Embed(GameObject embedded, OrientedBoundingBox obb, Vector3 position)
   {
     // Temporarily make the embedded object render in front of spatial mesh
     MakeHighPriorityRenderOrder(embedded);
 
-    // Create an object describing the margin volume required for embedded
-    // object placement
-    GameObject marginVolume;
+    // Compute the front (pivot point of embedded object flush with surface)
+    // and back planes of the object to be embedded
     Vector3 centerPointOnFrontPlane;
     Vector3 centerPointOnBackPlane;
-    if (CreateMarginVolumeObject(out marginVolume, out centerPointOnFrontPlane, out centerPointOnBackPlane, embedded, position))
-    {
-      return;
-    }
-
+    ComputeDepthBounds(out centerPointOnFrontPlane, out centerPointOnBackPlane, obb, position);
+    
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_requestQueue.Enqueue(new EmbedRequest(marginVolume, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_requestQueue.Enqueue(new EmbedRequest(obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
     if (!m_working)
     {
       m_working = true;
       StartCoroutine(DeformSurfaceCoroutine());
     }
 
-    DebugVisualization(marginVolume);
+    DebugVisualization(obb);
   }
 
   public void SetSpatialMeshFilters(List<MeshFilter> spatialMeshFilters)

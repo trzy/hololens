@@ -93,7 +93,8 @@ public class SurfacePlaneDeformationController: MonoBehaviour
     GameObject bulletHole = Instantiate(m_bulletHolePrefab, position, Quaternion.LookRotation(normal)) as GameObject;
     bulletHole.AddComponent<WorldAnchor>(); // does this do anything?
     bulletHole.transform.parent = this.transform;
-    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, plane);
+    OrientedBoundingBox obb = OBBMeshIntersection.CreateWorldSpaceOBB(bulletHole.GetComponent<BoxCollider>());
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, obb, plane);
   }
 
   private void OnTapEvent(InteractionSourceKind source, int tap_count, Ray head_ray)
