@@ -293,7 +293,7 @@ Prefab:
     - target: {fileID: 114228605629207424, guid: 38070312f7f6b8740aaedfb988318001,
         type: 2}
       propertyPath: debugMarginVolumes
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 38070312f7f6b8740aaedfb988318001, type: 2}
