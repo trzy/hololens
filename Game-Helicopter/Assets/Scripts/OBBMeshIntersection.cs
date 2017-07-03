@@ -5,13 +5,34 @@
  * http://fileadmin.cs.lth.se/cs/personal/tomas_akenine-moller/code/
  */
 
-using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using HoloToolkit.Unity.SpatialMapping;
 
 public static class OBBMeshIntersection
 {
+  // Creates an oriented bounding box from the box collider in *world* coordinates
+  public static OrientedBoundingBox CreateWorldSpaceOBB(BoxCollider collider)
+  {
+    OrientedBoundingBox obb = new OrientedBoundingBox()
+    {
+      Center = collider.transform.TransformPoint(collider.center),
+      Rotation = collider.transform.rotation,
+      Extents = 0.5f * new Vector3(collider.transform.lossyScale.x * collider.size.x, collider.transform.lossyScale.y * collider.size.y, collider.transform.lossyScale.z * collider.size.z)
+    };
+    return obb;
+  }
+
+  private static Vector3 TransformWorldToOBB(Vector3 point, OrientedBoundingBox obb)
+  {
+    // OBB is in world units (no scale applied) but with an arbitrary center
+    // point and rotation. This function converts from absolute world space to
+    // OBB-local space.
+    return Quaternion.Inverse(obb.Rotation) * (point - obb.Center);
+  }
+
   private static bool AxisTestX01Failed(Vector3[] v, Vector3 boxhalfsize, float a, float b, float fa, float fb)
   {
     float p0 = a * v[0].y - b * v[0].z;
@@ -231,6 +252,36 @@ public static class OBBMeshIntersection
     return PlaneBoxOverlap(normal, v0, boxhalfsize);
   }
 
+  private static Bounds ComputeAABB(OrientedBoundingBox obb)
+  {
+    Vector3[] points = new Vector3[8];
+    Vector3 center = obb.Center;  // already in world coordinates
+    points[0] = center + obb.Rotation * new Vector3(obb.Extents.x, obb.Extents.y, obb.Extents.z);
+    points[1] = center + obb.Rotation * new Vector3(obb.Extents.x, obb.Extents.y, -obb.Extents.z);
+    points[2] = center + obb.Rotation * new Vector3(obb.Extents.x, -obb.Extents.y, obb.Extents.z);
+    points[3] = center + obb.Rotation * new Vector3(obb.Extents.x, -obb.Extents.y, -obb.Extents.z);
+    points[4] = center + obb.Rotation * new Vector3(-obb.Extents.x, obb.Extents.y, obb.Extents.z);
+    points[5] = center + obb.Rotation * new Vector3(-obb.Extents.x, obb.Extents.y, -obb.Extents.z);
+    points[6] = center + obb.Rotation * new Vector3(-obb.Extents.x, -obb.Extents.y, obb.Extents.z);
+    points[7] = center + obb.Rotation * new Vector3(-obb.Extents.x, -obb.Extents.y, -obb.Extents.z);
+    float minX = float.PositiveInfinity;
+    float minY = float.PositiveInfinity;
+    float minZ = float.PositiveInfinity;
+    float maxX = float.NegativeInfinity;
+    float maxY = float.NegativeInfinity;
+    float maxZ = float.NegativeInfinity;
+    foreach (Vector3 point in points)
+    {
+      minX = Mathf.Min(minX, point.x);
+      maxX = Mathf.Max(maxX, point.x);
+      minY = Mathf.Min(minY, point.y);
+      maxY = Mathf.Max(maxY, point.y);
+      minZ = Mathf.Min(minZ, point.z);
+      maxZ = Mathf.Max(maxZ, point.z);
+    }
+    return new Bounds(center, new Vector3(maxX - minX, maxY - minY, maxZ - minZ));
+  }
+
   private static Bounds ComputeAABB(BoxCollider obb)
   {
     // Naive method using 8 points from OBB (could be improved!)
@@ -263,7 +314,7 @@ public static class OBBMeshIntersection
     return new Bounds(center, new Vector3(maxX - minX, maxY - minY, maxZ - minZ));
   }
 
-  public static List<int> FindTriangles(BoxCollider obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
+  public static List<int> FindTriangles(OrientedBoundingBox obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
   {
     //System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
     //stopwatch.Reset();
@@ -272,11 +323,11 @@ public static class OBBMeshIntersection
     int[] indices = triangleIndices;
     int expectedNumIntersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
     List<int> intersectingTriangles = new List<int>(expectedNumIntersecting);
-    Vector3 boxcenter = obb.center;
-    Vector3 boxhalfsize = obb.size * 0.5f;
+    Vector3 boxcenter = Vector3.zero;
+    Vector3 boxhalfsize = obb.Extents;
 
     // Gross test using AABB
-    Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
+    Bounds aabb = ComputeAABB(obb);
     if (!aabb.Intersects(meshTransform.gameObject.GetComponent<Renderer>().bounds))
       return intersectingTriangles;
 
@@ -287,7 +338,7 @@ public static class OBBMeshIntersection
     {
       // Transform mesh 1) mesh local -> world, 2) world -> OBB local
       Vector3 worldVertex = meshTransform.TransformPoint(meshVerts[i]);
-      verts[i] = obb.transform.InverseTransformPoint(worldVertex);
+      verts[i] = TransformWorldToOBB(worldVertex, obb);
     }
     
     // Test each triangle in the mesh
@@ -311,18 +362,19 @@ public static class OBBMeshIntersection
 
   public delegate void ResultsCallback(List<int> intersectingTriangles_found);
 
-  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, BoxCollider obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
+  public static IEnumerator FindTrianglesCoroutine(ResultsCallback callback, float maxSecondsPerFrame, OrientedBoundingBox obb, Vector3[] meshVerts, int[] triangleIndices, Transform meshTransform)
   {
     float t0 = Time.realtimeSinceStartup;
 
     int[] indices = triangleIndices;
     int expectedNumIntersecting = Math.Max(1, indices.Length / 10); // assume 10% will intersect
     List<int> intersectingTriangles = new List<int>(expectedNumIntersecting);
-    Vector3 boxcenter = obb.center;
-    Vector3 boxhalfsize = obb.size * 0.5f;
+
+    Vector3 boxcenter = Vector3.zero; // OBB is symmetric about its center point
+    Vector3 boxhalfsize = obb.Extents;
 
     // Gross test using AABB
-    Bounds aabb = obb.enabled ? obb.bounds : ComputeAABB(obb);
+    Bounds aabb = ComputeAABB(obb);
     if (!aabb.Intersects(meshTransform.gameObject.GetComponent<Renderer>().bounds))
     {
       callback(intersectingTriangles);
@@ -336,7 +388,7 @@ public static class OBBMeshIntersection
     {
       // Transform mesh: 1) mesh local -> world, 2) world -> OBB local
       Vector3 worldVertex = meshTransform.TransformPoint(meshVerts[i]);
-      verts[i] = obb.transform.InverseTransformPoint(worldVertex);
+      verts[i] = TransformWorldToOBB(worldVertex, obb);// obb.transform.InverseTransformPoint(worldVertex);
       if (Time.realtimeSinceStartup - t0 >= maxSecondsPerFrame)
       {
         yield return null;
