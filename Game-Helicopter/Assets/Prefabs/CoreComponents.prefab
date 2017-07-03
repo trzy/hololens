@@ -351,6 +351,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
+--- !u!1 &1879997902822858
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4252043912462120}
+  - component: {fileID: 114472897799942812}
+  m_Layer: 0
+  m_Name: SurfacePlaneDeformationManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!1 &1895650731432286
 GameObject:
   m_ObjectHideFlags: 1
@@ -474,6 +490,19 @@ Transform:
   m_Father: {fileID: 4465418404084822}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &4252043912462120
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1879997902822858}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4569852558078926}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4252299330739240
 Transform:
   m_ObjectHideFlags: 1
@@ -588,6 +617,7 @@ Transform:
   m_Children:
   - {fileID: 4759442195222934}
   - {fileID: 4545116861201656}
+  - {fileID: 4252043912462120}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -800,10 +830,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c3cbf182824c204fb57884e8408d7e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  visualizationMode: 1
+  visualizationMode: 2
   visualizeSpatialMeshes: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: ddc2ff62e97ce6d41991784c3aa8e233, type: 2}
+  buildNavMesh: 1
 --- !u!114 &114136368123575782
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -916,6 +947,22 @@ MonoBehaviour:
   Axis0Destination: 4
   Axis1Destination: 6
   Axis2Destination: 6
+--- !u!114 &114472897799942812
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1879997902822858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e669d0765517b004a8efb6922579e15e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  extraDisplacement: 0.02
+  highPriorityRenderQueueValue: 1000
+  maxSecondsPerFrame: 0.004
+  debugMarginVolumes: 0
+  debugMaterial: {fileID: 0}
 --- !u!114 &114476073476192572
 MonoBehaviour:
   m_ObjectHideFlags: 1
