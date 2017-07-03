@@ -147,67 +147,14 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 114104542529742446, guid: 5748bd6759d77d8409df5d42be6ef349,
+    - target: {fileID: 114472897799942812, guid: 5748bd6759d77d8409df5d42be6ef349,
         type: 2}
-      propertyPath: visualizationMode
-      value: 2
+      propertyPath: debugMarginVolumes
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 5748bd6759d77d8409df5d42be6ef349, type: 2}
   m_IsPrefabParent: 0
---- !u!1 &900386731
-GameObject:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
-  m_Component:
-  - component: {fileID: 900386733}
-  - component: {fileID: 900386732}
-  m_Layer: 0
-  m_Name: Tunnel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &900386732
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 900386731}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 358a49978b171b5449352c05c355d318, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  vehiclePrefab: {fileID: 1216265711727216, guid: e3bacc11d28cf134e948b93de8e64f8a,
-    type: 2}
-  maxVehiclesInTunnel: 3
-  numVehiclesToSpawn: 1
-  type: 2
-  rampAngle: 30
-  numRampSegments: 3
-  tunnelHeadroom: 0.1
-  tunnelWiggleroom: 0.2
-  tunnelVehicleSpacing: 0.25
-  layerName: Tunnel
-  tunnelMaterial: {fileID: 2100000, guid: 4450a3589e2acce4a977da4e83d8c048, type: 2}
-  occlusionMaterial: {fileID: 2100000, guid: 4450a3589e2acce4a977da4e83d8c048, type: 2}
---- !u!4 &900386733
-Transform:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 900386731}
-  m_LocalRotation: {x: 0, y: 0.38268343, z: 0, w: 0.92387956}
-  m_LocalPosition: {x: 0.755, y: 0, z: 1.046}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
 --- !u!1 &959460400
 GameObject:
   m_ObjectHideFlags: 0
@@ -262,6 +209,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5dbf794307975a428eaea27f6232f95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tunnelPrefab: {fileID: 114891703950916172, guid: c0fcfdfc09d70384ca973711fc01eb8b,
+    type: 2}
   homeBasePrefab:
   - {fileID: 1898659249554414, guid: 9bd6ef65660f45e44b5146f72815fa87, type: 2}
   - {fileID: 1451633366844476, guid: ded74ce861c191946ac6b38ac9500eff, type: 2}

@@ -8,6 +8,6 @@ public class PedalToTheMetal: MonoBehaviour
   private void FixedUpdate()
   {
     //GetComponent<Rigidbody>().AddRelativeForce(acceleration * Vector3.forward, ForceMode.VelocityChange);
-    GetComponent<Rigidbody>().velocity = transform.forward * 0.75f;
+    GetComponent<Rigidbody>().velocity = transform.forward * acceleration;
   }
 }

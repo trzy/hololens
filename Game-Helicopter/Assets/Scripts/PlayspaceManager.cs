@@ -28,6 +28,9 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
   [Tooltip("Spatial Mapping mode only: Material used spatial mesh visualization during scanning")]
   public Material renderingMaterial = null;
 
+  [Tooltip("Automatically apply static batching when meshes are available. If you need to access the meshes (such as for SurfacePlaneDeformationManager), leave this disabled.")]
+  public bool autoApplyStaticBatching = false;
+
   [Tooltip("Build a NavMesh after scanning is complete")]
   public bool buildNavMesh = true;
 
@@ -356,7 +359,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     }
   }
 
-  private void ApplyStaticBatching()
+  public void ApplyStaticBatching()
   {
     if (visualizationMode == VisualizationMode.None)
       return; // don't bother
@@ -411,7 +414,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
           if (!visualizeSpatialMeshes)
             DisableSpatialMappingMeshes();
           ApplyVisualizationSettings();
-          //SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(meshFilters);
+          SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(meshFilters);
           if (buildNavMesh)
             m_navMeshBuilder.AddSourceMeshes(meshFilters, m_spatialUnderstanding.transform);
           m_spatialUnderstandingState = State.WaitingForPlacementSolverInit;
@@ -429,7 +432,8 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         }
         else if (m_solverInitialized && navMeshFinished)
         {
-          ApplyStaticBatching();
+          if (autoApplyStaticBatching)
+            ApplyStaticBatching();
           m_scanningComplete = true;
           m_spatialUnderstandingState = State.Finished;
           if (OnScanComplete != null)

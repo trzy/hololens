@@ -12,6 +12,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using HoloToolkit.Unity.SpatialMapping;
 
 public class HiddenTunnel: MonoBehaviour
 {
@@ -63,6 +64,8 @@ public class HiddenTunnel: MonoBehaviour
 
   private const float CEILING_THICKNESS = 0.05f;
 
+  private Vector3 m_vehicleDimensions = Vector3.zero;
+
   private struct ObjectData
   {
     public GameObject obj;
@@ -77,11 +80,14 @@ public class HiddenTunnel: MonoBehaviour
     }
   };
 
+  private ObjectData m_tunnelObject;
+  private ObjectData m_occluderObject;
+
   private interface TunnelBuilderInterface
   {
     Vector3 OpeningDimensions();
     void CreateMeshes();
-    void CreateBoxCollider(GameObject topLevelObject);
+    OrientedBoundingBox CreateEmbeddableOBB(GameObject topLevelObject);
     void SpawnVehicles(GameObject vehiclePrefab, string layerName, int numVehicles, float vehicleSpacingFactor);
   }
 
@@ -289,16 +295,19 @@ public class HiddenTunnel: MonoBehaviour
       m_occluderObject.mesh.RecalculateNormals();
     }
 
-    public void CreateBoxCollider(GameObject topLevelObject)
+    public OrientedBoundingBox CreateEmbeddableOBB(GameObject topLevelObject)
     {
+      // Create bounding box in the local coordinate system of the tunnel as if
+      // for a BoxCollider
       Vector3 openingDimensions = OpeningDimensions();
-
-      BoxCollider box = topLevelObject.AddComponent<BoxCollider>();
-      box.size = m_tunnelDimensions + CEILING_THICKNESS * Vector3.up + openingDimensions.z * Vector3.forward;
+      Vector3 size = m_tunnelDimensions + CEILING_THICKNESS * Vector3.up + openingDimensions.z * Vector3.forward;
 
       // Pivot point is at center of opening but box needs to be at center of
       // object
-      box.center = new Vector3(0, -0.5f * (m_tunnelDimensions.y + CEILING_THICKNESS), +0.5f * openingDimensions.z - 0.5f * box.size.z);
+      Vector3 center = new Vector3(0, -0.5f * (m_tunnelDimensions.y + CEILING_THICKNESS), +0.5f * openingDimensions.z - 0.5f * size.z);
+
+      // Create OBB suitable for embedding object into the floor
+      return CreateEmbeddableOBBFromLocalOBB(center, size, topLevelObject.transform);
     }
 
     public void SpawnVehicles(GameObject vehiclePrefab, string layerName, int numVehicles, float vehicleSpacingFactor)
@@ -521,16 +530,19 @@ public class HiddenTunnel: MonoBehaviour
       m_occluderObject.mesh.RecalculateNormals();
     }
 
-    public void CreateBoxCollider(GameObject topLevelObject)
+    public OrientedBoundingBox CreateEmbeddableOBB(GameObject topLevelObject)
     {
+      // Create bounding box in the local coordinate system of the tunnel as if
+      // for a BoxCollider
       Vector3 openingDimensions = OpeningDimensions();
-
-      BoxCollider box = topLevelObject.AddComponent<BoxCollider>();
-      box.size = m_tunnelDimensions + CEILING_THICKNESS * Vector3.up + openingDimensions.z * Vector3.forward;
+      Vector3 size = m_tunnelDimensions + CEILING_THICKNESS * Vector3.up + openingDimensions.z * Vector3.forward;
 
       // Pivot point is at center of opening but we want box to be at center of
       // object
-      box.center = new Vector3(0, -0.5f * (m_tunnelDimensions.y + CEILING_THICKNESS), +0.5f * openingDimensions.z - 0.5f * box.size.z);
+      Vector3 center = new Vector3(0, -0.5f * (m_tunnelDimensions.y + CEILING_THICKNESS), +0.5f * openingDimensions.z - 0.5f * size.z);
+
+      // Create OBB suitable for placing object into the floor
+      return CreateEmbeddableOBBFromLocalOBB(center, size, topLevelObject.transform);
     }
 
     public void SpawnVehicles(GameObject vehiclePrefab, string layerName, int numVehicles, float vehicleSpacingFactor)
@@ -726,16 +738,19 @@ public class HiddenTunnel: MonoBehaviour
       m_occluderObject.mesh.RecalculateNormals();
     }
 
-    public void CreateBoxCollider(GameObject topLevelObject)
+    public OrientedBoundingBox CreateEmbeddableOBB(GameObject topLevelObject)
     {
+      // Create bounding box in the local coordinate system of the tunnel as if
+      // for a BoxCollider
       Vector3 openingDimensions = OpeningDimensions();
-
-      BoxCollider box = topLevelObject.AddComponent<BoxCollider>();
-      box.size = m_vertices[3] - m_vertices[6];
+      Vector3 size = m_vertices[3] - m_vertices[6];
 
       // Pivot point is at center of opening but box is defined at center of
       // object
-      box.center = 0.5f * (m_vertices[3] + m_vertices[6]);
+      Vector3 center = 0.5f * (m_vertices[3] + m_vertices[6]);
+
+      // Create OBB suitable for embedding object into the floor
+      return CreateEmbeddableOBBFromLocalOBB(center, size, topLevelObject.transform);
     }
 
     public void SpawnVehicles(GameObject vehiclePrefab, string layerName, int numVehicles, float vehicleSpacingFactor)
@@ -771,7 +786,22 @@ public class HiddenTunnel: MonoBehaviour
   }
 
   private TunnelBuilderInterface m_tunnelBuilder = null;
-  
+
+  private static OrientedBoundingBox CreateEmbeddableOBBFromLocalOBB(Vector3 localCenter, Vector3 localSize, Transform transform)
+  {
+    // Objects embeddable with SurfacePlanDeformationManager must provide an
+    // OBB with the z axis normal to the surface into which the object will be
+    // embedded. The tunnel's y axis is normal to the floor, so we create an
+    // OBB with a z axis corresponding to the tunnel's y axis.
+    Quaternion yToZ = Quaternion.FromToRotation(Vector3.forward, Vector3.up);
+    return new OrientedBoundingBox()
+    {
+      Center = transform.TransformPoint(localCenter),
+      Rotation = transform.rotation * yToZ,
+      Extents = 0.5f * new Vector3(transform.lossyScale.x * localSize.x, transform.lossyScale.z * localSize.z, transform.lossyScale.y * localSize.y)
+    };
+  }
+
   private ObjectData CreateNewObject(string name, Material material, bool createCollider)
   {
     GameObject obj = new GameObject(name);
@@ -788,42 +818,59 @@ public class HiddenTunnel: MonoBehaviour
     return new ObjectData(obj, collider, mesh);
   }
 
-  public void Place(Vector3 position, Quaternion rotation)
+  private void OnEmbedComplete()
   {
-    
+    m_tunnelObject.obj.SetActive(true);
+    m_occluderObject.obj.SetActive(true);
+    m_tunnelBuilder.SpawnVehicles(vehiclePrefab, layerName, numVehiclesToSpawn, tunnelVehicleSpacing);
   }
 
-  private void Awake()
+  public void Embed(Vector3 position, Quaternion rotation)
+  {
+    transform.position = position;
+    transform.rotation = rotation;
+    Vector3 placementBox = GetPlacementDimensions();
+    OrientedBoundingBox obb = m_tunnelBuilder.CreateEmbeddableOBB(gameObject);
+    obb.Extents += Vector3.forward * placementBox.y;  // remember that OBB z axis corresponds to tunnel's y axis
+    SurfacePlaneDeformationManager.Instance.Embed(gameObject, obb, transform.position, () => { OnEmbedComplete(); }, false);
+  }
+
+  public Vector3 GetPlacementDimensions()
+  {
+    Vector3 placementBox = m_tunnelBuilder.OpeningDimensions();
+    placementBox.y = 2 * m_vehicleDimensions.y;
+    return placementBox;
+  }
+
+  public void Init()
   {
     gameObject.layer = LayerMask.NameToLayer(layerName);
 
     // Tunnel dimensions exclude ceiling thickness and any additional ramp
     // structure
-    Vector3 vehicleDimensions = Footprint.Measure(vehiclePrefab);
-    Vector3 tunnelDimensions = new Vector3(vehicleDimensions.x * (1 + tunnelWiggleroom), vehicleDimensions.y * (1 + tunnelHeadroom), maxVehiclesInTunnel * vehicleDimensions.z * (1 + tunnelVehicleSpacing));
+    m_vehicleDimensions = Footprint.Measure(vehiclePrefab);
+    Vector3 tunnelDimensions = new Vector3(m_vehicleDimensions.x * (1 + tunnelWiggleroom), m_vehicleDimensions.y * (1 + tunnelHeadroom), maxVehiclesInTunnel * m_vehicleDimensions.z * (1 + tunnelVehicleSpacing));
 
-    ObjectData tunnelObject = CreateNewObject("TunnelInterior", tunnelMaterial, true);
-    ObjectData occluderObject = CreateNewObject("TunnelOccluder", occlusionMaterial, false);
+    m_tunnelObject = CreateNewObject("TunnelInterior", tunnelMaterial, true);
+    m_occluderObject = CreateNewObject("TunnelOccluder", occlusionMaterial, false);
 
     switch (type)
     {
       case Type.StraightRamp:
-        m_tunnelBuilder = new TunnelWithStraightRamp(tunnelObject, occluderObject, tunnelDimensions, vehicleDimensions, rampAngle);
+        m_tunnelBuilder = new TunnelWithStraightRamp(m_tunnelObject, m_occluderObject, tunnelDimensions, m_vehicleDimensions, rampAngle);
         break;
       case Type.SmoothRamp:
-        m_tunnelBuilder = new TunnelWithSmoothRamp(tunnelObject, occluderObject, tunnelDimensions, vehicleDimensions, rampAngle, numRampSegments);
+        m_tunnelBuilder = new TunnelWithSmoothRamp(m_tunnelObject, m_occluderObject, tunnelDimensions, m_vehicleDimensions, rampAngle, numRampSegments);
         break;
       case Type.RampOnly:
-        m_tunnelBuilder = new AngledTunnel(tunnelObject, occluderObject, tunnelDimensions, vehicleDimensions, rampAngle);
+        m_tunnelBuilder = new AngledTunnel(m_tunnelObject, m_occluderObject, tunnelDimensions, m_vehicleDimensions, rampAngle);
         break;
     }
 
     m_tunnelBuilder.CreateMeshes();
-    m_tunnelBuilder.CreateBoxCollider(gameObject);
-    //m_tunnelBuilder.SpawnVehicles(vehiclePrefab, layerName, numVehiclesToSpawn, tunnelVehicleSpacing);
 
-    // Disable sub-objects. They will be re-enabled upon placement.
-    tunnelObject.obj.SetActive(false);
-    occluderObject.obj.SetActive(false);
+    // Disable sub-objects. They will be re-enabled upon being embedded.
+    m_tunnelObject.obj.SetActive(false);
+    m_occluderObject.obj.SetActive(false);
   }
 }

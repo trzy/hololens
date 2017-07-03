@@ -6,6 +6,7 @@ using HoloToolkit.Unity;
 
 public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 {
+  public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
   public GameObject[] besiegedBuildingPrefab;
   public float distanceApart = 2;
@@ -74,10 +75,26 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     }
   }
 
+  private void PlaceTunnels()
+  {
+    HiddenTunnel tunnel = Instantiate(tunnelPrefab) as HiddenTunnel;
+    tunnel.Init();
+    Vector3 placementSize = tunnel.GetPlacementDimensions();
+    
+    Vector3 position;
+    Quaternion rotation;
+
+    if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, out rotation, placementSize))
+      tunnel.Embed(position - 0.5f * Vector3.up * placementSize.y, rotation);
+    else
+      GameObject.Destroy(tunnel.gameObject);
+  }
+
   public void GenerateLevel()
   {
     PlaceBuildings();
     PlaceAgents();
+    PlaceTunnels();// Instantiate(tunnelPrefab, tunnelPrefab.transform.position, tunnelPrefab.transform.rotation);
   }
 
 	public LevelManager()
