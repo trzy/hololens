@@ -1,10 +1,6 @@
 ﻿/*
  * TODO:
  * -----
- * - Upon Awake(), create objects but disable them. Then, create a function to
- *   place the object using the SurfaceMeshDeformationManager that disables the
- *   box collider after successful placement, enables the tunnel objects, and 
- *   lastly, spawns vehicles.
  * - Attach SharedMaterialHelper to objects.
  * - Make navigation obstacle around opening.
  */
