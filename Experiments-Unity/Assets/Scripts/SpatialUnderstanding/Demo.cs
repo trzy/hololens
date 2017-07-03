@@ -92,7 +92,7 @@ public class Demo: MonoBehaviour
     GameObject bulletHole = Instantiate(m_bulletHolePrefab, position, Quaternion.LookRotation(normal)) as GameObject;
     bulletHole.transform.parent = this.transform;
     OrientedBoundingBox obb = OBBMeshIntersection.CreateWorldSpaceOBB(bulletHole.GetComponent<BoxCollider>());
-    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, obb, position);
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, obb, position, () => { Debug.Log("Embed complete"); }, true);
   }
 
   private void DoRaycast()

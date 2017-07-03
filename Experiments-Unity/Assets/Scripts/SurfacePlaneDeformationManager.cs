@@ -16,7 +16,8 @@
  *   below) that will be created.
  * - No instanced materials. Objects should use only the shared materials they
  *   are instantiated with in the first place.
- * - SharedMaterialHelper must be attached to the object.
+ * - SharedMaterialHelper must be attached to the object (unless temporary 
+ *   high priority rendering is disabled)
  * 
  * The problem with embedding small objects
  * ----------------------------------------
@@ -56,7 +57,8 @@
  * The procedure used here is:
  * 
  *  1. Make embedded object render priority *higher* than spatial meshes by
- *     assigning lower render queue values to its instanced materials.
+ *     assigning lower render queue values to its instanced materials. This
+ *     feature is configurable via a paramter.
  *  2. Compute object thickness. This is the required margin necessary to
  *     "push back" spatial mesh triangles by, so that none overlap with the
  *     embedded object.
@@ -79,11 +81,10 @@
  *     *and* the SurfacePlane are required because a single spatial mesh may 
  *     contain multiple SurfacePlanes. The margin created through deformation
  *     only exists in the vicinity of a given plane.
- *  8. Destroy the temporary margin volume game object.
- *  9. Restore the shared materials of the embedded object (which will also 
+ *  8. Restore the shared materials of the embedded object (which will also 
  *     restore its original render queue values).
  *     
- * Note that steps 4 through 9 are performed in a coroutine over multiple
+ * Note that steps 4 through 8 are performed in a coroutine over multiple
  * frames.
  * 
  * Arbitrary spatial mesh
@@ -123,6 +124,8 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     public Vector3 centerPointOnFrontPlane;
     public Vector3 centerPointOnBackPlane;
     public GameObject embedded;
+    public System.Action OnComplete;
+    public bool tempHighPriorityRender;
 
     public virtual bool HasSufficientMargin(MeshFilter meshFilter, float requiredMargin)
     {
@@ -135,12 +138,14 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     {
     }
 
-    public EmbedRequest(OrientedBoundingBox pObb, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded)
+    public EmbedRequest(OrientedBoundingBox pObb, Vector3 pCenterPointOnFrontPlane, Vector3 pCenterPointOnBackPlane, GameObject pEmbedded, System.Action pOnComplete, bool pTempHighPriorityRender)
     {
       obb = pObb;
       centerPointOnFrontPlane = pCenterPointOnFrontPlane;
       centerPointOnBackPlane = pCenterPointOnBackPlane;
       embedded = pEmbedded;
+      OnComplete = pOnComplete;
+      tempHighPriorityRender = pTempHighPriorityRender;
     }
   }
 
@@ -172,8 +177,10 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       OrientedBoundingBox pObb,
       Vector3 pCenterPointOnFrontPlane,
       Vector3 pCenterPointOnBackPlane,
-      GameObject pEmbedded)
-      : base(pObb, pCenterPointOnFrontPlane, pCenterPointOnBackPlane, pEmbedded)
+      GameObject pEmbedded,
+      System.Action pOnComplete,
+      bool pTempHighPriorityRender)
+      : base(pObb, pCenterPointOnFrontPlane, pCenterPointOnBackPlane, pEmbedded, pOnComplete, pTempHighPriorityRender)
     {
       plane = pPlane;
       m_marginByPlaneAndSpatialMesh = marginByPlaneAndSpatialMesh;
@@ -349,7 +356,10 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
       // Restore embedded object's shared materials (and its render order) now
       // that margin exists in the spatial mesh. Clean up temporary objects.
       // Destroy temporary object
-      embedded.GetComponent<SharedMaterialHelper>().RestoreSharedMaterials();
+      if (request.tempHighPriorityRender)
+        embedded.GetComponent<SharedMaterialHelper>().RestoreSharedMaterials();
+      if (request.OnComplete != null)
+        request.OnComplete();
     }
 
     m_working = false;
@@ -414,15 +424,14 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     }
   }
 
-  public void Embed(GameObject embedded, OrientedBoundingBox obb, SurfacePlane plane)
+  public void Embed(GameObject embedded, OrientedBoundingBox obb, SurfacePlane plane, System.Action OnComplete = null, bool tempHighPriorityRender = true)
   {
     if (null == plane)
-    {
       return;
-    }
 
     // Temporarily make the embedded object render in front of spatial mesh
-    MakeHighPriorityRenderOrder(embedded);
+    if (tempHighPriorityRender)
+      MakeHighPriorityRenderOrder(embedded);
 
     // Compute the front (pivot point of embedded object flush with surface)
     // and back planes of the object to be embedded
@@ -432,7 +441,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
 
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_requestQueue.Enqueue(new SurfacePlaneEmbedRequest(plane, m_marginByPlaneAndSpatialMesh, obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_requestQueue.Enqueue(new SurfacePlaneEmbedRequest(plane, m_marginByPlaneAndSpatialMesh, obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded, OnComplete, tempHighPriorityRender));
     if (!m_working)
     {
       m_working = true;
@@ -442,10 +451,11 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     DebugVisualization(obb);
   }
 
-  public void Embed(GameObject embedded, OrientedBoundingBox obb, Vector3 position)
+  public void Embed(GameObject embedded, OrientedBoundingBox obb, Vector3 position, System.Action OnComplete = null, bool tempHighPriorityRender = true)
   {
     // Temporarily make the embedded object render in front of spatial mesh
-    MakeHighPriorityRenderOrder(embedded);
+    if (tempHighPriorityRender)
+      MakeHighPriorityRenderOrder(embedded);
 
     // Compute the front (pivot point of embedded object flush with surface)
     // and back planes of the object to be embedded
@@ -455,7 +465,7 @@ public class SurfacePlaneDeformationManager: HoloToolkit.Unity.Singleton<Surface
     
     // Deform the spatial mesh to create a margin volume large enough for the
     // embedded object
-    m_requestQueue.Enqueue(new EmbedRequest(obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded));
+    m_requestQueue.Enqueue(new EmbedRequest(obb, centerPointOnFrontPlane, centerPointOnBackPlane, embedded, OnComplete, tempHighPriorityRender));
     if (!m_working)
     {
       m_working = true;
