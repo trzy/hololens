@@ -2,20 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MobileSAM: MonoBehaviour
+public class AAVehicle: MonoBehaviour
 {
-  public enum InitialBehavior
+  public enum DefaultBehavior
   {
     Nothing,
     Scan,
     Patrol
-  }
-
-  public enum StopFollowBehavior
-  {
-    StayPut,
-    ReturnToHome,
-    Patrol,
   }
 
   public MoveTo moveTo;
@@ -23,10 +16,10 @@ public class MobileSAM: MonoBehaviour
   public Follow follow;
   public Scan scan;
   public Track track;
-  public InitialBehavior initialBehavior = InitialBehavior.Nothing;
-  public StopFollowBehavior stopFollowBehavior = StopFollowBehavior.StayPut;
-  public float startFollowDistance = 1f;
-  public float stopFollowDistance = 2;
+  public ResetTurret resetTurret;
+  public DefaultBehavior defaultBehavior = DefaultBehavior.Nothing;
+  public float startEngagingDistance = 1f;
+  public float stopEngagingDistance = 2;
   public float startTrackDistance = 2;
   public float stopTrackDistance = 3;
 
@@ -46,9 +39,22 @@ public class MobileSAM: MonoBehaviour
 
   private void DisableAllBehaviors()
   {
-    foreach (MonoBehaviour behavior in m_navigationBehaviors)
+    foreach (MonoBehaviour behavior in m_allBehaviors)
     {
       behavior.enabled = false;
+    }
+  }
+
+  private void EnableDefaultBehavior()
+  {
+    switch (defaultBehavior)
+    {
+      case DefaultBehavior.Scan:
+        scan.enabled = true;
+        break;
+      case DefaultBehavior.Patrol:
+        patrol.enabled = true;
+        break;
     }
   }
 
@@ -56,36 +62,30 @@ public class MobileSAM: MonoBehaviour
   {
     float distance = MathHelpers.GroundVector(transform.position - m_target.position).magnitude;
 
-    if (distance < startFollowDistance)
+    if (distance < startEngagingDistance)
     {
       DisableNavigationBehaviorsExcept(follow);
       follow.enabled = true;
     }
-    else if (distance > stopFollowDistance && follow.enabled == true)
+    else if (distance > stopEngagingDistance && follow.enabled == true)
     {
-      switch (stopFollowBehavior)
-      {
-        case StopFollowBehavior.StayPut:
-        default:
-          DisableNavigationBehaviorsExcept();
-          break;
-        case StopFollowBehavior.ReturnToHome:
-          DisableNavigationBehaviorsExcept(moveTo);
-          moveTo.enabled = true;
-          moveTo.Move(m_homePosition,
-            () =>
-            {
-              DisableAllBehaviors();
-              scan.enabled = true;
-            });
-          break;
-        case StopFollowBehavior.Patrol:
-          DisableNavigationBehaviorsExcept(patrol);
-          patrol.enabled = true;
-          break;
-      }
+      // Return back to starting position and resume default behavior
+      DisableAllBehaviors();
+      resetTurret.enabled = true;
+      moveTo.enabled = true;
+      moveTo.Move(m_homePosition,
+        () =>
+        {
+          DisableAllBehaviors();
+          
+          // Do this again to ensure turret has been reset and hand off to
+          // default state only when this is done
+          resetTurret.enabled = true;
+          resetTurret.OnComplete = () => { Debug.Log("ResetTurret complete"); EnableDefaultBehavior(); };
+        });
     }
 
+    /*
     if (distance < startTrackDistance)
     {
       track.enabled = true;
@@ -96,6 +96,7 @@ public class MobileSAM: MonoBehaviour
       track.enabled = false;
       scan.enabled = true;
     }
+    */
   }
 
   private void Start()
@@ -107,19 +108,12 @@ public class MobileSAM: MonoBehaviour
     scan = GetComponent<Scan>();
     track = GetComponent<Track>();
     track.target = Camera.main.transform;
+    resetTurret = GetComponent<ResetTurret>();
 
-    m_allBehaviors = new MonoBehaviour[] { moveTo, patrol, follow, scan, track };
+    m_allBehaviors = new MonoBehaviour[] { moveTo, patrol, follow, scan, track, resetTurret };
     m_navigationBehaviors = new MonoBehaviour[] { moveTo, patrol, follow };
     DisableAllBehaviors();
-    switch (initialBehavior)
-    {
-      case InitialBehavior.Scan:
-        scan.enabled = true;
-        break;
-      case InitialBehavior.Patrol:
-        patrol.enabled = true;
-        break;
-    }
+    EnableDefaultBehavior();
 
     m_homePosition = transform.position;
 

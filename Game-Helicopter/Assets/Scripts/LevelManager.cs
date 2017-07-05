@@ -92,9 +92,9 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel()
   {
-    PlaceBuildings();
+    //PlaceBuildings();
     PlaceAgents();
-    PlaceTunnels();// Instantiate(tunnelPrefab, tunnelPrefab.transform.position, tunnelPrefab.transform.rotation);
+    PlaceTunnels();
   }
 
 	public LevelManager()

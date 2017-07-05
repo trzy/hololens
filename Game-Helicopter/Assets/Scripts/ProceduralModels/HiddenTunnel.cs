@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using HoloToolkit.Unity.SpatialMapping;
 
-public class HiddenTunnel: MonoBehaviour
+public class HiddenTunnel : MonoBehaviour
 {
   public enum Type
   {
@@ -58,6 +58,9 @@ public class HiddenTunnel: MonoBehaviour
   [Tooltip("Matterial for occluding hull.")]
   public Material occlusionMaterial;
 
+  [Tooltip("Allows tunnel to be instantiated in the scene hierarchy immediately for debugging purposes. Does not use SurfacePlaneDeformationManager.")]
+  public bool debugMode = false;
+
   private const float CEILING_THICKNESS = 0.05f;
 
   private Vector3 m_vehicleDimensions = Vector3.zero;
@@ -87,7 +90,7 @@ public class HiddenTunnel: MonoBehaviour
     void SpawnVehicles(GameObject vehiclePrefab, string layerName, int numVehicles, float vehicleSpacingFactor);
   }
 
-  private class TunnelWithStraightRamp: TunnelBuilderInterface
+  private class TunnelWithStraightRamp : TunnelBuilderInterface
   {
     private ObjectData m_tunnelObject;
     private ObjectData m_occluderObject;
@@ -317,7 +320,7 @@ public class HiddenTunnel: MonoBehaviour
       {
         Vector3 localPosition = new Vector3(x, y, z);
         GameObject vehicle = Instantiate(vehiclePrefab, m_tunnelObject.obj.transform.TransformPoint(localPosition), m_tunnelObject.obj.transform.rotation);
-        vehicle.layer = LayerMask.NameToLayer(layerName);
+        SetVehicleLayer(vehicle, layerName);
       }
     }
 
@@ -331,7 +334,7 @@ public class HiddenTunnel: MonoBehaviour
     }
   }
 
-  private class TunnelWithSmoothRamp: TunnelBuilderInterface
+  private class TunnelWithSmoothRamp : TunnelBuilderInterface
   {
     private ObjectData m_tunnelObject;
     private ObjectData m_occluderObject;
@@ -552,7 +555,7 @@ public class HiddenTunnel: MonoBehaviour
       {
         Vector3 localPosition = new Vector3(x, y, z);
         GameObject vehicle = Instantiate(vehiclePrefab, m_tunnelObject.obj.transform.TransformPoint(localPosition), m_tunnelObject.obj.transform.rotation);
-        vehicle.layer = LayerMask.NameToLayer(layerName);
+        SetVehicleLayer(vehicle, layerName);
       }
     }
 
@@ -567,7 +570,7 @@ public class HiddenTunnel: MonoBehaviour
     }
   }
 
-  private class AngledTunnel: TunnelBuilderInterface
+  private class AngledTunnel : TunnelBuilderInterface
   {
     private ObjectData m_tunnelObject;
     private ObjectData m_occluderObject;
@@ -638,10 +641,10 @@ public class HiddenTunnel: MonoBehaviour
       m_vertices = new Vector3[]
       {
         // Tunnel opening
-        new Vector3(-0.5f * tunnelWidth, 0, -0.5f * openingLength), // 0 upper left of tunnel entrance / ceiling cutaway
-        new Vector3(+0.5f * tunnelWidth, 0, -0.5f * openingLength), // 1 upper right
-        new Vector3(-0.5f * tunnelWidth, 0, +0.5f * openingLength), // 2 upper left of tunnel entrance / ramp floor
-        new Vector3(+0.5f * tunnelWidth, 0, +0.5f * openingLength), // 3 upper right
+        new Vector3(-0.5f * tunnelWidth, 0, -0.5f * openingLength), // 0 left of tunnel entrance / ceiling cutaway
+        new Vector3(+0.5f * tunnelWidth, 0, -0.5f * openingLength), // 1 right
+        new Vector3(-0.5f * tunnelWidth, 0, +0.5f * openingLength), // 2 left of tunnel entrance / ramp floor
+        new Vector3(+0.5f * tunnelWidth, 0, +0.5f * openingLength), // 3 right
 
         // Bottom of ceiling cutaway
         new Vector3(-0.5f * tunnelWidth, -CEILING_THICKNESS, -0.5f * openingLength),  // 4 left side
@@ -656,6 +659,10 @@ public class HiddenTunnel: MonoBehaviour
         // Points on tunnel floor that align with bottom of ceiling cutaway
         new Vector3(-0.5f * tunnelWidth, -CEILING_THICKNESS, -0.5f * openingLength + baseLength), // 10 left side
         new Vector3(+0.5f * tunnelWidth, -CEILING_THICKNESS, -0.5f * openingLength + baseLength), // 11 right side
+
+        // Landing in front of tunnel
+        new Vector3(-0.5f * tunnelWidth, 0, +0.5f * openingLength + 2*m_vehicleDimensions.z), // 12 left of tunnel entrance / ramp floor
+        new Vector3(+0.5f * tunnelWidth, 0, +0.5f * openingLength + 2*m_vehicleDimensions.z)  // 13 right
       };
 
       m_tunnelTriangles = new int[]
@@ -690,7 +697,13 @@ public class HiddenTunnel: MonoBehaviour
 
         // Right wall
         11, 5, 7,
-        7, 9, 11
+        7, 9, 11,
+
+        // Landing pad
+        //TODO: placement volume needs to be adjusted to safely use this
+        //TODO: this should be put
+        //2, 12, 13,
+        //13, 3, 2
       };
 
       m_occluderTriangles = new int[]
@@ -766,7 +779,7 @@ public class HiddenTunnel: MonoBehaviour
         float z = distanceUpRamp * Mathf.Cos(m_rampAngle * Mathf.Deg2Rad);
         Vector3 localPosition = startingPoint + y * Vector3.up + z * Vector3.forward;
         GameObject vehicle = Instantiate(vehiclePrefab, m_tunnelObject.obj.transform.TransformPoint(localPosition), m_tunnelObject.obj.transform.rotation * rampRotation);
-        vehicle.layer = LayerMask.NameToLayer(layerName);
+        SetVehicleLayer(vehicle, layerName);
       }
     }
 
@@ -798,6 +811,16 @@ public class HiddenTunnel: MonoBehaviour
     };
   }
 
+  private static void SetVehicleLayer(GameObject vehicle, string layerName)
+  {
+    int layer = LayerMask.NameToLayer(layerName);
+    vehicle.layer = layer;
+    foreach (Transform transform in vehicle.GetComponentsInChildren<Transform>())
+    {
+      transform.gameObject.layer = layer;
+    }
+  }
+
   private ObjectData CreateNewObject(string name, Material material, bool createCollider)
   {
     GameObject obj = new GameObject(name);
@@ -825,9 +848,13 @@ public class HiddenTunnel: MonoBehaviour
   {
     transform.position = position;
     transform.rotation = rotation;
+
+    // Even with spatial understanding, floor is not always even, so we need to
+    // extend the OBB used for mesh deformation above the level of the floor
     Vector3 placementBox = GetPlacementDimensions();
     OrientedBoundingBox obb = m_tunnelBuilder.CreateEmbeddableOBB(gameObject);
     obb.Extents += Vector3.forward * placementBox.y;  // remember that OBB z axis corresponds to tunnel's y axis
+
     SurfacePlaneDeformationManager.Instance.Embed(gameObject, obb, transform.position, () => { OnEmbedComplete(); }, false);
   }
 
@@ -868,5 +895,14 @@ public class HiddenTunnel: MonoBehaviour
     // Disable sub-objects. They will be re-enabled upon being embedded.
     m_tunnelObject.obj.SetActive(false);
     m_occluderObject.obj.SetActive(false);
+  }
+
+  private void Awake()
+  {
+    if (debugMode)
+    {
+      Init();
+      OnEmbedComplete();
+    }
   }
 }

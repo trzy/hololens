@@ -20,10 +20,14 @@ public class MoveTo: MonoBehaviour
 
   private void FixedUpdate()
   {
-    if (!m_agent.pathPending && m_agent.remainingDistance <= m_nearEnough && m_OnTargetReached != null)
+    if (!m_agent.pathPending && m_agent.remainingDistance <= m_nearEnough)
     {
-      m_OnTargetReached();
-      m_OnTargetReached = null;
+      if (m_OnTargetReached != null)
+      {
+        m_OnTargetReached();
+        m_OnTargetReached = null;
+      }
+      enabled = false;
     }
   }
 
