@@ -81,7 +81,7 @@ public class AAVehicle: MonoBehaviour
           // Do this again to ensure turret has been reset and hand off to
           // default state only when this is done
           resetTurret.enabled = true;
-          resetTurret.OnComplete = () => { Debug.Log("ResetTurret complete"); EnableDefaultBehavior(); };
+          resetTurret.OnComplete = () => { EnableDefaultBehavior(); };
         });
     }
 
