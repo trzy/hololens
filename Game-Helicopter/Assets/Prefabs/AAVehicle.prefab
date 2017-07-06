@@ -70,6 +70,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!1 &1475671725075876
+GameObject:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4800440949905382}
+  m_Layer: 0
+  m_Name: GunPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!1 &1791317396494700
 GameObject:
   m_ObjectHideFlags: 1
@@ -156,7 +171,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 1, z: -0.345}
   m_LocalScale: {x: 0.5, y: 1, z: 0.3}
   m_Children:
-  - {fileID: 4517566178033064}
+  - {fileID: 4800440949905382}
   m_Father: {fileID: 4078629113863550}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -167,10 +182,24 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1791317396494700}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1.5}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 2}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
+  m_LocalScale: {x: 0.19999999, y: 0.20000002, z: 2}
   m_Children:
   - {fileID: 4238372488928444}
+  m_Father: {fileID: 4800440949905382}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &4800440949905382
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1475671725075876}
+  m_LocalRotation: {x: 0.0031415874, y: 0, z: 0, w: 0.99999505}
+  m_LocalPosition: {x: 0, y: 0, z: 0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 4517566178033064}
   m_Father: {fileID: 4488355549764768}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -359,7 +388,7 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1273363679279094}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5270e2e1edd75ba4b896bcf365ccecba, type: 3}
   m_Name: 
@@ -384,7 +413,8 @@ MonoBehaviour:
   scan: {fileID: 114728057745015998}
   track: {fileID: 114710733504599828}
   resetTurret: {fileID: 114785787693960788}
-  defaultBehavior: 1
+  defaultNavigationBehavior: 0
+  defaultTurretBehavior: 0
   startEngagingDistance: 1
   stopEngagingDistance: 2
   startTrackDistance: 2
@@ -395,15 +425,16 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1273363679279094}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6c3e5e14f5fa3aa44b118a81fd8b1f60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   azimuthalTrackingObject: {fileID: 4488355549764768}
-  altitudeTrackingObject: {fileID: 4517566178033064}
-  azimuthalTrackingSpeed: 18
+  verticalTrackingObject: {fileID: 4800440949905382}
+  azimuthalSpeed: 18
+  verticalSpeed: 18
   maxErrorDegrees: 2
 --- !u!114 &114728057745015998
 MonoBehaviour:
@@ -447,7 +478,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   azimuthalObject: {fileID: 4488355549764768}
-  verticalObject: {fileID: 4517566178033064}
+  verticalObject: {fileID: 4800440949905382}
   azimuthalSpeed: 90
   verticalSpeed: 18
 --- !u!114 &114836172727347652
