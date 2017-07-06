@@ -16,6 +16,12 @@ public class MathHelpers
     return new Vector3(0, v.y, v.z);
   }
 
+  // X-component of cross product
+  public static float CrossX(Vector3 a, Vector3 b)
+  {
+    return a.y * b.z - a.z * b.y;
+  }
+
   // Y-component of cross product
   public static float CrossY(Vector3 a, Vector3 b)
   {
