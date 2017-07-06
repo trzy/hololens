@@ -4,11 +4,17 @@ using UnityEngine;
 
 public class AAVehicle: MonoBehaviour
 {
-  public enum DefaultBehavior
+  public enum DefaultNavigationBehavior
+  {
+    Nothing,
+    Patrol
+  }
+
+  public enum DefaultTurretBehavior
   {
     Nothing,
     Scan,
-    Patrol
+    Track
   }
 
   public MoveTo moveTo;
@@ -17,14 +23,15 @@ public class AAVehicle: MonoBehaviour
   public Scan scan;
   public Track track;
   public ResetTurret resetTurret;
-  public DefaultBehavior defaultBehavior = DefaultBehavior.Nothing;
+  public DefaultNavigationBehavior defaultNavigationBehavior = DefaultNavigationBehavior.Nothing;
+  public DefaultTurretBehavior defaultTurretBehavior = DefaultTurretBehavior.Nothing;
   public float startEngagingDistance = 1f;
   public float stopEngagingDistance = 2;
   public float startTrackDistance = 2;
   public float stopTrackDistance = 3;
 
-  private MonoBehaviour[] m_allBehaviors;
   private MonoBehaviour[] m_navigationBehaviors;
+  private MonoBehaviour[] m_turretBehaviors;
   private Vector3 m_homePosition;
   private Transform m_target = null;
 
@@ -37,23 +44,39 @@ public class AAVehicle: MonoBehaviour
     }
   }
 
-  private void DisableAllBehaviors()
+  private void DisableTurretBehaviorsExcept(MonoBehaviour doNotDisable = null)
   {
-    foreach (MonoBehaviour behavior in m_allBehaviors)
+    foreach (MonoBehaviour behavior in m_turretBehaviors)
     {
-      behavior.enabled = false;
+      if (behavior != doNotDisable)
+        behavior.enabled = false;
     }
   }
 
-  private void EnableDefaultBehavior()
+  private void EnableDefaultNavigationBehavior()
   {
-    switch (defaultBehavior)
+    switch (defaultNavigationBehavior)
     {
-      case DefaultBehavior.Scan:
+      default:
+      case DefaultNavigationBehavior.Nothing:
+        break;
+      case DefaultNavigationBehavior.Patrol:
+        patrol.enabled = true;
+        break;
+    }
+  }
+
+  private void EnableDefaultTurretBehavior()
+  {
+    switch (defaultTurretBehavior)
+    {
+      default:
+        break;
+      case DefaultTurretBehavior.Scan:
         scan.enabled = true;
         break;
-      case DefaultBehavior.Patrol:
-        patrol.enabled = true;
+      case DefaultTurretBehavior.Track:
+        track.enabled = true;
         break;
     }
   }
@@ -70,33 +93,23 @@ public class AAVehicle: MonoBehaviour
     else if (distance > stopEngagingDistance && follow.enabled == true)
     {
       // Return back to starting position and resume default behavior
-      DisableAllBehaviors();
-      resetTurret.enabled = true;
+      DisableNavigationBehaviorsExcept();
       moveTo.enabled = true;
-      moveTo.Move(m_homePosition,
-        () =>
-        {
-          DisableAllBehaviors();
-          
-          // Do this again to ensure turret has been reset and hand off to
-          // default state only when this is done
-          resetTurret.enabled = true;
-          resetTurret.OnComplete = () => { EnableDefaultBehavior(); };
-        });
+      moveTo.Move(m_homePosition, () => { EnableDefaultNavigationBehavior(); });
     }
 
-    /*
     if (distance < startTrackDistance)
     {
+      DisableTurretBehaviorsExcept(track);
       track.enabled = true;
-      scan.enabled = false;
     }
-    else if (distance > stopTrackDistance)
+    else if (distance > stopTrackDistance && track.enabled == true)
     {
-      track.enabled = false;
-      scan.enabled = true;
+      // Reset turret and resume default behavior
+      DisableTurretBehaviorsExcept();
+      resetTurret.enabled = true;
+      resetTurret.OnComplete = () => { EnableDefaultTurretBehavior(); };
     }
-    */
   }
 
   private void Start()
@@ -110,10 +123,12 @@ public class AAVehicle: MonoBehaviour
     track.target = Camera.main.transform;
     resetTurret = GetComponent<ResetTurret>();
 
-    m_allBehaviors = new MonoBehaviour[] { moveTo, patrol, follow, scan, track, resetTurret };
     m_navigationBehaviors = new MonoBehaviour[] { moveTo, patrol, follow };
-    DisableAllBehaviors();
-    EnableDefaultBehavior();
+    m_turretBehaviors = new MonoBehaviour[] { scan, track, resetTurret };
+    DisableNavigationBehaviorsExcept();
+    DisableTurretBehaviorsExcept();
+    EnableDefaultNavigationBehavior();
+    EnableDefaultTurretBehavior();
 
     m_homePosition = transform.position;
 
