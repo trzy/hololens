@@ -4,10 +4,16 @@ using UnityEngine;
 
 public class MathHelpers
 {
-  // Project onto ground plane (xz-plane)
-  public static Vector3 GroundVector(Vector3 v)
+  // Project onto azimuthal plane (xz-plane; the ground plane)
+  public static Vector3 Azimuthal(Vector3 v)
   {
     return new Vector3(v.x, 0, v.z);
+  }
+
+  // Project onto the vertical plane (yz-plane)
+  public static Vector3 Vertical(Vector3 v)
+  {
+    return new Vector3(0, v.y, v.z);
   }
 
   // Y-component of cross product

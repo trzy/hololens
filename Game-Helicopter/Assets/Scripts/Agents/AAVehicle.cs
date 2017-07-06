@@ -60,7 +60,7 @@ public class AAVehicle: MonoBehaviour
 
   private void FixedUpdate()
   {
-    float distance = MathHelpers.GroundVector(transform.position - m_target.position).magnitude;
+    float distance = MathHelpers.Azimuthal(transform.position - m_target.position).magnitude;
 
     if (distance < startEngagingDistance)
     {

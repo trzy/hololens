@@ -27,7 +27,7 @@ public class Follow: MonoBehaviour
 
   private bool TooFarFromTarget()
   {
-    return MathHelpers.GroundVector(m_agent.destination - target.position).magnitude > targetDistance;
+    return MathHelpers.Azimuthal(m_agent.destination - target.position).magnitude > targetDistance;
   }
 
   private void StopMoving()

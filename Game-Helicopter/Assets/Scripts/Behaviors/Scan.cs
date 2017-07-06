@@ -49,7 +49,7 @@ public class Scan: MonoBehaviour
     }
     else
     {
-      Vector3 currentOrientation = MathHelpers.GroundVector(scanningObject.transform.forward).normalized;
+      Vector3 currentOrientation = MathHelpers.Azimuthal(scanningObject.transform.forward).normalized;
       float sinAngle = MathHelpers.CrossY(currentOrientation, m_targetOrientation);
       if (Mathf.Abs(sinAngle) > m_sinMaxErrorDegrees)
       {

@@ -12,11 +12,14 @@ public class Track: MonoBehaviour
   [Tooltip("Component of agent that tracks along azimuthal direction.")]
   public Transform azimuthalTrackingObject = null;
 
-  [Tooltip("Component of agent that tracks altitude.")]
-  public Transform altitudeTrackingObject = null;
+  [Tooltip("Component of agent that tracks vertically.")]
+  public Transform verticalTrackingObject = null;
 
-  [Tooltip("Rate of turret rotation in degrees/sec during tracking state.")]
-  public float azimuthalTrackingSpeed = 180 / 10;
+  [Tooltip("Azimuthal rotation speed (degrees/sec).")]
+  public float azimuthalSpeed = 180 / 10;
+
+  [Tooltip("Vertical rotation speed (degrees/sec).")]
+  public float verticalSpeed = 180 / 10;
 
   [Tooltip("Error tolerance in degrees.")]
   public float maxErrorDegrees = 2;
@@ -26,12 +29,12 @@ public class Track: MonoBehaviour
   private void Update()
   {
     Vector3 targetPosition = target == null ? Camera.main.transform.position : target.position;
-    Vector3 targetLocalPosition = MathHelpers.GroundVector(azimuthalTrackingObject.transform.InverseTransformPoint(targetPosition));
+    Vector3 targetLocalPosition = MathHelpers.Azimuthal(azimuthalTrackingObject.transform.InverseTransformPoint(targetPosition));
     float sinAngle = MathHelpers.CrossY(Vector3.forward, targetLocalPosition.normalized); // only the y component will be valid and we want it signed
     if (Mathf.Abs(sinAngle) > m_sinMaxErrorDegrees)
     {
       float direction = Mathf.Sign(sinAngle);
-      azimuthalTrackingObject.Rotate(0, direction * Time.deltaTime * azimuthalTrackingSpeed, 0);
+      azimuthalTrackingObject.Rotate(0, direction * Time.deltaTime * azimuthalSpeed, 0);
     }
   }
 
