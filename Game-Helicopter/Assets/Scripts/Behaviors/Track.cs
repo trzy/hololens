@@ -21,9 +21,19 @@ public class Track: MonoBehaviour
   [Tooltip("Vertical rotation speed (degrees/sec).")]
   public float verticalSpeed = 180 / 10;
 
+  [Tooltip("Maximum vertical angle (degrees).")]
+  [Range(-90, 90)]  // Sine is monotonic in this range
+  public float maxVerticalAngle = 60;
+
+  [Tooltip("Minimum vertical angle (degrees).")]
+  [Range(-90, 90)]
+  public float minVerticalAngle = 30;
+
   [Tooltip("Error tolerance in degrees.")]
   public float maxErrorDegrees = 2;
 
+  private float m_sinMaxVerticalAngle;
+  private float m_sinMinVerticalAngle;
   private float m_deltaSinMaxErrorDegrees;
   private float m_sinMaxErrorDegrees;
 
@@ -43,9 +53,7 @@ public class Track: MonoBehaviour
     }
 
     if (verticalTrackingObject != null && azimuthalTrackingObject != null)
-    {
-      //TODO: min and max angle
-      
+    {     
       // Transform both the target and the vertical rotating object into the
       // local coordinate system of the azimuthal object, whose xz-plane will
       // be our ground plane from which to measure vertical angle.
@@ -56,10 +64,13 @@ public class Track: MonoBehaviour
       float sinTargetAngle = targetLocalVector.y / targetLocalVector.magnitude;
       float sinObjectAngle = objectLocalVector.y / objectLocalVector.magnitude;
 
+      // Clamp the target angle to allowable range
+      sinTargetAngle = Mathf.Clamp(sinTargetAngle, m_sinMinVerticalAngle, m_sinMaxVerticalAngle);
+
       // Rotate appropriately to minimize error
       if (Mathf.Abs(sinTargetAngle - sinObjectAngle) > m_deltaSinMaxErrorDegrees)
       {
-        float direction = Mathf.Sign(objectLocalVector.y - targetLocalVector.y);
+        float direction = Mathf.Sign(sinObjectAngle - sinTargetAngle);
         verticalTrackingObject.Rotate(direction * Time.deltaTime * verticalSpeed, 0, 0);
       }
 
@@ -80,7 +91,9 @@ public class Track: MonoBehaviour
 
   private void Start()
   {
-    //m_sinMaxErrorDegrees = Mathf.Sin(Mathf.Abs(maxErrorDegrees) * Mathf.Deg2Rad);
+    m_sinMaxVerticalAngle = Mathf.Sin(maxVerticalAngle * Mathf.Deg2Rad);
+    m_sinMinVerticalAngle = Mathf.Sin(minVerticalAngle * Mathf.Deg2Rad);
+    m_sinMaxErrorDegrees = Mathf.Sin(Mathf.Abs(maxErrorDegrees) * Mathf.Deg2Rad);
 
     // Largest Sin(x) - Sin(x-MAX_ERRORD_DEGREES) occurs about x = 0, where the
     // derivative of Sin(x) is highest
