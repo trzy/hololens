@@ -17,6 +17,8 @@ public class AAVehicle: MonoBehaviour
     Track
   }
 
+  public Bullet bulletPrefab;
+  public Transform muzzle;
   public MoveTo moveTo;
   public Patrol patrol;
   public Follow follow;
@@ -25,15 +27,23 @@ public class AAVehicle: MonoBehaviour
   public ResetTurret resetTurret;
   public DefaultNavigationBehavior defaultNavigationBehavior = DefaultNavigationBehavior.Nothing;
   public DefaultTurretBehavior defaultTurretBehavior = DefaultTurretBehavior.Nothing;
-  public float startEngagingDistance = 1f;
-  public float stopEngagingDistance = 2;
+  public float startFollowingDistance = 1f;
+  public float stopFollowingDistance = 2;
   public float startTrackDistance = 2;
   public float stopTrackDistance = 3;
-
+  
   private MonoBehaviour[] m_navigationBehaviors;
   private MonoBehaviour[] m_turretBehaviors;
   private Vector3 m_homePosition;
+
   private Transform m_target = null;
+
+  private bool m_lockedOnTarget = false;
+  private float m_lockTime;
+  private float m_lastFireTime;
+
+  private Bullet[] m_bulletPool = new Bullet[16];
+  private int m_nextBulletIdx = 0;
 
   private void DisableNavigationBehaviorsExcept(MonoBehaviour doNotDisable = null)
   {
@@ -81,16 +91,47 @@ public class AAVehicle: MonoBehaviour
     }
   }
 
+  private Bullet GetBulletFromPool()
+  {
+    Bullet bullet = m_bulletPool[m_nextBulletIdx];
+    if (bullet.gameObject.activeSelf)
+      return null;  // no free bullets currently
+    m_nextBulletIdx = (m_nextBulletIdx + 1) % m_bulletPool.Length;
+    return bullet;
+  }
+
+  private void Attack()
+  {
+    if (!m_lockedOnTarget)
+      return;
+
+    float timeSinceLock = Time.time - m_lockTime;
+    if (timeSinceLock < 2)
+      return;
+
+    float timeSinceFired = Time.time - m_lastFireTime;
+    if (timeSinceFired < 1)
+      return;
+
+    Bullet bullet = GetBulletFromPool();
+    if (bullet == null)
+      return;
+    bullet.transform.position = muzzle.position;
+    bullet.transform.rotation = muzzle.rotation;
+    bullet.gameObject.SetActive(true);
+    m_lastFireTime = Time.time;
+  }
+  
   private void FixedUpdate()
   {
     float distance = MathHelpers.Azimuthal(transform.position - m_target.position).magnitude;
 
-    if (distance < startEngagingDistance)
+    if (distance < startFollowingDistance)
     {
       DisableNavigationBehaviorsExcept(follow);
       follow.enabled = true;
     }
-    else if (distance > stopEngagingDistance && follow.enabled == true)
+    else if (distance > stopFollowingDistance && follow.enabled == true)
     {
       // Return back to starting position and resume default behavior
       DisableNavigationBehaviorsExcept();
@@ -102,6 +143,18 @@ public class AAVehicle: MonoBehaviour
     {
       DisableTurretBehaviorsExcept(track);
       track.enabled = true;
+      track.OnLockObtained = 
+        () => 
+        {
+          m_lockedOnTarget = true;
+          m_lockTime = Time.time;
+        };
+      track.OnLockLost =
+        () =>
+        {
+          m_lockedOnTarget = false;
+        };
+      Attack();
     }
     else if (distance > stopTrackDistance && track.enabled == true)
     {
@@ -109,6 +162,7 @@ public class AAVehicle: MonoBehaviour
       DisableTurretBehaviorsExcept();
       resetTurret.enabled = true;
       resetTurret.OnComplete = () => { EnableDefaultTurretBehavior(); };
+      m_lockedOnTarget = false;
     }
   }
 
@@ -130,9 +184,21 @@ public class AAVehicle: MonoBehaviour
     EnableDefaultNavigationBehavior();
     EnableDefaultTurretBehavior();
 
+    m_lockTime = Time.time;
+    m_lastFireTime = Time.time;
+
     m_homePosition = transform.position;
 
     //TODO: add a SetTarget() method
     m_target = Camera.main.transform;
+  }
+
+  private void Awake()
+  {
+    for (int i = 0; i < m_bulletPool.Length; i++)
+    {
+      m_bulletPool[i] = Instantiate(bulletPrefab) as Bullet;
+      m_bulletPool[i].gameObject.SetActive(false);
+    }
   }
 }

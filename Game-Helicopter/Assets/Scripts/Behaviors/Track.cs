@@ -29,31 +29,55 @@ public class Track: MonoBehaviour
   [Range(-90, 90)]
   public float minVerticalAngle = 30;
 
-  [Tooltip("Error tolerance in degrees.")]
+  [Tooltip("Error tolerance in degrees that tracking aims for.")]
   public float maxErrorDegrees = 2;
+
+  [Tooltip("Approximate degrees (in azimuthal and vertical directions) within which lock callback is called.")]
+  public float lockDegrees = 10;
+
+  public Action OnLockObtained = null;
+  public Action OnLockLost = null;
+  public bool perfectLock = false;
+  public bool lockedOn = false;
 
   private float m_sinMaxVerticalAngle;
   private float m_sinMinVerticalAngle;
   private float m_deltaSinMaxErrorDegrees;
   private float m_sinMaxErrorDegrees;
+  private float m_sinLockDegrees;
 
   private void Update()
   {
+    bool hasVerticalObject = false;
+    bool azimuthalLock = false;
+    bool azimuthalPerfectLock = false;
+    bool verticalLock = false;
+    bool verticalPerfectLock = false;
+
     Vector3 targetPosition = target == null ? Camera.main.transform.position : target.position;
 
     if (azimuthalTrackingObject != null)
     {
       Vector3 targetLocalPosition = MathHelpers.Azimuthal(azimuthalTrackingObject.transform.InverseTransformPoint(targetPosition));
       float sinAngle = MathHelpers.CrossY(Vector3.forward, targetLocalPosition.normalized); // only the y component will be valid and we want it signed
-      if (Mathf.Abs(sinAngle) > m_sinMaxErrorDegrees)
+      float absSinAngle = Mathf.Abs(sinAngle);
+      if (absSinAngle > m_sinMaxErrorDegrees)
       {
         float direction = Mathf.Sign(sinAngle);
         azimuthalTrackingObject.Rotate(0, direction * Time.deltaTime * azimuthalSpeed, 0);
+        azimuthalLock = absSinAngle <= m_sinLockDegrees;
+      }
+      else
+      {
+        azimuthalLock = true;
+        azimuthalPerfectLock = true;
       }
     }
 
     if (verticalTrackingObject != null && azimuthalTrackingObject != null)
-    {     
+    {
+      hasVerticalObject = true;
+
       // Transform both the target and the vertical rotating object into the
       // local coordinate system of the azimuthal object, whose xz-plane will
       // be our ground plane from which to measure vertical angle.
@@ -68,10 +92,18 @@ public class Track: MonoBehaviour
       sinTargetAngle = Mathf.Clamp(sinTargetAngle, m_sinMinVerticalAngle, m_sinMaxVerticalAngle);
 
       // Rotate appropriately to minimize error
-      if (Mathf.Abs(sinTargetAngle - sinObjectAngle) > m_deltaSinMaxErrorDegrees)
+      float deltaSinAngle = sinObjectAngle - sinTargetAngle;
+      float absDeltaSinAngle = Mathf.Abs(deltaSinAngle);
+      if (absDeltaSinAngle > m_deltaSinMaxErrorDegrees)
       {
-        float direction = Mathf.Sign(sinObjectAngle - sinTargetAngle);
+        float direction = Mathf.Sign(deltaSinAngle);
         verticalTrackingObject.Rotate(direction * Time.deltaTime * verticalSpeed, 0, 0);
+        verticalLock = absDeltaSinAngle <= m_sinLockDegrees;
+      }
+      else
+      {
+        verticalLock = true;
+        verticalPerfectLock = true;
       }
 
       /*
@@ -87,6 +119,26 @@ public class Track: MonoBehaviour
       }
       */
     }
+
+    // Callbacks
+    bool oldLockState = lockedOn;
+    lockedOn = false;
+    if (!hasVerticalObject && azimuthalLock)
+    {
+      lockedOn = true;
+      perfectLock = azimuthalPerfectLock;
+      if (OnLockObtained != null && oldLockState == false)
+        OnLockObtained();
+    }
+    else if (verticalLock && azimuthalLock)
+    {
+      lockedOn = true;
+      perfectLock = azimuthalPerfectLock && verticalPerfectLock;
+      if (OnLockObtained != null && oldLockState == false)
+        OnLockObtained();
+    }
+    if (OnLockLost != null && oldLockState == true && lockedOn == false)
+      OnLockLost();
   }
 
   private void Start()
@@ -94,6 +146,7 @@ public class Track: MonoBehaviour
     m_sinMaxVerticalAngle = Mathf.Sin(maxVerticalAngle * Mathf.Deg2Rad);
     m_sinMinVerticalAngle = Mathf.Sin(minVerticalAngle * Mathf.Deg2Rad);
     m_sinMaxErrorDegrees = Mathf.Sin(Mathf.Abs(maxErrorDegrees) * Mathf.Deg2Rad);
+    m_sinLockDegrees = Mathf.Sin(Mathf.Max(lockDegrees) * Mathf.Deg2Rad);
 
     // Largest Sin(x) - Sin(x-MAX_ERRORD_DEGREES) occurs about x = 0, where the
     // derivative of Sin(x) is highest
