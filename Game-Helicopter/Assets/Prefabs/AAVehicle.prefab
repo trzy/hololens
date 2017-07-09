@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 114728057745015998}
   - component: {fileID: 114710733504599828}
   - component: {fileID: 114785787693960788}
+  - component: {fileID: 114707548329085352}
   m_Layer: 0
   m_Name: AAVehicle
   m_TagString: Untagged
@@ -141,7 +142,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1273363679279094}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.7440906, y: -0.5143229, z: -7.5900207}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.15, y: 0.05, z: 0.2}
   m_Children:
   - {fileID: 4078629113863550}
@@ -407,21 +408,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 637ba89213d742e45acad3b5e0a8ce04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 114757586292346114, guid: 49179d83737e3fd4ba057949c28b438e,
-    type: 2}
-  muzzle: {fileID: 4238372488928444}
   moveTo: {fileID: 114836172727347652}
   patrol: {fileID: 114286258334342614}
   follow: {fileID: 114321628753178224}
   scan: {fileID: 114728057745015998}
   track: {fileID: 114710733504599828}
   resetTurret: {fileID: 114785787693960788}
+  fire: {fileID: 114707548329085352}
   defaultNavigationBehavior: 0
   defaultTurretBehavior: 0
   startFollowingDistance: 1
   stopFollowingDistance: 2
   startTrackDistance: 2
   stopTrackDistance: 3
+--- !u!114 &114707548329085352
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1273363679279094}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 044db5287edebc248ae329b82902de45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bulletPrefab: {fileID: 114757586292346114, guid: 49179d83737e3fd4ba057949c28b438e,
+    type: 2}
+  muzzle: {fileID: 4238372488928444}
+  timeDelayToFirstFire: 2
+  minTimeDelayBetweenBursts: 1
+  maxTimeDelayBetweenBursts: 3
+  firingRateHz: 5
+  minBurstSize: 1
+  maxBurstSize: 5
 --- !u!114 &114710733504599828
 MonoBehaviour:
   m_ObjectHideFlags: 1

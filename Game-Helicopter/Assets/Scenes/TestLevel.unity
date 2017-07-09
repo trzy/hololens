@@ -229,6 +229,8 @@ MonoBehaviour:
     type: 2}
   agentPrefab2: {fileID: 1562602078146906, guid: 29578ae37cd64ba4c8749cf74a80b1da,
     type: 2}
+  agentPrefab3: {fileID: 1241546587381942, guid: c03cc7ffddd6be448994e70ee442a4d8,
+    type: 2}
 --- !u!1001 &1100835761
 Prefab:
   m_ObjectHideFlags: 0

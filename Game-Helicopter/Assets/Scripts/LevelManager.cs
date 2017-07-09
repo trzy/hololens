@@ -12,6 +12,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public float distanceApart = 2;
   public GameObject agentPrefab1;
   public GameObject agentPrefab2;
+  public GameObject agentPrefab3;
 
   private GameObject PlaceBuildingOnFloor(GameObject prefab, GameObject other)
   {
@@ -70,6 +71,19 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
         if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
           position = hit.position;
         GameObject agent = Instantiate(agentPrefab2, position, Quaternion.identity);
+        agent.GetComponent<Follow>().target = Camera.main.transform;
+      }
+    }
+
+    agentSize = Footprint.Measure(agentPrefab3);
+    agentWidth = Mathf.Max(agentSize.x, agentSize.z);
+    for (int i = 0; i < 1; i++)
+    {
+      if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agentWidth))
+      {
+        if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+          position = hit.position;
+        GameObject agent = Instantiate(agentPrefab3, position, Quaternion.identity);
         agent.GetComponent<Follow>().target = Camera.main.transform;
       }
     }

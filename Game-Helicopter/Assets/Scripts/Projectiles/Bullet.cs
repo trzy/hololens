@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class Bullet: MonoBehaviour
 {
   [Tooltip("Velocity (m/sec).")]
