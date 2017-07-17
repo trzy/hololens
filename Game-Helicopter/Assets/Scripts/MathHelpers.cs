@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class MathHelpers
 {
+  public static bool IsNaN(Vector3 v)
+  {
+    return float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z);
+  }
+
   // Project onto azimuthal plane (xz-plane; the ground plane)
   public static Vector3 Azimuthal(Vector3 v)
   {
