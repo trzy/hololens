@@ -263,7 +263,7 @@ public class GuidanceArrow: MonoBehaviour
               // Gradually move arrow along Camera's forward axis (z) until it is
               // within the HUD plane
               float completeness = TweenTransition(now);
-              float z = m_transitionStartPosition.z + Mathf.Sign(HUDDistance - m_transitionStartPosition.z) * completeness;
+              float z = m_transitionStartPosition.z + (HUDDistance - m_transitionStartPosition.z) * completeness;
               transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, z);
             }
           }
