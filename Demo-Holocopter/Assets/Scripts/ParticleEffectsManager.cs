@@ -177,10 +177,10 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
 
     
     GameObject bulletHole = Instantiate(bulletHolePrefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
-    bulletHole.AddComponent<WorldAnchor>();
+    //bulletHole.AddComponent<WorldAnchor>();
     bulletHole.transform.parent = this.transform;
     //SpatialMeshDeformationManager.Instance.Embed(bulletHole);
-    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, plane);
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, OBBMeshIntersection.CreateWorldSpaceOBB(bulletHole.GetComponent<BoxCollider>()), plane);
     //TODO: logic for objects to self destruct after not being gazed at for long enough?
     m_bulletHoles.Enqueue(bulletHole);
     while (m_bulletHoles.Count > maxBulletHoles)
@@ -192,6 +192,25 @@ public class ParticleEffectsManager: HoloToolkit.Unity.Singleton<ParticleEffects
       }
     }
     
+  }
+
+  // SpatialUnderstanding case
+  public void CreateBulletHole(Vector3 position, Vector3 normal)
+  {
+   GameObject bulletHole = Instantiate(bulletHolePrefab, position + normal * .005f, Quaternion.LookRotation(normal)) as GameObject;
+    bulletHole.transform.parent = this.transform;
+    SurfacePlaneDeformationManager.Instance.Embed(bulletHole, OBBMeshIntersection.CreateWorldSpaceOBB(bulletHole.GetComponent<BoxCollider>()), bulletHole.transform.position);
+    //TODO: logic for objects to self destruct after not being gazed at for long enough?
+    m_bulletHoles.Enqueue(bulletHole);
+    while (m_bulletHoles.Count > maxBulletHoles)
+    {
+      GameObject oldBulletHole = m_bulletHoles.Dequeue();
+      if (oldBulletHole)  // if hasn't destroyed itself already
+      {
+        Destroy(oldBulletHole);
+      }
+    }
+
   }
 
   public void CreateCrater(Vector3 position, Vector3 normal)

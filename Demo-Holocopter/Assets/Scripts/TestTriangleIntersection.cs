@@ -10,6 +10,6 @@ public class TestTriangleIntersection: MonoBehaviour
   {
     BoxCollider obb = obbParent.GetComponent<BoxCollider>();
     Mesh mesh = meshParent.GetComponent<MeshFilter>().sharedMesh;
-    Debug.Log("OBB-Mesh Intersection Result: " + (OBBMeshIntersection.FindTriangles(obb, mesh.vertices, mesh.GetTriangles(0), meshParent.transform).Count > 0));
+    Debug.Log("OBB-Mesh Intersection Result: " + (OBBMeshIntersection.FindTriangles(OBBMeshIntersection.CreateWorldSpaceOBB(obb), mesh.vertices, mesh.GetTriangles(0), meshParent.transform).Count > 0));
   }
 }

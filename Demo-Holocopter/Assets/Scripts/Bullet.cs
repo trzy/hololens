@@ -41,7 +41,7 @@ public class Bullet: MonoBehaviour
         break;
       case HoloToolkit.Unity.SpatialMapping.PlaneTypes.Floor:
         ParticleEffectsManager.Instance.CreateLingeringFireball(hitPoint, hitNormal, 0);
-        ParticleEffectsManager.Instance.CreateCrater(hitPoint, hitNormal);
+        //ParticleEffectsManager.Instance.CreateCrater(hitPoint, hitNormal);
         break;
       default:
         break;
@@ -56,6 +56,19 @@ public class Bullet: MonoBehaviour
           Mathf.Abs(Vector3.Dot(hitNormal, Vector3.forward)) > cos80)
       {
         PlayRicochetSound();
+      }
+      else if (Mathf.Abs(hitNormal.y) < 0.05f)
+      {
+        // Must have hit a wall
+        //TODO: for spatial understanding, we should raycast and determine whether we actually hit a real wall
+        ParticleEffectsManager.Instance.CreateBulletImpactDebris(hitPoint, hitNormal, 0.1f, 3, 0);
+        ParticleEffectsManager.Instance.CreateBulletHole(hitPoint, hitNormal);
+      }
+      else if (hitNormal.y > 0.95f)
+      {
+        // Must have hit the floor
+        //TODO: raycast spatial understanding
+        ParticleEffectsManager.Instance.CreateLingeringFireball(hitPoint, hitNormal, 0);
       }
     }
     /*
