@@ -1,9 +1,13 @@
 ﻿/*
  * TODO:
  * -----
- * 1. Add a different mesh type.
- * 2. Make arrow object animate itself rather than doing it here.
- * 3. Add callbacks for when object becomes visible.
+ * 0. Percentage of viewport to clip to (current 0.9) should be configurable.
+ * 1. Absolute positioning all the type by transforming to camera space,
+ *    then transforming back to world space.
+ * 2. Create tag-along behavior in XY plane.
+ * 3. Add a different mesh type.
+ * 4. Make arrow object animate itself rather than doing it here.
+ * 5. Add callbacks for when object becomes visible.
  */
 
 using System.Collections;
