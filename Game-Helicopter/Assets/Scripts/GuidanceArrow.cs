@@ -1,40 +1,21 @@
 ﻿/*
  * TODO:
  * -----
- * 0. Percentage of viewport to clip to (current 0.9) should be configurable.
- * 1. Absolute positioning all the type by transforming to camera space,
- *    then transforming back to world space.
- * 2. Create tag-along behavior in XY plane.
- * 3. Add a different mesh type.
- * 4. Make arrow object animate itself rather than doing it here.
- * 5. Add callbacks for when object becomes visible.
- */
+ * 1. Add a different mesh type.
+ * 2. Make arrow object animate itself rather than doing it here.
+  */
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GuidanceArrow: MonoBehaviour
+public class GuidanceArrow : MonoBehaviour
 {
-  // What to do with arrow when the target is visible by user
-  public enum TargetVisibleBehavior
+  public enum RubberBandMode
   {
-    Invisible,
-    ArrowOnHUD,
-    PinArrowInWorldSpace
-  }
-
-  // How to transition from world space back to HUD
-  public enum WorldSpaceToHUDTransition
-  {
-    Instantaneous,
-    Smooth
-  }
-
-  public enum TweenFunction
-  {
-    Linear,
-    Sigmoid
+    None,
+    XYZ,
+    XY
   }
 
   [Tooltip("Arrow object, where local +z faces camera and +y is pointing direction.")]
@@ -46,20 +27,17 @@ public class GuidanceArrow: MonoBehaviour
   [Tooltip("Distance of HUD plane from user's eye.")]
   public float HUDDistance = 2;
 
-  [Tooltip("Behavior when target is within user's view.")]
-  public TargetVisibleBehavior targetVisibleBehavior = TargetVisibleBehavior.ArrowOnHUD;
+  [Tooltip("Edge of the viewable space as a percentage of view angles, which determines where indicator is drawn.")]
+  public float viewBoundaryFraction = 0.85f;
 
-  [Tooltip("How to transition from world space back to HUD.")]
-  public WorldSpaceToHUDTransition worldSpaceToHUDTransition = WorldSpaceToHUDTransition.Instantaneous;
-
-  [Tooltip("Always face camera when on-screen and pinned to target object. A reason not to enable this would be when using a volumetric arrow mesh.")]
-  public bool billboardInWorldSpace = true;
-
-  [Tooltip("Tweening function to use for smooth transitions to and from world space.")]
-  public TweenFunction tweenFunction = TweenFunction.Linear;
+  [Tooltip("Smoothly change position and orientation. If disabled, arrow will be fixed onto HUD and update instantaneously.")]
+  public RubberBandMode rubberBandMode = RubberBandMode.None;
 
   [Tooltip("Duration of smooth transition in seconds.")]
   public float transitionDuration = 1;
+
+  [Tooltip("Continue to draw arrow even when target appears on-screen.")]
+  public bool drawWhenTargetOnScreen = false;
 
   //TODO: arrow mesh object should handle this
   public float bounceAmplitude = 0.25f;
@@ -72,25 +50,15 @@ public class GuidanceArrow: MonoBehaviour
   // transition animation)
   public System.Action OnTargetAppeared = null;
 
-  // Called only when arrow is pinned in world space and first reaches target
-  // point
-  public System.Action OnTargetReached = null;
-
   // Called in frames that target transitions from visible to invisible state
   public System.Action OnTargetDisappeared = null;
 
-  private enum State
-  {
-    HUD,
-    PinnedInWorldSpace
-  }
+  private Vector3 m_currentCameraSpacePosition;
+  private Vector3 m_desiredCameraSpacePosition;
+  private float m_currentOrientation = 0;
+  private float m_desiredOrientation = 0;
 
-  private State m_state = State.HUD;
   private bool m_wasTargetVisibleLastFrame = false;
-  private float m_transitionStartTime;
-  private Vector3 m_transitionStartPosition;
-  private bool m_pinned = false;
-  private float m_orientation = 0;
   private Vector3 m_arrowLocalPosition;
   private float m_nextBounceTime;
 
@@ -116,49 +84,64 @@ public class GuidanceArrow: MonoBehaviour
     return point;
   }
 
-  private Vector3 Project(Vector3 worldPoint, float zDistance)
+  private Vector3 Project(Vector3 worldSpacePoint, float zDistance)
   {
-    Vector3 point = Camera.main.transform.InverseTransformPoint(worldPoint);
-    float zScale = zDistance / point.z;
+    Vector3 cameraSpacePoint = Camera.main.transform.InverseTransformPoint(worldSpacePoint);
+    float zScale = zDistance / cameraSpacePoint.z;
 
     // If point is behind us, we also need to flip x and y, hence the Sign()
-    Vector3 projected = Mathf.Sign(zScale) * zScale * new Vector3(point.x, point.y, 0);
-    projected.z = point.z;
+    Vector3 projected = Mathf.Sign(zScale) * zScale * new Vector3(cameraSpacePoint.x, cameraSpacePoint.y, 0);
+    projected.z = zDistance;
     return projected;
   }
 
   private void AimAtTarget()
   {
-    // This function assumes we are parented to the camera
-    Vector3 point = Project(target.position, transform.localPosition.z);
-    Vector3 pointXY = new Vector3(point.x, point.y, 0);
-    transform.localRotation = Quaternion.LookRotation(Vector3.forward, pointXY);
+    // The camera aspect ratio for HoloLens seems to be incorrect and produces
+    // horizontal extents that are slightly too large
+    float fovY = Camera.main.fieldOfView * viewBoundaryFraction;
+    float fovX = fovY * Camera.main.aspect;
+    float xExtent = HUDDistance * Mathf.Tan(0.5f * fovX * Mathf.Deg2Rad);
+    float yExtent = HUDDistance * Mathf.Tan(0.5f * fovY * Mathf.Deg2Rad);
+
+    // Project the target point into camera-local space on a plane at HUD distance
+    Vector3 point = Project(target.position, HUDDistance);
+
+    // Direction from center point of HUD plane toward target (as projected on HUD)
+    Vector3 direction = new Vector3(point.x, point.y, 0);
 
     // If point is behind us, we need to push it to screen boundaries. This
     // also happens to smooth out the undesirable behavior caused by the
     // singularity near z=0.
     if (point.z < Camera.main.nearClipPlane)
-      point += 1e6f * pointXY.normalized;
+      point += 1e6f * direction.normalized;
 
-    // The camera aspect ratio for HoloLens seems to be incorrect and produces
-    // horizontal extents that are slightly too large
-    float fovY = Camera.main.fieldOfView * 0.9f;
-    float fovX = fovY * Camera.main.aspect;
-    float xExtent = transform.localPosition.z * Mathf.Tan(0.5f * fovX * Mathf.Deg2Rad);
-    float yExtent = transform.localPosition.z * Mathf.Tan(0.5f * fovY * Mathf.Deg2Rad);
-
-    // Clip Y and X to screen extents.
+    // Clip Y and X to screen extents. We take advantage of being in camera
+    // space, where (0, 0, z) is directly in front and center.
     // Vector equation of line: p = v * t, where t = [0,1].
     // Solve for p.y = yclip: yclip = v.y * tclip. Then, xclip = v.x * tclip.
     point = ClipXY(point, yExtent / point.y);
     point = ClipXY(point, -yExtent / point.y);
     point = ClipXY(point, xExtent / point.x);
     point = ClipXY(point, -xExtent / point.x);
-    point.z = transform.localPosition.z;
+    point.z = HUDDistance;
 
     // TODO: handle NaNs that occur at z=0?
+    // Transform position back to world space
     if (!MathHelpers.IsNaN(point))
-      transform.localPosition = point;
+      m_desiredCameraSpacePosition = point;
+    else
+      m_desiredCameraSpacePosition = new Vector3(0, 0, HUDDistance);
+
+    // Point the arrow at the object and make sure arrow is facing camera and lies
+    // in the HUD plane (not quite the same as billboarding, where orientation toward
+    // camera changes slightly with XY position).
+    // Our convention is that the arrow points along its local y axis and that
+    // its z axis should point along the camera's. We must rotate our direction from
+    // camera back into world space.
+    Vector3 desiredCameraSpaceDirection = direction;
+    Quaternion localRotation = Quaternion.LookRotation(Vector3.forward, direction);
+    m_desiredOrientation = localRotation.eulerAngles.z;
   }
 
   private void ScheduleNextBounceAnimation(float now)
@@ -193,25 +176,6 @@ public class GuidanceArrow: MonoBehaviour
     //Debug.Log("visible=" + IsPointVisible(target.position));
   }
 
-  // Returns a number between 0 and 1 (indicating completeness) as a function
-  // of the duration since transition start time. 
-  private float TweenTransition(float now)
-  {
-    float delta = now - m_transitionStartTime;
-
-    switch (tweenFunction)
-    {
-      case TweenFunction.Linear:
-        // Linear, clamped to 1
-        return Mathf.Min(delta / transitionDuration, 1);
-      case TweenFunction.Sigmoid:
-        // TODO: implement me!
-        return 1;
-    }
-
-    return 1;
-  }
-
   private void LateUpdate()
   {
     bool isTargetVisible = IsPointVisible(target.position);
@@ -227,106 +191,72 @@ public class GuidanceArrow: MonoBehaviour
     m_wasTargetVisibleLastFrame = isTargetVisible;
 
     // Hide arrow if requested when target is visible
-    if (isTargetVisible && targetVisibleBehavior == TargetVisibleBehavior.Invisible)
+    if (isTargetVisible && !drawWhenTargetOnScreen)
     {
       arrow.SetActive(false);
       return;
     }
+
+    // Turn on the arrow
+    bool arrowAppearedThisFrame = arrow.activeSelf == false;
     arrow.SetActive(true);
 
-    // Update arrow behavior
+    // Update desired arrow position and orientation
     float now = Time.time;
-    switch (m_state)
+    UpdateHUD(now);
+
+    // If rubber band mode enabled, move smoothly toward desired position, else
+    // snap to it immediately
+    if (rubberBandMode != RubberBandMode.None)
     {
-      // Arrow is projected onto a HUD plane, which is a fixed distance from
-      // the camera and always facing the user
-      case State.HUD:
-        UpdateHUD(now);
+      //TODO: fix rotation interpolation to always take shortest rotational direction
+      float t = arrowAppearedThisFrame ? 1 : Time.deltaTime / transitionDuration;
 
-        if (isTargetVisible)
-        {
-          if (targetVisibleBehavior == TargetVisibleBehavior.PinArrowInWorldSpace)
-          {
-            // Transition to absolute positioning. Save arrow's orientation, un-
-            // parent from camera, and begin transition animation.
-            m_orientation = transform.rotation.eulerAngles.z;
-            transform.parent = null;
-            m_transitionStartTime = now;
-            m_transitionStartPosition = transform.position;
-            m_pinned = false;
-            m_state = State.PinnedInWorldSpace;
-          }
-        }
-        else
-        {
-          if (worldSpaceToHUDTransition == WorldSpaceToHUDTransition.Smooth)
-          {
-            float distanceFromHUDPlane = Mathf.Abs(transform.localPosition.z - HUDDistance);
-            if (distanceFromHUDPlane > 1e-3f)
-            {
-              // Gradually move arrow along Camera's forward axis (z) until it is
-              // within the HUD plane
-              float completeness = TweenTransition(now);
-              float z = m_transitionStartPosition.z + (HUDDistance - m_transitionStartPosition.z) * completeness;
-              transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, z);
-            }
-          }
-        }
-        break;
+      // Set position
+      if (rubberBandMode == RubberBandMode.XY)
+      {
+        // In this mode, we are always affixed to HUD plane and lerp only in
+        // the XY plane
+        m_currentCameraSpacePosition = Vector3.Lerp(m_currentCameraSpacePosition, m_desiredCameraSpacePosition, t);
+        transform.position = Camera.main.transform.TransformPoint(m_currentCameraSpacePosition);
+      }
+      else
+      {
+        Vector3 desiredWorldSpacePosition = Camera.main.transform.TransformPoint(m_desiredCameraSpacePosition);
+        transform.position = Vector3.Lerp(transform.position, desiredWorldSpacePosition, t);
+      }
 
-      // Arrow takes a position in absolute world space
-      case State.PinnedInWorldSpace:
-        if (billboardInWorldSpace)
-        {
-          // Orient toward camera and then use saved orientation from last HUD
-          // state frame to rotate the arrow into a fixed orientation pointing
-          // at the target
-          Vector3 cameraToObject = Camera.main.transform.position - transform.position;
-          transform.rotation = Quaternion.LookRotation(-cameraToObject);
-          transform.Rotate(new Vector3(0, 0, m_orientation));
-        }
+      // Set orientation
+      transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
+      m_currentOrientation = Mathf.Lerp(m_currentOrientation, m_desiredOrientation, t);
+      transform.Rotate(new Vector3(0, 0, m_currentOrientation));
+    }
+    else
+    {
+      transform.position = Camera.main.transform.TransformPoint(m_desiredCameraSpacePosition);
+      transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
+      transform.Rotate(new Vector3(0, 0, m_desiredOrientation));
 
-        if (isTargetVisible)
-        {
-          if ((transform.position - target.position).sqrMagnitude > (1e-3f * 1e-3f))
-          {
-            // Gradually move arrow toward its final target
-            float completeness = TweenTransition(now);
-            transform.position = m_transitionStartPosition + completeness * (target.position - m_transitionStartPosition);
-          }
-          else if (!m_pinned && OnTargetReached != null)
-          {
-            OnTargetReached();
-            m_pinned = true;
-          }
-        }
-        else
-        {
-          // Transition back to HUD plane
-          transform.parent = Camera.main.transform;
-          m_transitionStartTime = now;
-          m_transitionStartPosition = transform.localPosition;
-          if (worldSpaceToHUDTransition == WorldSpaceToHUDTransition.Instantaneous)
-            transform.localPosition = new Vector3(transform.localPosition.x, transform.localPosition.y, HUDDistance);
-          m_state = State.HUD;
-        }
-        break;
+      // In case rubber band mode is switched on, we want a sensible starting point
+      m_currentCameraSpacePosition = m_desiredCameraSpacePosition;
     }
   }
 
   private void OnEnable()
   {
     m_arrowLocalPosition = arrow.transform.localPosition;
+    UpdateHUD(Time.time);
+    m_currentCameraSpacePosition = m_desiredCameraSpacePosition;
+    m_currentOrientation = m_desiredOrientation;
+    if (IsPointVisible(target.position) && !drawWhenTargetOnScreen)
+      arrow.SetActive(false);
     ScheduleNextBounceAnimation(Time.time);
   }
 
   private void Awake()
   {
-    HUDDistance = transform.localPosition.z;
-    transform.parent = Camera.main.transform;
     //TEMP testing
     OnTargetAppeared = () => { Debug.Log("TARGET APPEARED"); };
-    OnTargetReached = () => { Debug.Log("TARGET REACHED"); };
     OnTargetDisappeared = () => { Debug.Log("TARGET DISAPPEARED"); };
   }
 }
