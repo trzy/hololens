@@ -23,16 +23,20 @@
 //  Monitor.Exit(mutex);
 //}
 
-using System;
 using System.Collections.Generic;
 using System.Threading;
+using System;
 
 public class TaskScheduler
 {
   public delegate Action TaskFunction();
 
   private object m_mtx = new object();
+#if UNITY_EDITOR || !UNITY_WSA
   private Thread m_thread;
+#else
+  private System.Threading.Tasks.Task m_mySchedulerTask;
+#endif
   private bool m_stop = false;
   private Queue<TaskFunction> m_queue = new Queue<TaskFunction>();
   private object m_outMtx = new object();
@@ -107,7 +111,11 @@ public class TaskScheduler
   public void Start()
   {
     m_stop = false;
+#if UNITY_EDITOR || !UNITY_WSA
     m_thread.Start();
+#else
+    m_mySchedulerTask.Start();
+#endif
   }
 
   public void Stop()
@@ -117,11 +125,19 @@ public class TaskScheduler
     {
       Monitor.Pulse(m_mtx);
     }
+#if UNITY_EDITOR || !UNITY_WSA
     m_thread.Join();
+#else
+    m_mySchedulerTask.Wait();
+#endif
   }
 
   public TaskScheduler()
 	{
+#if UNITY_EDITOR || !UNITY_WSA
     m_thread = new System.Threading.Thread(Run);
+#else
+    m_mySchedulerTask = new System.Threading.Tasks.Task(Run, System.Threading.Tasks.TaskCreationOptions.LongRunning);
+#endif
   }
 }
