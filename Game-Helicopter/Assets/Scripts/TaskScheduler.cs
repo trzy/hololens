@@ -63,9 +63,9 @@ public class TaskScheduler
       while (internalQueue.Count > 0)
       {
         TaskFunction Task = internalQueue.Dequeue();
-        Action OnCompleted = Task();
         if (!m_stop)
-        {
+        { 
+          Action OnCompleted = Task();
           lock (m_outMtx)
           {
             m_outQueue.Enqueue(OnCompleted);
