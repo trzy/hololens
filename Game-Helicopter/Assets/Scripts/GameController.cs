@@ -15,6 +15,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
     Init,
     Scanning,
     FinalizeScan,
+    GenerateLevel,
     Playing
   }
 
@@ -22,7 +23,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
 
   private void OnScanComplete()
   {
-    SetState(State.Playing);
+    SetState(State.GenerateLevel);
   }
 
   private void SetState(State state)
@@ -39,8 +40,11 @@ public class GameController: MonoBehaviour, IInputClickHandler
         PlayspaceManager.Instance.OnScanComplete += OnScanComplete;
         PlayspaceManager.Instance.StopScanning();
         break;
+      case State.GenerateLevel:
+        LevelManager.Instance.GenerateLevel(() => SetState(State.Playing) );
+        Debug.Log("State: GenerateLevel");
+        break;
       case State.Playing:
-        LevelManager.Instance.GenerateLevel();
         Debug.Log("State: Playing");
         break;
     }
@@ -48,6 +52,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
 
   public void OnInputClicked(InputClickedEventData eventData)
   {
+    Debug.Log("CLICK!");
     switch (m_state)
     {
       case State.Scanning:
@@ -72,6 +77,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
 
   private void Start()
   {
+    InputManager.Instance.AddGlobalListener(this.gameObject);
     SetState(State.Scanning);
   }
 }

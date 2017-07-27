@@ -202,6 +202,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   private void Shuffle(int[] a)
   {
+return;
     for (int i = 0; i < a.Length; i++)
     {
       int tmp = a[i];
@@ -262,19 +263,6 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
       stats = new SpatialUnderstandingDll.Imports.PlayspaceStats();
       return false;
     }
-  }
-
-  private IEnumerator InitSolverCoroutine()
-  {
-    int retval = 0;
-    Job job = new Job(() => { retval = SpatialUnderstandingDllObjectPlacement.Solver_Init(); });
-    job.Execute();
-    while (!job.Finished())
-    {
-      yield return null;
-    }
-    Debug.Log("Placement Solver initialization " + (retval == 1 ? "succeeded" : "FAILED"));
-    m_solverInitialized = true;
   }
 
   public bool IsSpatialLayer(GameObject obj)
@@ -426,7 +414,16 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
         if (!m_solverInitCalled)
         {
           m_solverInitCalled = true;
-          StartCoroutine(InitSolverCoroutine());
+          TaskManager.Instance.Schedule(
+            () =>
+            {
+              int retval = SpatialUnderstandingDllObjectPlacement.Solver_Init();
+              return () =>
+              {
+                Debug.Log("Placement Solver initialization " + (retval == 1 ? "succeeded" : "FAILED"));
+                m_solverInitialized = true;
+              };
+            });
           if (buildNavMesh)
             m_navMeshBuilder.BuildAsync();
         }

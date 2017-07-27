@@ -1,4 +1,7 @@
-﻿using System;
+﻿//TODO: TaskScheduler needs to replace Job (from which solver init is called)
+//TODO: Rewrite PlayspaceManager Shuffle() to be thread-safe using a non-Unity randomizer.
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -13,6 +16,8 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public GameObject agentPrefab1;
   public GameObject agentPrefab2;
   public GameObject agentPrefab3;
+
+  private int m_numTasksPending = 0;
 
   private GameObject PlaceBuildingOnFloor(GameObject prefab, GameObject other)
   {
@@ -48,44 +53,77 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   private void PlaceAgents()
   {
-    Vector3 agentSize = Footprint.Measure(agentPrefab1);
-    float agentWidth = Mathf.Max(agentSize.x, agentSize.z);
-    Vector3 position;
-    NavMeshHit hit;
+    PlayspaceManager pm = PlayspaceManager.Instance;
+
+    Vector3 agent1Size = Footprint.Measure(agentPrefab1);
+    float agent1Width = Mathf.Max(agent1Size.x, agent1Size.z);
     for (int i = 0; i < 3; i++)
     {
-      if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agentWidth))
-      {
-        if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
-          position = hit.position;
-        Instantiate(agentPrefab1, position, Quaternion.identity);
-      }
+      TaskManager.Instance.Schedule(
+        () =>
+        {
+          Vector3 position;
+          if (pm.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agent1Width))
+          {
+            return () =>
+            {
+              NavMeshHit hit;
+              if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+                position = hit.position;
+              Instantiate(agentPrefab1, position, Quaternion.identity);
+            };
+          }
+          return null;
+        });
+      m_numTasksPending++;
     }
 
-    agentSize = Footprint.Measure(agentPrefab2);
-    agentWidth = Mathf.Max(agentSize.x, agentSize.z);
+    Vector3 agent2Size = Footprint.Measure(agentPrefab2);
+    float agent2Width = Mathf.Max(agent2Size.x, agent2Size.z);
     for (int i = 0; i < 1; i++)
     {
-      if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agentWidth))
-      {
-        if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
-          position = hit.position;
-        GameObject agent = Instantiate(agentPrefab2, position, Quaternion.identity);
-        agent.GetComponent<Follow>().target = Camera.main.transform;
-      }
+      TaskManager.Instance.Schedule(
+        () =>
+        {
+          Vector3 position;
+          if (pm.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agent2Width))
+          {
+            return () =>
+            {
+              NavMeshHit hit;
+              if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+                position = hit.position;
+              GameObject agent = Instantiate(agentPrefab2, position, Quaternion.identity);
+              agent.GetComponent<Follow>().target = Camera.main.transform;
+            };
+          }
+          return null;
+        });
+      m_numTasksPending++;
     }
 
-    agentSize = Footprint.Measure(agentPrefab3);
-    agentWidth = Mathf.Max(agentSize.x, agentSize.z);
+    Vector3 agent3Size = Footprint.Measure(agentPrefab3);
+    float agent3Width = Mathf.Max(agent3Size.x, agent3Size.z);
     for (int i = 0; i < 1; i++)
     {
-      if (PlayspaceManager.Instance.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agentWidth))
-      {
-        if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
-          position = hit.position;
-        GameObject agent = Instantiate(agentPrefab3, position, Quaternion.identity);
-        agent.GetComponent<Follow>().target = Camera.main.transform;
-      }
+      TaskManager.Instance.Schedule(
+        () =>
+        {
+          Vector3 position;
+          if (pm.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agent3Width))
+          {
+            return () =>
+            {
+              NavMeshHit hit;
+              if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+                position = hit.position;
+              GameObject agent = Instantiate(agentPrefab3, position, Quaternion.identity);
+              agent.GetComponent<Follow>().target = Camera.main.transform;
+            };
+          }
+          return null;
+        });
+      m_numTasksPending++;
     }
   }
 
@@ -104,14 +142,21 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
       GameObject.Destroy(tunnel.gameObject);
   }
 
-  public void GenerateLevel()
+  public void GenerateLevel(Action OnComplete)
   {
     //PlaceBuildings();
     PlaceAgents();
-    PlaceTunnels();
-  }
+    //PlaceTunnels();
 
-	public LevelManager()
-	{
-	}
+    TaskManager.Instance.Schedule(
+      () => 
+      {
+        return () =>
+        {
+          Debug.Log("Finished generating level.");
+          OnComplete();
+        };
+      });
+    m_numTasksPending++;
+  }
 }
