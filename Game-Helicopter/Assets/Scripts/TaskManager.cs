@@ -126,7 +126,7 @@ public class TaskManager: HoloToolkit.Unity.Singleton<TaskManager>
   }
 
   protected override void Awake()
-	{
+  {
     base.Awake();
 #if UNITY_EDITOR || !UNITY_WSA
     m_thread = new System.Threading.Thread(Run);
