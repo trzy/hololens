@@ -147,16 +147,6 @@ Prefab:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 114472897799942812, guid: 5748bd6759d77d8409df5d42be6ef349,
-        type: 2}
-      propertyPath: debugMarginVolumes
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 114104542529742446, guid: 5748bd6759d77d8409df5d42be6ef349,
-        type: 2}
-      propertyPath: autoApplyStaticBatching
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 5748bd6759d77d8409df5d42be6ef349, type: 2}
   m_IsPrefabParent: 0
@@ -175,7 +165,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &852810262
 MonoBehaviour:
   m_ObjectHideFlags: 0
