@@ -1,35 +1,18 @@
-﻿//while (true) {
-//  Monitor.Enter(mutex);
-//  if (queue.Count == 0) {
-//    Monitor.Wait(mutex);
-//  }
-//  queue.Dequeue();
-//  Monitor.Exit(mutex);
-//}
-
-//while (true) {
-//  Monitor.Enter(mutex);
-//  if (queue.Count == 0) {
-//    Monitor.Wait(mutex);
-//  }
-//  queue.Dequeue();
-//  Monitor.Exit(mutex);
-//}
-
-//while (true) {
-//  Monitor.Enter(mutex);
-//  queue.Enqueue(42);
-//  Monitor.PulseAll(mutex);
-//  Monitor.Exit(mutex);
-//}
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System;
+using UnityEngine;
+using HoloToolkit.Unity;
 
-public class TaskScheduler
+public class TaskManager: HoloToolkit.Unity.Singleton<TaskManager>
 {
   public delegate Action TaskFunction();
+
+  [Tooltip("Whether to run completion callbacks automatically in LateUpdate().")]
+  public bool autoRunCompletionCallbacks = true;
+
+  [Tooltip("How long to spend in each LateUpdate running completion callbacks.")]
+  public float maxSecondsPerFrameRunningCompletionCallbacks = 8e-3f;
 
   private object m_mtx = new object();
 #if UNITY_EDITOR || !UNITY_WSA
@@ -108,7 +91,7 @@ public class TaskScheduler
     }
   }
 
-  public void Start()
+  private void StartThread()
   {
     m_stop = false;
 #if UNITY_EDITOR || !UNITY_WSA
@@ -118,7 +101,7 @@ public class TaskScheduler
 #endif
   }
 
-  public void Stop()
+  private void StopThread()
   {
     m_stop = true;
     lock (m_mtx)
@@ -132,12 +115,30 @@ public class TaskScheduler
 #endif
   }
 
-  public TaskScheduler()
+  private void LateUpdate()
+  {
+    if (!autoRunCompletionCallbacks)
+      return;
+
+    float start = Time.time;
+    while ((Time.time - start) < maxSecondsPerFrameRunningCompletionCallbacks && TryExecuteOneCompletionCallback())
+      ;
+  }
+
+  protected override void Awake()
 	{
+    base.Awake();
 #if UNITY_EDITOR || !UNITY_WSA
     m_thread = new System.Threading.Thread(Run);
 #else
     m_mySchedulerTask = new System.Threading.Tasks.Task(Run, System.Threading.Tasks.TaskCreationOptions.LongRunning);
 #endif
+    StartThread();
+  }
+
+  protected override void OnDestroy()
+  {
+    StopThread();
+    base.OnDestroy();
   }
 }
