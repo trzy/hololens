@@ -209,6 +209,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!1 &1565216071397474
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4735373600784006}
+  - component: {fileID: 114183143534602478}
+  m_Layer: 0
+  m_Name: TaskManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!1 &1573565724289252
 GameObject:
   m_ObjectHideFlags: 1
@@ -618,6 +634,7 @@ Transform:
   - {fileID: 4759442195222934}
   - {fileID: 4545116861201656}
   - {fileID: 4252043912462120}
+  - {fileID: 4735373600784006}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -649,6 +666,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4465418404084822}
   m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &4735373600784006
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1565216071397474}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4569852558078926}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4759442195222934
 Transform:
@@ -834,6 +864,7 @@ MonoBehaviour:
   visualizeSpatialMeshes: 0
   occlusionMaterial: {fileID: 2100000, guid: df172103f5fba4a4d8636aeca60cb0d7, type: 2}
   renderingMaterial: {fileID: 2100000, guid: ddc2ff62e97ce6d41991784c3aa8e233, type: 2}
+  autoApplyStaticBatching: 0
   buildNavMesh: 1
 --- !u!114 &114136368123575782
 MonoBehaviour:
@@ -868,6 +899,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RoomModel: {fileID: 100000, guid: 38dc4b3c1f142da46b1669835926f67e, type: 3}
   SimulatedUpdatePeriodInSeconds: -1
+--- !u!114 &114183143534602478
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1565216071397474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2317034d9798294ba9c06ef627c260f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoRunCompletionCallbacks: 1
+  maxSecondsPerFrameRunningCompletionCallbacks: 0.008
 --- !u!114 &114207765299626034
 MonoBehaviour:
   m_ObjectHideFlags: 1
