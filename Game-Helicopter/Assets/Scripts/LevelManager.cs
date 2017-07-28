@@ -12,43 +12,74 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
   public GameObject[] besiegedBuildingPrefab;
+
+  public float idealDistanceApart = 4;
+  public float minDistanceApart = 2;
+  public float distanceStepSize = 0.25f;
+
   public float distanceApart = 2;
+
   public GameObject agentPrefab1;
   public GameObject agentPrefab2;
   public GameObject agentPrefab3;
 
   private int m_numTasksPending = 0;
 
-  private GameObject PlaceBuildingOnFloor(GameObject prefab, GameObject other)
-  {
-    Vector3 size = Footprint.Measure(prefab);
-    Vector3 position;
-    Quaternion rotation;
-    List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>();
-    if (other != null)
-      rules.Add(PlayspaceManager.Rule.AwayFrom(other.transform.position, distanceApart));
-    if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, out rotation, size, rules))
-      return Instantiate(prefab, position, rotation);
-    return null;
-  }
-
   private void PlaceBuildings()
   {
-    GameObject homeBase = null;
-    GameObject besiegedBuilding = null;
-
-    for (int i = 0; i < besiegedBuildingPrefab.Length && besiegedBuilding == null; i++)
+    Vector3[] homeBaseSizes = new Vector3[homeBasePrefab.Length];
+    Vector3[] besiegedBuildingSizes = new Vector3[besiegedBuildingPrefab.Length];
+    for (int i = 0; i < homeBasePrefab.Length; i++)
     {
-      besiegedBuilding = PlaceBuildingOnFloor(besiegedBuildingPrefab[i], null);
-
-      for (int j = 0; j < homeBasePrefab.Length && besiegedBuilding != null && homeBase == null; j++)
-      {
-        homeBase = PlaceBuildingOnFloor(homeBasePrefab[j], besiegedBuilding);
-      }
+      homeBaseSizes[i] = Footprint.Measure(homeBasePrefab[i]);
     }
+    for (int i = 0; i < besiegedBuildingPrefab.Length; i++)
+    {
+      besiegedBuildingSizes[i] = Footprint.Measure(besiegedBuildingPrefab[i]);
+    }
+    
+    //TODO: query playspace alignment and iterate over a large radius from playspace center for first building
+    //      in order to ensure that it is placed somewhere on the edge of playspace.
 
-    if (homeBase == null || besiegedBuilding == null)
-      Debug.Log("ERROR: could not place buildings");
+    TaskManager.Instance.Schedule(
+      () =>
+      {
+        for (float distanceApart = idealDistanceApart; distanceApart >= minDistanceApart; distanceApart -= distanceStepSize)
+        {
+          for (int i = 0; i < besiegedBuildingPrefab.Length; i++)
+          {
+            for (int j = 0; j < homeBasePrefab.Length; j++)
+            {
+              string name1;
+              string name2;
+              Vector3 position1 = Vector3.zero;
+              Vector3 position2 = Vector3.zero;
+              Quaternion rotation1;
+              Quaternion rotation2;
+              bool placed1 = PlayspaceManager.Instance.TryPlaceOnFloor(out name1, out position1, out rotation1, besiegedBuildingSizes[i]);
+              List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>() { PlayspaceManager.Rule.AwayFrom(position1, distanceApart) };
+              bool placed2 = PlayspaceManager.Instance.TryPlaceOnFloor(out name2, out position2, out rotation2, homeBaseSizes[j], rules);
+              if (placed1 && placed2)
+              {
+                return () =>
+                {
+                  Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart);
+                  Instantiate(besiegedBuildingPrefab[i], position1, rotation1);
+                  Instantiate(homeBasePrefab[j], position2, rotation2);
+                };
+              }
+              else if (placed1)
+                PlayspaceManager.Instance.RemoveObject(name1);
+              else if (placed2)
+                PlayspaceManager.Instance.RemoveObject(name2);
+            }
+          }
+        }
+
+        return () => Debug.Log("Failed to place buildings!");
+      });
+
+    //TODO: failed -- try placing anywhere and then if that also fails, need to re-scan.
   }
 
   private void PlaceAgents()
@@ -132,11 +163,12 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     HiddenTunnel tunnel = Instantiate(tunnelPrefab) as HiddenTunnel;
     tunnel.Init();
     Vector3 placementSize = tunnel.GetPlacementDimensions();
-    
+
+    string name;
     Vector3 position;
     Quaternion rotation;
 
-    if (PlayspaceManager.Instance.TryPlaceOnFloor(out position, out rotation, placementSize))
+    if (PlayspaceManager.Instance.TryPlaceOnFloor(out name, out position, out rotation, placementSize))
       tunnel.Embed(position - 0.5f * Vector3.up * placementSize.y, rotation);
     else
       GameObject.Destroy(tunnel.gameObject);
@@ -144,7 +176,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel(Action OnComplete)
   {
-    //PlaceBuildings();
+    PlaceBuildings();
     PlaceAgents();
     //PlaceTunnels();
 

@@ -113,6 +113,11 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   private AsyncNavMeshBuilder m_navMeshBuilder = new AsyncNavMeshBuilder();
 
+  public void RemoveObject(string placementName)
+  {
+    SpatialUnderstandingDllObjectPlacement.Solver_RemoveObject(placementName);
+  }
+
   private bool TryPlaceObject(
     out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
     string placementName,
@@ -146,14 +151,14 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
-  public bool TryPlaceOnFloor(out Vector3 position, out Quaternion rotation, Vector3 size, List<Rule> rules = null)
+  public bool TryPlaceOnFloor(out string placementName, out Vector3 position, out Quaternion rotation, Vector3 size, List<Rule> rules = null)
   {
     position = Vector3.zero;
     rotation = Quaternion.identity;
-    string token = "Floor-" + m_uniquePlacementID++;
+    placementName = "Floor-" + m_uniquePlacementID++;
     SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition = SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_OnFloor(0.5f * size);
     SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
-    if (TryPlaceObject(out placementResult, token, placementDefinition, rules))
+    if (TryPlaceObject(out placementResult, placementName, placementDefinition, rules))
     {
       position = placementResult.Position;
       rotation = Quaternion.LookRotation(placementResult.Forward, placementResult.Up);
@@ -377,8 +382,8 @@ return;
         m_spatialUnderstandingState = State.Scanning;
         break;
       case State.Scanning:
-        if (GetStats(out stats))
-          Debug.Log("NumFloor=" + stats.NumFloor + ", NumWallX-=" + stats.NumWall_XNeg + ", NumWallX+=" + stats.NumWall_XPos + ", NumWallZ-=" + stats.NumWall_ZNeg + ", NumWallZ+=" + stats.NumWall_ZPos);
+        //if (GetStats(out stats))
+        //  Debug.Log("NumFloor=" + stats.NumFloor + ", NumWallX-=" + stats.NumWall_XNeg + ", NumWallX+=" + stats.NumWall_XPos + ", NumWallZ-=" + stats.NumWall_ZNeg + ", NumWallZ+=" + stats.NumWall_ZPos);
         break;
       case State.FinalizeScan:
         //TODO: timeout?

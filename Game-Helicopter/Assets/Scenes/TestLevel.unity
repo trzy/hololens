@@ -266,7 +266,7 @@ MonoBehaviour:
   - {fileID: 1491877365881328, guid: 5c826ab45dc364748831ff90d22eaf9e, type: 2}
   - {fileID: 1361636558563896, guid: 1788b96cb2ded454bbbfbffdc07e1815, type: 2}
   - {fileID: 1567150736236286, guid: 796cc15ba7c338548ab2fb0f7a5c8d9f, type: 2}
-  distanceApart: 2
+  distanceApart: 3
   agentPrefab1: {fileID: 1273363679279094, guid: 92845d3254ee8d347b88c7452d360b2d,
     type: 2}
   agentPrefab2: {fileID: 1562602078146906, guid: 29578ae37cd64ba4c8749cf74a80b1da,
