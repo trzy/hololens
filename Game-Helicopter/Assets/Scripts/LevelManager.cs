@@ -1,5 +1,4 @@
-﻿//TODO: TaskScheduler needs to replace Job (from which solver init is called)
-//TODO: Rewrite PlayspaceManager Shuffle() to be thread-safe using a non-Unity randomizer.
+﻿//TODO: Rewrite PlayspaceManager Shuffle() to be thread-safe using a non-Unity randomizer.
 using System;
 using System.Collections;
 using System.Collections.Generic;
