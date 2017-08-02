@@ -8,6 +8,8 @@ using HoloToolkit.Unity;
 
 public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 {
+  public GuidanceArrow guidanceArrowPrefab;
+
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
   public GameObject[] besiegedBuildingPrefab;
@@ -22,7 +24,18 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public GameObject agentPrefab2;
   public GameObject agentPrefab3;
 
-  private int m_numTasksPending = 0;
+  private GameObject m_besiegedBuilding;
+  private GameObject m_homeBase;
+
+  private enum State
+  {
+    None,
+    GenerateLevel,
+    MissionBriefing
+  }
+
+  private State m_state = State.None;
+  private GuidanceArrow m_guidanceArrow;
 
   private void PlaceBuildings()
   {
@@ -63,14 +76,14 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
                 return () =>
                 {
                   Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart);
-                  Instantiate(besiegedBuildingPrefab[i], position1, rotation1);
-                  Instantiate(homeBasePrefab[j], position2, rotation2);
+                  m_besiegedBuilding = Instantiate(besiegedBuildingPrefab[i], position1, rotation1);
+                  m_homeBase = Instantiate(homeBasePrefab[j], position2, rotation2);
                 };
               }
               else if (placed1)
-                PlayspaceManager.Instance.RemoveObject(name1);
-              else if (placed2)
                 PlayspaceManager.Instance.RemoveObject(name2);
+              else if (placed2)
+                PlayspaceManager.Instance.RemoveObject(name1);
             }
           }
         }
@@ -105,7 +118,6 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
           }
           return null;
         });
-      m_numTasksPending++;
     }
 
     Vector3 agent2Size = Footprint.Measure(agentPrefab2);
@@ -129,7 +141,6 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
           }
           return null;
         });
-      m_numTasksPending++;
     }
 
     Vector3 agent3Size = Footprint.Measure(agentPrefab3);
@@ -153,7 +164,6 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
           }
           return null;
         });
-      m_numTasksPending++;
     }
   }
 
@@ -175,6 +185,8 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   public void GenerateLevel(Action OnComplete)
   {
+    m_state = State.GenerateLevel;
+
     PlaceBuildings();
     PlaceAgents();
     //PlaceTunnels();
@@ -188,6 +200,63 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
           OnComplete();
         };
       });
-    m_numTasksPending++;
+  }
+
+  private void FixedUpdate()
+  {
+    if (m_state == State.MissionBriefing)
+    {
+
+    }
+  }
+
+  private IEnumerator Wait(float seconds, Action OnTimeReached)
+  {
+    float start = Time.time;
+    Debug.Log("Starting Wait coroutine...");
+    yield return new WaitForSeconds(seconds);
+    Debug.Log("Finished Wait coroutine!");
+    OnTimeReached();
+  }
+
+  public void StartIntroSequence()
+  {
+    //TODO: need to add a setter to GuidanceArrow for target because if old target is visible and new target is visible, OnTargetAppeared will never be triggered!
+
+    m_state = State.MissionBriefing;
+
+    Action HomeBaseOverview = () =>
+    {
+      m_guidanceArrow.target = m_homeBase.transform;
+
+      m_guidanceArrow.OnTargetAppeared = () =>
+      {
+
+      };
+
+      m_guidanceArrow.OnTargetDisappeared = () =>
+      {
+      };
+    };
+
+
+    m_guidanceArrow = Instantiate(guidanceArrowPrefab).GetComponent<GuidanceArrow>();
+    m_guidanceArrow.target = m_besiegedBuilding.transform;
+    IEnumerator coroutine = null;
+
+    m_guidanceArrow.OnTargetAppeared = () =>
+    {
+      coroutine = Wait(10, HomeBaseOverview);
+      StartCoroutine(coroutine);
+      //m_guidanceArrow.target = m_homeBase.transform;
+      //m_guidanceArrow.gameObject.SetActive(false);
+    };
+
+    m_guidanceArrow.OnTargetDisappeared = () =>
+    {
+      Debug.Log("Target disappeared");
+      if (coroutine != null)
+        StopCoroutine(coroutine);
+    };
   }
 }

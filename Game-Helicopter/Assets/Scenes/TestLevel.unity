@@ -150,58 +150,6 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 5748bd6759d77d8409df5d42be6ef349, type: 2}
   m_IsPrefabParent: 0
---- !u!1 &852810260
-GameObject:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
-  m_Component:
-  - component: {fileID: 852810263}
-  - component: {fileID: 852810262}
-  m_Layer: 0
-  m_Name: GuidanceArrow
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &852810262
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 852810260}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afdc317e70bca3b4a84ba9f7ef0b3975, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  arrow: {fileID: 1457821670}
-  target: {fileID: 1871162624}
-  HUDDistance: 2
-  viewBoundaryFraction: 0.85
-  rubberBandMode: 1
-  transitionDuration: 0.15
-  drawWhenTargetOnScreen: 0
-  bounceAmplitude: 0
-  bounceFrequency: 1.5
-  numberOfBounces: 3
-  timeBetweenBounces: 2
---- !u!4 &852810263
-Transform:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 852810260}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 2}
-  m_LocalScale: {x: 0.05, y: 0.1, z: 0.1}
-  m_Children:
-  - {fileID: 1457821672}
-  m_Father: {fileID: 0}
-  m_RootOrder: 5
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &959460400
 GameObject:
   m_ObjectHideFlags: 0
@@ -256,6 +204,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5dbf794307975a428eaea27f6232f95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  guidanceArrowPrefab: {fileID: 114833906177146282, guid: 8154fb74594821448ac74b975ab0966f,
+    type: 2}
   tunnelPrefab: {fileID: 114891703950916172, guid: c0fcfdfc09d70384ca973711fc01eb8b,
     type: 2}
   homeBasePrefab:
@@ -266,6 +216,9 @@ MonoBehaviour:
   - {fileID: 1491877365881328, guid: 5c826ab45dc364748831ff90d22eaf9e, type: 2}
   - {fileID: 1361636558563896, guid: 1788b96cb2ded454bbbfbffdc07e1815, type: 2}
   - {fileID: 1567150736236286, guid: 796cc15ba7c338548ab2fb0f7a5c8d9f, type: 2}
+  idealDistanceApart: 4
+  minDistanceApart: 2
+  distanceStepSize: 0.25
   distanceApart: 3
   agentPrefab1: {fileID: 1273363679279094, guid: 92845d3254ee8d347b88c7452d360b2d,
     type: 2}
@@ -324,47 +277,6 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: c0fcfdfc09d70384ca973711fc01eb8b, type: 2}
   m_IsPrefabParent: 0
---- !u!1 &1457821670
-GameObject:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  serializedVersion: 5
-  m_Component:
-  - component: {fileID: 1457821672}
-  - component: {fileID: 1457821671}
-  m_Layer: 0
-  m_Name: Arrow
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1457821671
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1457821670}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9df8a3f8b21285f4bb9073612e4345cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: 7c446968ee3465545a8691da0ca1c43c, type: 2}
---- !u!4 &1457821672
-Transform:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1457821670}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 852810263}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1763342919
 GameObject:
   m_ObjectHideFlags: 0
@@ -611,5 +523,5 @@ Transform:
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

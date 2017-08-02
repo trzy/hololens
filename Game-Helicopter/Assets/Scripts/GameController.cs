@@ -21,11 +21,14 @@
  *    (1 / 2835) / (1 / 13) = 0.004585537918871252 ~= .005 = scale
  *
  * Additionally, for reasons unknown, it appears that each line occupies 1.5x
- * the height that would be computed from font point size alone. 
+ * the height that would be computed from font point size alone when using the
+ * Arial font. 
  * 
  * To compute the height of a given line in meters:
  * 
  *    height = scale * (1 / 13) * (font size in points) * 1.5
+ *    
+ * The factor seems to be different for other fonts.
  */
 
 using System.Collections;
@@ -75,6 +78,7 @@ public class GameController: MonoBehaviour, IInputClickHandler
         Debug.Log("State: GenerateLevel");
         break;
       case State.Playing:
+        LevelManager.Instance.StartIntroSequence();
         Debug.Log("State: Playing");
         break;
     }
