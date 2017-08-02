@@ -308,21 +308,26 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
           SetSpatialUnderstandingMaterial(occlusionMaterial);
         SurfacePlaneDeformationManager.Instance.SetSpatialMeshFilters(m_spatialUnderstanding.UnderstandingCustomMesh.GetMeshFilters());
         m_spatialUnderstandingState = SpatialUnderstandingState.WaitingForPlacementSolverInit;
+        TaskManager.Instance.Schedule(
+        () =>
+        {
+          bool solverSucceeded = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
+          return () =>
+          {
+            m_placementSolverInitialized = solverSucceeded;
+            Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
+          };
+        });
       }
       break;
     case SpatialUnderstandingState.WaitingForPlacementSolverInit:
       //TODO: error checking and timeout?
-      if (!m_placementSolverInitialized)
+      if (m_placementSolverInitialized)
       {
-        m_placementSolverInitialized = (SpatialUnderstandingDllObjectPlacement.Solver_Init() == 1);
-        Debug.Log("Placement Solver initialization " + (m_placementSolverInitialized ? "succeeded" : "FAILED"));
-        if (m_placementSolverInitialized)
-        {
-          if (OnScanComplete != null)
-            OnScanComplete();
-          m_scanningComplete = true;
-          m_spatialUnderstandingState = SpatialUnderstandingState.Finished;
-        }
+        if (OnScanComplete != null)
+          OnScanComplete();
+        m_scanningComplete = true;
+        m_spatialUnderstandingState = SpatialUnderstandingState.Finished;
       }
       break;
     default:
