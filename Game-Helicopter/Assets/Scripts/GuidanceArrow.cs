@@ -21,9 +21,6 @@ public class GuidanceArrow : MonoBehaviour
   [Tooltip("Arrow object, where local +z faces camera and +y is pointing direction.")]
   public GameObject arrow;
 
-  [Tooltip("Target object to track.")]
-  public Transform target;
-
   [Tooltip("Distance of HUD plane from user's eye.")]
   public float HUDDistance = 2;
 
@@ -45,6 +42,19 @@ public class GuidanceArrow : MonoBehaviour
   public float numberOfBounces = 3;
   public float timeBetweenBounces = 2;
 
+  // Target object to point at
+  public Transform target
+  {
+    get { return m_target; }
+    set
+    {
+      bool update = m_target != value;
+      m_target = value;
+      if (update)
+        OnEnable();
+    }
+  }
+
   // Called in frames that target transitions from invisible to visible state
   // (if world space pinning is enabled, this also signals the start of the 
   // transition animation)
@@ -58,6 +68,7 @@ public class GuidanceArrow : MonoBehaviour
   private float m_currentOrientation = 0;
   private float m_desiredOrientation = 0;
 
+  private Transform m_target = null;
   private bool m_wasTargetVisibleLastFrame = false;
   private Vector3 m_arrowLocalPosition;
   private float m_nextBounceTime;
@@ -173,20 +184,33 @@ public class GuidanceArrow : MonoBehaviour
   {
     Bounce(now);
     AimAtTarget();
-    //Debug.Log("visible=" + IsPointVisible(target.position));
   }
 
   private void LateUpdate()
   {
+    if (target == null)
+    {
+      // Ensures that when target is set again, OnTargetAppeared() will be
+      // called correctly
+      m_wasTargetVisibleLastFrame = false;
+      return;
+    }
+
     bool isTargetVisible = IsPointVisible(target.position);
 
     // Handle appeared/disappeared callbacks
     if (isTargetVisible != m_wasTargetVisibleLastFrame)
     {
       if (isTargetVisible)
-        OnTargetAppeared();
+      {
+        if (OnTargetAppeared != null)
+          OnTargetAppeared();
+      }
       else
-        OnTargetDisappeared();
+      {
+        if (OnTargetDisappeared != null)
+          OnTargetDisappeared();
+      }
     }
     m_wasTargetVisibleLastFrame = isTargetVisible;
 
@@ -244,19 +268,19 @@ public class GuidanceArrow : MonoBehaviour
 
   private void OnEnable()
   {
-    m_arrowLocalPosition = arrow.transform.localPosition;
-    UpdateHUD(Time.time);
-    m_currentCameraSpacePosition = m_desiredCameraSpacePosition;
-    m_currentOrientation = m_desiredOrientation;
-    if (IsPointVisible(target.position) && !drawWhenTargetOnScreen)
-      arrow.SetActive(false);
-    ScheduleNextBounceAnimation(Time.time);
+    if (target != null)
+    {
+      m_arrowLocalPosition = arrow.transform.localPosition;
+      UpdateHUD(Time.time);
+      m_currentCameraSpacePosition = m_desiredCameraSpacePosition;
+      m_currentOrientation = m_desiredOrientation;
+      if (IsPointVisible(target.position) && !drawWhenTargetOnScreen)
+        arrow.SetActive(false);
+      ScheduleNextBounceAnimation(Time.time);
+    }
   }
 
   private void Awake()
   {
-    //TEMP testing
-    OnTargetAppeared = () => { Debug.Log("TARGET APPEARED"); };
-    OnTargetDisappeared = () => { Debug.Log("TARGET DISAPPEARED"); };
   }
 }
