@@ -9,6 +9,19 @@ using HoloToolkit.Unity;
 public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 {
   public GuidanceArrow guidanceArrowPrefab;
+  public NarrationBox narrationObject;
+  public TextMesh narrationTextMesh;
+
+  [System.Serializable]
+  public class NarrationLine: System.Object
+  {
+    [TextAreaAttribute(5,10)]
+    public string text = "The terrorists have cut off all access to the research facility!";
+    public AudioClip clip = null;
+  }
+
+  public NarrationLine[] openingNarration;
+  public NarrationLine[] besiegedBuildingNarration;
 
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
@@ -17,8 +30,6 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public float idealDistanceApart = 4;
   public float minDistanceApart = 2;
   public float distanceStepSize = 0.25f;
-
-  public float distanceApart = 2;
 
   public GameObject agentPrefab1;
   public GameObject agentPrefab2;
@@ -219,19 +230,72 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     OnTimeReached();
   }
 
+  private void StartBesiegedBuildingNarration()
+  {
+    m_guidanceArrow.target = m_besiegedBuilding.transform;
+    m_guidanceArrow.gameObject.SetActive(true);
+    int lineIdx = 0;
+    Action NextLineCallback = null;
+    NextLineCallback = () =>
+    {
+      if (lineIdx >= besiegedBuildingNarration.Length)
+      {
+        //m_guidanceArrow.gameObject.SetActive(false);
+        m_guidanceArrow.target = m_homeBase.transform;
+        narrationObject.gameObject.SetActive(false);
+
+        return;
+      }
+      narrationObject.SetLine(besiegedBuildingNarration[lineIdx].text, besiegedBuildingNarration[lineIdx].clip, NextLineCallback);
+      ++lineIdx;
+    };
+
+    m_guidanceArrow.OnTargetAppeared = () =>
+    {
+      narrationObject.gameObject.SetActive(true);
+      NextLineCallback();
+      m_guidanceArrow.OnTargetAppeared = null;
+    };
+
+    m_guidanceArrow.OnTargetDisappeared = () =>
+    {
+    };
+  }
+
+  private void StartOpeningNarration()
+  {
+    narrationObject.gameObject.SetActive(true);
+    int lineIdx = 0;
+    Action NextLineCallback = null;
+    NextLineCallback = () =>
+    {
+      if (lineIdx >= openingNarration.Length)
+      {
+        narrationObject.gameObject.SetActive(false);
+        StartBesiegedBuildingNarration();
+        return;
+      }
+      narrationObject.SetLine(openingNarration[lineIdx].text, openingNarration[lineIdx].clip, NextLineCallback);
+      ++lineIdx;
+    };
+    NextLineCallback();
+  }
+
   public void StartIntroSequence()
   {
     //TODO: need to add a setter to GuidanceArrow for target because if old target is visible and new target is visible, OnTargetAppeared will never be triggered!
 
     m_state = State.MissionBriefing;
+    StartOpeningNarration();
 
+    /*
     Action HomeBaseOverview = () =>
     {
       m_guidanceArrow.target = m_homeBase.transform;
 
       m_guidanceArrow.OnTargetAppeared = () =>
       {
-
+        narrationObject.SetActive(false);
       };
 
       m_guidanceArrow.OnTargetDisappeared = () =>
@@ -243,6 +307,12 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     m_guidanceArrow = Instantiate(guidanceArrowPrefab).GetComponent<GuidanceArrow>();
     m_guidanceArrow.target = m_besiegedBuilding.transform;
     IEnumerator coroutine = null;
+    int lineIdx = 0;
+    Action OpeningNarrationCallback = () =>
+    {
+      if (lineIdx >= openingNarration.Length)
+    }
+    narrationObject.SetLines()
 
     m_guidanceArrow.OnTargetAppeared = () =>
     {
@@ -258,5 +328,16 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
       if (coroutine != null)
         StopCoroutine(coroutine);
     };
+
+    narrationTextMesh.text = "The terrorists have cut off all access to the research facility!";
+    narrationObject.SetActive(true);
+    */
+  }
+
+  private void Start()
+  {
+    narrationObject.gameObject.SetActive(false);
+    m_guidanceArrow = Instantiate(guidanceArrowPrefab).GetComponent<GuidanceArrow>();
+    m_guidanceArrow.gameObject.SetActive(false);
   }
 }

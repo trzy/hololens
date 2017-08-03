@@ -73,7 +73,7 @@ Material:
     - _UVSec: 0
     - _UseColor: 1
     - _UseMainTex: 1
-    - _ZTest: 4
+    - _ZTest: 0
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 0.24313726, g: 0.24313726, b: 0.24313726, a: 1}
