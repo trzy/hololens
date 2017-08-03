@@ -139,6 +139,30 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
+  public SpatialUnderstandingDll.Imports.RaycastResult.SurfaceTypes QuerySurfaceType(Vector3 surfacePosition, Vector3 surfaceNormal)
+  {
+    IntPtr resultPtr = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticRaycastResultPtr();
+    int success = SpatialUnderstandingDll.Imports.PlayspaceRaycast(
+      // Note that normal points *out* of surface, so this moves us in front of
+      // surface. Assuming surface normal is unit length.
+      surfacePosition.x + .1f * surfaceNormal.x,
+      surfacePosition.y + .1f * surfaceNormal.y,
+      surfacePosition.z + .1f * surfaceNormal.z,
+      // Length long enough to penetrate the surface
+      .2f * surfaceNormal.x,
+      .2f * surfaceNormal.y,
+      .2f * surfaceNormal.z,
+      // Location to write result
+      resultPtr);
+    //if (success != 0)
+    {
+      SpatialUnderstandingDll.Imports.RaycastResult result = SpatialUnderstanding.Instance.UnderstandingDLL.GetStaticRaycastResult();
+      Debug.Log("surfaceNormal=" + result.IntersectNormal + ", surfacePosition=" + result.IntersectPoint + ", SUCCESS=" + success);
+      return result.SurfaceType;
+    }
+    //return SpatialUnderstandingDll.Imports.RaycastResult.SurfaceTypes.Invalid;
+  }
+
   private delegate bool SurfacePlaneConstraint(SurfacePlane surfacePlane);
 
   private List<GameObject> GetSurfacePlanes(PlaneTypes desiredTypes, SurfacePlaneConstraint ExtraConstraints, SortOrder sortOrder)

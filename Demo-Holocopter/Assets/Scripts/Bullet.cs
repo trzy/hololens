@@ -6,6 +6,7 @@
  */
 
 using UnityEngine;
+using HoloToolkit.Unity;
 using System.Collections;
 
 public class Bullet: MonoBehaviour
@@ -50,6 +51,9 @@ public class Bullet: MonoBehaviour
     else
     {
       ParticleEffectsManager.Instance.CreateBulletImpact(hitPoint, hitNormal);
+      SpatialUnderstandingDll.Imports.RaycastResult.SurfaceTypes surfaceType = PlayspaceManager.Instance.QuerySurfaceType(hitPoint, hitNormal);
+      Debug.Log("hitNormal=" + hitNormal + ", hitPoint=" + hitPoint);
+
       float cos80 = 0.1736f;
       if (Mathf.Abs(Vector3.Dot(hitNormal, Vector3.right)) > cos80 &&
           Mathf.Abs(Vector3.Dot(hitNormal, Vector3.up)) > cos80 &&
@@ -57,14 +61,16 @@ public class Bullet: MonoBehaviour
       {
         PlayRicochetSound();
       }
-      else if (Mathf.Abs(hitNormal.y) < 0.05f)
+      else if (surfaceType == SpatialUnderstandingDll.Imports.RaycastResult.SurfaceTypes.WallExternal)
+      //else if (Mathf.Abs(hitNormal.y) < 0.05f)
       {
         // Must have hit a wall
         //TODO: for spatial understanding, we should raycast and determine whether we actually hit a real wall
         ParticleEffectsManager.Instance.CreateBulletImpactDebris(hitPoint, hitNormal, 0.1f, 3, 0);
         ParticleEffectsManager.Instance.CreateBulletHole(hitPoint, hitNormal);
       }
-      else if (hitNormal.y > 0.95f)
+      else if (surfaceType == SpatialUnderstandingDll.Imports.RaycastResult.SurfaceTypes.Floor)
+      //else if (hitNormal.y > 0.95f)
       {
         // Must have hit the floor
         //TODO: raycast spatial understanding
