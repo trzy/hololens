@@ -36,12 +36,6 @@ public class GuidanceArrow : MonoBehaviour
   [Tooltip("Continue to draw arrow even when target appears on-screen.")]
   public bool drawWhenTargetOnScreen = false;
 
-  //TODO: arrow mesh object should handle this
-  public float bounceAmplitude = 0.25f;
-  public float bounceFrequency = 2;
-  public float numberOfBounces = 3;
-  public float timeBetweenBounces = 2;
-
   // Target object to point at
   public Transform target
   {
@@ -70,8 +64,6 @@ public class GuidanceArrow : MonoBehaviour
 
   private Transform m_target = null;
   private bool m_wasTargetVisibleLastFrame = false;
-  private Vector3 m_arrowLocalPosition;
-  private float m_nextBounceTime;
 
   private bool IsPointVisible(Vector3 point)
   {
@@ -155,34 +147,8 @@ public class GuidanceArrow : MonoBehaviour
     m_desiredOrientation = localRotation.eulerAngles.z;
   }
 
-  private void ScheduleNextBounceAnimation(float now)
-  {
-    m_nextBounceTime = now + timeBetweenBounces;
-  }
-
-  private void Bounce(float now)
-  {
-    //TODO: rather than oscillate about position, maybe should just always be a positive displacement
-    //      (no negative values)
-
-    float t = now - m_nextBounceTime;
-    if (t < 0)
-      return;
-
-    float bouncePeriod = 1 / bounceFrequency;
-    if (t > numberOfBounces * bouncePeriod)
-    {
-      ScheduleNextBounceAnimation(now);
-      return;
-    }
-
-    float bounceOffset = bounceAmplitude * Mathf.Sin(2 * Mathf.PI * t * bounceFrequency);
-    arrow.transform.localPosition = m_arrowLocalPosition + Vector3.up * bounceOffset;
-  }
-
   private void UpdateHUD(float now)
   {
-    Bounce(now);
     AimAtTarget();
   }
 
@@ -270,13 +236,11 @@ public class GuidanceArrow : MonoBehaviour
   {
     if (target != null)
     {
-      m_arrowLocalPosition = arrow.transform.localPosition;
-      UpdateHUD(Time.time);
+       UpdateHUD(Time.time);
       m_currentCameraSpacePosition = m_desiredCameraSpacePosition;
       m_currentOrientation = m_desiredOrientation;
       if (IsPointVisible(target.position) && !drawWhenTargetOnScreen)
         arrow.SetActive(false);
-      ScheduleNextBounceAnimation(Time.time);
     }
   }
 
