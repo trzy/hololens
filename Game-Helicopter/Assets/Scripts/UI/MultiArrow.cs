@@ -1,5 +1,5 @@
-﻿//TODO: ensure SharedMaterialHelper runs before all child OnEnable
-//TODO: add a little bounce to the final arrow to give it a more kinetic feel
+﻿//TODO: SharedMaterialHelper is not running before OnEnable() of child arrows! Change init priority?
+//      Or maybe we don't care because they don't use scripts anymore.
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
