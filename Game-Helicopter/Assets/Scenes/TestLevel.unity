@@ -440,7 +440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5dbf794307975a428eaea27f6232f95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  guidanceArrowPrefab: {fileID: 114833906177146282, guid: 8154fb74594821448ac74b975ab0966f,
+  guidanceArrowPrefab: {fileID: 114983517091128554, guid: 906e590c88bc94b4ba5e5e25ce692a88,
     type: 2}
   narrationObject: {fileID: 64429345}
   narrationTextMesh: {fileID: 481775371}
