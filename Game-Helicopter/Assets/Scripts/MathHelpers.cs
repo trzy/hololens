@@ -4,6 +4,16 @@ using UnityEngine;
 
 public class MathHelpers
 {
+  // Angles must be normalized to [0,359] already. Result may be outside this
+  // range.
+  public static float ShortestAngleLerp(float fromDegrees, float toDegrees, float t)
+  {
+    float delta = toDegrees - fromDegrees;
+    if (Mathf.Abs(delta) > 180)
+      toDegrees -= 360 * Mathf.Sign(delta);
+    return Mathf.Lerp(fromDegrees, toDegrees, t);
+  }
+
   public static float CircularEaseOut(float from, float to, float t)
   {
     float t1 = Mathf.Clamp(t, 0, 1) - 1;  // shift curve right by 1
