@@ -31,6 +31,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+[DefaultExecutionOrder(-100)] // ensure this runs before any child object is initialized and touches its materials
 public class SharedMaterialHelper: MonoBehaviour
 {
   [Tooltip("Automatically initialize by calling SaveSharedMaterials() in Awake()")]
