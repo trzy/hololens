@@ -1,4 +1,5 @@
 ﻿//TODO: Rewrite PlayspaceManager Shuffle() to be thread-safe using a non-Unity randomizer.
+//TODO: GuidanceArrow should trigger OnTargetAppeared when *any* part of the target enters the view screen?
 using System;
 using System.Collections;
 using System.Collections.Generic;
