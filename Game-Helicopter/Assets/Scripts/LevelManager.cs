@@ -9,6 +9,7 @@ using HoloToolkit.Unity;
 public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 {
   public GuidanceArrow guidanceArrowPrefab;
+  public HUDIndicator hudIndicatorPrefab;
   public NarrationBox narrationObject;
   public TextMesh narrationTextMesh;
 
@@ -22,6 +23,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   public NarrationLine[] openingNarration;
   public NarrationLine[] besiegedBuildingNarration;
+  public NarrationLine[] homeBaseNarration;
 
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
@@ -47,6 +49,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
   private State m_state = State.None;
   private GuidanceArrow m_guidanceArrow;
+  private HUDIndicator m_hudIndicator;
 
   private void PlaceBuildings()
   {
@@ -230,6 +233,38 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     OnTimeReached();
   }
 
+  private void StartHomeBaseNarration()
+  {
+    m_guidanceArrow.target = m_homeBase.transform;
+    m_guidanceArrow.gameObject.SetActive(true);
+    int lineIdx = 0;
+    Action NextLineCallback = null;
+    NextLineCallback = () =>
+    {
+      if (lineIdx >= homeBaseNarration.Length)
+      {
+        narrationObject.gameObject.SetActive(false);
+        m_hudIndicator.gameObject.SetActive(false);
+        return;
+      }
+      narrationObject.SetLine(homeBaseNarration[lineIdx].text, homeBaseNarration[lineIdx].clip, NextLineCallback);
+      ++lineIdx;
+    };
+
+    m_guidanceArrow.OnTargetAppeared = () =>
+    {
+      narrationObject.gameObject.SetActive(true);
+      NextLineCallback();
+      m_guidanceArrow.gameObject.SetActive(false);
+      m_hudIndicator.target = m_homeBase.transform;
+      m_hudIndicator.gameObject.SetActive(true);
+    };
+
+    m_guidanceArrow.OnTargetDisappeared = () =>
+    {
+    };
+  }
+
   private void StartBesiegedBuildingNarration()
   {
     m_guidanceArrow.target = m_besiegedBuilding.transform;
@@ -240,10 +275,9 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     {
       if (lineIdx >= besiegedBuildingNarration.Length)
       {
-        //m_guidanceArrow.gameObject.SetActive(false);
-        m_guidanceArrow.target = m_homeBase.transform;
         narrationObject.gameObject.SetActive(false);
-
+        m_hudIndicator.gameObject.SetActive(false);
+        StartHomeBaseNarration();
         return;
       }
       narrationObject.SetLine(besiegedBuildingNarration[lineIdx].text, besiegedBuildingNarration[lineIdx].clip, NextLineCallback);
@@ -254,7 +288,9 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     {
       narrationObject.gameObject.SetActive(true);
       NextLineCallback();
-      m_guidanceArrow.OnTargetAppeared = null;
+      m_guidanceArrow.gameObject.SetActive(false);
+      m_hudIndicator.target = m_besiegedBuilding.transform;
+      m_hudIndicator.gameObject.SetActive(true);
     };
 
     m_guidanceArrow.OnTargetDisappeared = () =>
@@ -287,57 +323,14 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
     m_state = State.MissionBriefing;
     StartOpeningNarration();
-
-    /*
-    Action HomeBaseOverview = () =>
-    {
-      m_guidanceArrow.target = m_homeBase.transform;
-
-      m_guidanceArrow.OnTargetAppeared = () =>
-      {
-        narrationObject.SetActive(false);
-      };
-
-      m_guidanceArrow.OnTargetDisappeared = () =>
-      {
-      };
-    };
-
-
-    m_guidanceArrow = Instantiate(guidanceArrowPrefab).GetComponent<GuidanceArrow>();
-    m_guidanceArrow.target = m_besiegedBuilding.transform;
-    IEnumerator coroutine = null;
-    int lineIdx = 0;
-    Action OpeningNarrationCallback = () =>
-    {
-      if (lineIdx >= openingNarration.Length)
-    }
-    narrationObject.SetLines()
-
-    m_guidanceArrow.OnTargetAppeared = () =>
-    {
-      coroutine = Wait(10, HomeBaseOverview);
-      StartCoroutine(coroutine);
-      //m_guidanceArrow.target = m_homeBase.transform;
-      //m_guidanceArrow.gameObject.SetActive(false);
-    };
-
-    m_guidanceArrow.OnTargetDisappeared = () =>
-    {
-      Debug.Log("Target disappeared");
-      if (coroutine != null)
-        StopCoroutine(coroutine);
-    };
-
-    narrationTextMesh.text = "The terrorists have cut off all access to the research facility!";
-    narrationObject.SetActive(true);
-    */
   }
 
   private void Start()
   {
     narrationObject.gameObject.SetActive(false);
-    m_guidanceArrow = Instantiate(guidanceArrowPrefab).GetComponent<GuidanceArrow>();
+    m_guidanceArrow = Instantiate(guidanceArrowPrefab) as GuidanceArrow;
     m_guidanceArrow.gameObject.SetActive(false);
+    m_hudIndicator = Instantiate(hudIndicatorPrefab) as HUDIndicator;
+    m_hudIndicator.gameObject.SetActive(false);
   }
 }
