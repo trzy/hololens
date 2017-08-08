@@ -115,6 +115,10 @@ MonoBehaviour:
   margin: 1.25
   bendAngle: 20
   bendLength: 0.25
+  zoomPosition: {x: 0, y: 0, z: 0}
+  zoomScale: 2
+  zoomAngle: 135
+  zoomTime: 0
   lineRenderers:
   - {fileID: 120258890770698638}
   - {fileID: 120057148998190852}

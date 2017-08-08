@@ -400,7 +400,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &958923765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -416,6 +416,10 @@ MonoBehaviour:
   margin: 1.25
   bendAngle: 20
   bendLength: 0.25
+  zoomPosition: {x: 0, y: 0, z: 0}
+  zoomScale: 2
+  zoomAngle: 45
+  zoomTime: 1
   lineRenderers:
   - {fileID: 1949388939}
   - {fileID: 1260203464}

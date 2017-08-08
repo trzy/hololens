@@ -18,18 +18,48 @@ public class HUDIndicator: MonoBehaviour
   [Tooltip("Length of bend as a multiple of the width of the indicator (distance between vertical bars).")]
   public float bendLength = 0.25f;
 
+  [Tooltip("Starting point relative to camera for zoom-in effect.")]
+  public Vector3 zoomPosition = Vector3.zero;
+
+  [Tooltip("Starting scale for zoom-in effect.")]
+  public float zoomScale = 2;
+
+  [Tooltip("Starting angle in degrees for zoom-in effect.")]
+  public float zoomAngle = 135;
+
+  [Tooltip("Zoom-in effect duration (0 to disable).")]
+  public float zoomTime = 0;
+
   [Tooltip("Line renderers that must be attached as sub-objects.")]
   public LineRenderer[] lineRenderers;
 
+  private Vector3 m_startPosition;
+  private Vector3 m_localScale;
+  private float m_startTime;
+
   private void LateUpdate()
   {
+    if (target == null)
+      return;
+
+    float t = (zoomTime == 0) ? 1 : (Time.time - m_startTime) / zoomTime;
+
     // Track the target and face the camera
-    transform.position = target.position;
-    transform.forward = (Camera.main.transform.position - transform.position).normalized;
+    transform.position = Vector3.Lerp(m_startPosition, target.position, t);
+    if (Camera.main.transform.position != transform.position)
+      transform.rotation = Quaternion.LookRotation((Camera.main.transform.position - transform.position).normalized, Vector3.up);
+    transform.Rotate(new Vector3(0, 0, Mathf.Lerp(zoomAngle, 0, t)));
+    transform.localScale = m_localScale * Mathf.Lerp(zoomScale, 1, t);
   }
 
   private void OnEnable()
   {
+    if (target == null)
+    {
+      m_localScale = Vector3.zero;
+      return;
+    }
+
     Vector3 targetSize = Footprint.Measure(target.gameObject);
     float width = margin * Mathf.Sqrt(targetSize.x * targetSize.x + targetSize.z * targetSize.z);
     float height = margin * targetSize.y;
@@ -52,5 +82,16 @@ public class HUDIndicator: MonoBehaviour
     line2.SetPosition(1, xDir * 0.5f * width + 0.5f * height * yDir);
     line2.SetPosition(2, xDir * 0.5f * width - 0.5f * height * yDir);
     line2.SetPosition(3, xDir * 0.5f * width - 0.5f * height * yDir + (-xDirBend - yDirBend).normalized * bendLength * width);
+
+    m_startPosition = Camera.main.transform.position + zoomPosition;
+    m_localScale = transform.localScale;
+    m_startTime = Time.time;
+  }
+
+  private void OnDisable()
+  {
+    // Restore actual scale
+    if (m_localScale != Vector3.zero)
+      transform.localScale = m_localScale;
   }
 }
