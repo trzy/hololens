@@ -118,10 +118,11 @@ MonoBehaviour:
   zoomPosition: {x: 0, y: 0, z: 0}
   zoomScale: 2
   zoomAngle: 135
-  zoomTime: 0
+  zoomTime: 0.25
   lineRenderers:
   - {fileID: 120258890770698638}
   - {fileID: 120057148998190852}
+  textMesh: {fileID: 0}
 --- !u!120 &120057148998190852
 LineRenderer:
   m_ObjectHideFlags: 1

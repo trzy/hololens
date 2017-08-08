@@ -33,6 +33,9 @@ public class HUDIndicator: MonoBehaviour
   [Tooltip("Line renderers that must be attached as sub-objects.")]
   public LineRenderer[] lineRenderers;
 
+  [Tooltip("Text mesh sub-object.")]
+  public TextMesh textMesh;
+
   private Vector3 m_startPosition;
   private Vector3 m_localScale;
   private float m_startTime;
@@ -47,7 +50,7 @@ public class HUDIndicator: MonoBehaviour
     // Track the target and face the camera
     transform.position = Vector3.Lerp(m_startPosition, target.position, t);
     if (Camera.main.transform.position != transform.position)
-      transform.rotation = Quaternion.LookRotation((Camera.main.transform.position - transform.position).normalized, Vector3.up);
+      transform.rotation = Quaternion.LookRotation((transform.position - Camera.main.transform.position).normalized, Vector3.up);
     transform.Rotate(new Vector3(0, 0, Mathf.Lerp(zoomAngle, 0, t)));
     transform.localScale = m_localScale * Mathf.Lerp(zoomScale, 1, t);
   }
@@ -70,8 +73,10 @@ public class HUDIndicator: MonoBehaviour
 
     LineRenderer line1 = lineRenderers[0];
     LineRenderer line2 = lineRenderers[1];
+    LineRenderer line3 = lineRenderers[2];
     line1.positionCount = 4;
     line2.positionCount = 4;
+    line3.positionCount = 3;
 
     line1.SetPosition(0, -xDir * 0.5f * width + 0.5f * height * yDir + (xDirBend + yDirBend).normalized * bendLength * width);
     line1.SetPosition(1, -xDir * 0.5f * width + 0.5f * height * yDir);
@@ -83,9 +88,16 @@ public class HUDIndicator: MonoBehaviour
     line2.SetPosition(2, xDir * 0.5f * width - 0.5f * height * yDir);
     line2.SetPosition(3, xDir * 0.5f * width - 0.5f * height * yDir + (-xDirBend - yDirBend).normalized * bendLength * width);
 
+    Vector2 textSize = Footprint.Measure(textMesh);
+    line3.SetPosition(0, xDir * 0.5f * width * 1.25f + 0 * height * yDir);
+    line3.SetPosition(1, line3.GetPosition(0) + (xDir + yDir).normalized * 0.5f * width);
+    line3.SetPosition(2, line3.GetPosition(1) + xDir * textSize.x);
+    textMesh.gameObject.transform.localPosition = line3.GetPosition(1) + yDir * 0.25f * textSize.y;
+
     m_startPosition = Camera.main.transform.position + zoomPosition;
     m_localScale = transform.localScale;
     m_startTime = Time.time;
+
   }
 
   private void OnDisable()
