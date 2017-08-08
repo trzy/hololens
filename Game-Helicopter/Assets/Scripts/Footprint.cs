@@ -2,6 +2,22 @@
 
 public static class Footprint
 {
+  public static Vector2 Measure(TextMesh textMesh)
+  {
+    float width = 0;
+    float height = 0;
+    foreach (char symbol in textMesh.text)
+    {
+      CharacterInfo info;
+      if (textMesh.font.GetCharacterInfo(symbol, out info, textMesh.fontSize, textMesh.fontStyle))
+      {
+        width += info.advance;
+        height = Mathf.Max(height, info.glyphHeight);
+      }
+    }
+    return new Vector2(width, height) * textMesh.characterSize * textMesh.transform.lossyScale.x * 0.1f;
+  }
+
   public static Vector3 Measure(GameObject obj)
   {
     BoxCollider box = obj.GetComponent<BoxCollider>();
