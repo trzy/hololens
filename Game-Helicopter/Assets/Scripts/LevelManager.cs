@@ -258,6 +258,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
       NextLineCallback();
       m_guidanceArrow.gameObject.SetActive(false);
       m_hudIndicator.target = m_homeBase.transform;
+      m_hudIndicator.textMesh.text = "Home Base";
       m_hudIndicator.gameObject.SetActive(true);
     };
 
@@ -291,6 +292,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
       NextLineCallback();
       m_guidanceArrow.gameObject.SetActive(false);
       m_hudIndicator.target = m_besiegedBuilding.transform;
+      m_hudIndicator.textMesh.text = "Research Facility";
       m_hudIndicator.gameObject.SetActive(true);
     };
 

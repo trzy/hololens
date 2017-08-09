@@ -536,7 +536,7 @@ TextMesh:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 728217524}
-  m_Text: Hapablap
+  m_Text: Cube
   m_OffsetZ: 0
   m_CharacterSize: 1
   m_LineSpacing: 1
@@ -545,7 +545,7 @@ TextMesh:
   m_TabSize: 4
   m_FontSize: 48
   m_FontStyle: 0
-  m_RichText: 1
+  m_RichText: 0
   m_Font: {fileID: 12800000, guid: 86574c70442309b45be5a1c37a37a40b, type: 3}
   m_Color:
     serializedVersion: 2
@@ -597,7 +597,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &958923765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -613,9 +613,12 @@ MonoBehaviour:
   margin: 1.25
   bendAngle: 20
   bendLength: 0.25
+  textHeight: 0.25
+  textLineDrawTime: 0.5
+  textLineStartTime: 1.5
   zoomPosition: {x: 0, y: 0, z: 0}
   zoomScale: 2
-  zoomAngle: 45
+  zoomAngle: 135
   zoomTime: 1
   lineRenderers:
   - {fileID: 1949388939}
@@ -1096,7 +1099,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &1871162621
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1155,7 +1158,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1871162620}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_Children: []
   m_Father: {fileID: 0}
