@@ -218,7 +218,8 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 0.1, y: 0.2, z: 0.05}
-  m_Children: []
+  m_Children:
+  - {fileID: 1997047567}
   m_Father: {fileID: 1824258764}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1422,6 +1423,7 @@ GameObject:
   - component: {fileID: 1824258763}
   - component: {fileID: 1824258762}
   - component: {fileID: 1824258761}
+  - component: {fileID: 1824258765}
   m_Layer: 0
   m_Name: Helicopter
   m_TagString: Untagged
@@ -1487,17 +1489,29 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1824258760}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 0.15, y: 0.13, z: 0.4}
   m_Children:
   - {fileID: 236845841}
   - {fileID: 1025387339}
   - {fileID: 239136241}
   - {fileID: 68940588}
-  - {fileID: 1997047567}
   m_Father: {fileID: 0}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1824258765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1824258760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88925b916182c0049b60a535570eee68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  angularVelocity: {x: 0, y: 2000, z: 0}
+  rotor: {fileID: 68940588}
 --- !u!1 &1871162620
 GameObject:
   m_ObjectHideFlags: 0
@@ -1718,12 +1732,12 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1997047566}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.7, z: 0}
-  m_LocalScale: {x: 0.2, y: 0.1, z: 2}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.49999982, z: 0}
+  m_LocalScale: {x: 2, y: 0.49999994, z: 40}
   m_Children: []
-  m_Father: {fileID: 1824258764}
-  m_RootOrder: 4
+  m_Father: {fileID: 68940588}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1997047568
 MeshRenderer:
