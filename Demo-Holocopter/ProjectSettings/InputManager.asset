@@ -25,10 +25,10 @@ InputManager:
     m_Name: Horizontal2
     descriptiveName: XBox Right Stick Horizontal
     descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: 
-    altNegativeButton: 
-    altPositiveButton: 
+    negativeButton: left
+    positiveButton: right
+    altNegativeButton: a
+    altPositiveButton: d
     gravity: 3
     dead: 0.1
     sensitivity: 3

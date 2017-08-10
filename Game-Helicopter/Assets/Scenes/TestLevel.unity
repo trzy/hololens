@@ -263,7 +263,7 @@ BoxCollider:
   m_GameObject: {fileID: 68940587}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -345,7 +345,7 @@ BoxCollider:
   m_GameObject: {fileID: 236845840}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -427,7 +427,7 @@ BoxCollider:
   m_GameObject: {fileID: 239136240}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -1070,7 +1070,7 @@ BoxCollider:
   m_GameObject: {fileID: 1025387338}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -1422,7 +1422,9 @@ GameObject:
   - component: {fileID: 1824258764}
   - component: {fileID: 1824258763}
   - component: {fileID: 1824258762}
+  - component: {fileID: 1824258767}
   - component: {fileID: 1824258761}
+  - component: {fileID: 1824258766}
   - component: {fileID: 1824258765}
   m_Layer: 0
   m_Name: Helicopter
@@ -1512,6 +1514,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   angularVelocity: {x: 0, y: 2000, z: 0}
   rotor: {fileID: 68940588}
+--- !u!114 &1824258766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1824258760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43aa97c022e69404c9c0f1dd2e22bd4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotor: {fileID: 1824258765}
+--- !u!54 &1824258767
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1824258760}
+  serializedVersion: 2
+  m_Mass: 6000
+  m_Drag: 0
+  m_AngularDrag: 1.5
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &1871162620
 GameObject:
   m_ObjectHideFlags: 0
@@ -1779,7 +1808,7 @@ BoxCollider:
   m_GameObject: {fileID: 1997047566}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
