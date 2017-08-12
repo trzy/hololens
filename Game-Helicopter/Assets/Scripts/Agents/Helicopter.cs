@@ -5,6 +5,30 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class Helicopter: MonoBehaviour
 {
+  public struct Controls
+  {
+    public float longitudinal;  // [-1,1] forward/back in xz plane relative to current heading (local z projected onto xz)
+    public float lateral;       // [-1,1] right/left in xz plane relative to current heading (local x projected onto xz)
+    public float rotational;    // [-1,1] counter/clockwise rotation in xz plane
+    public float altitude;      // [-1,1] rotor force along local up (-1=free-fall, 0=hover)
+
+    public void Clear()
+    {
+      longitudinal = 0;
+      lateral = 0;
+      rotational = 0;
+      altitude = 0;
+    }
+
+    public Controls(float _longitudinal, float _lateral, float _rotational, float _altitude)
+    {
+      longitudinal = _longitudinal;
+      lateral = _lateral;
+      rotational = _rotational;
+      altitude = _altitude;
+    }
+  }
+
   [Tooltip("Helicopter rotor part.")]
   public HelicopterRotor rotor;
 
@@ -13,41 +37,28 @@ public class Helicopter: MonoBehaviour
     get { return transform.eulerAngles.y; } // Euler angle is safe here; equivalent to manual projection of forward onto xz plane
   }
 
-  private class Controls
+  public Controls controls
   {
-    public float longitudinal = 0;  // [-1,1] forward/back in xz plane relative to current heading (local z projected onto xz)
-    public float lateral = 0;       // [-1,1] right/left in xz plane relative to current heading (local x projected onto xz)
-    public float rotational = 0;    // [-1,1] counter/clockwise rotation in xz plane
-    public float altitude = 0;      // [-1,1] rotor force along local up (-1=free-fall, 0=hover)
-    public void Clear()
-    {
-      longitudinal = 0;
-      lateral = 0;
-      rotational = 0;
-      altitude = 0;
-    }
+    get { return m_controls; }
+    set { m_controls = value; }
   }
 
   private Rigidbody m_rb;
 
-  private IEnumerator m_controlCoroutine = null;
   private IEnumerator m_rotorSpeedCoroutine = null;
-  private Controls m_playerControls = new Controls();
-  private Controls m_programControls = new Controls();
-  private bool m_movingLastFrame = false;
+  private Controls m_controls = new Controls(0, 0, 0, 0);
 
-  private HoloLensXboxController.ControllerInput m_xboxController = null;
-  private Vector3 m_joypadLateralAxis;
-  private Vector3 m_joypadLongitudinalAxis;
-  private Vector3 m_targetForward;
+  private const float TRANSLATIONAL_ACCELERATION = .06f * 9.81f;
+  private const float ALTITUDE_ACCELERATION = .06f * 9.81f;
 
-  private const float SCALE = .06f;
   private const float MAX_TILT_DEGREES = 30;
-  private const float MAX_TORQUE = 25000 * SCALE; //TODO: reformulate in terms of mass?
-  private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_TORQUE / 5.0f;
-  private const float YAW_CORRECTIVE_TORQUE = MAX_TORQUE * 4;
-  private const float ACCEPTABLE_DISTANCE = 5 * SCALE;
-  private const float ACCEPTABLE_HEADING_ERROR = 5; // in degrees
+
+  private const float MAX_PITCH_ROLL_TORQUE = 0.1f / ((1f / 12) * (0.15f * 0.15f + 0.8f * 0.8f));
+  private const float PITCH_ROLL_CORRECTIVE_TORQUE = MAX_PITCH_ROLL_TORQUE / 10;
+
+  private const float MAX_YAW_TORQUE = .015f / ((1f / 12) * (0.15f * 0.15f + 0.4f * 0.4f));
+  private const float YAW_CORRECTIVE_TORQUE = MAX_YAW_TORQUE * 4;
+
   private const float GUN_FIRE_PERIOD = 1f / 8f;//1f / 5f;
 
   private IEnumerator RotorSpeedCoroutine(float targetVelocity, float rampTime)
@@ -64,7 +75,7 @@ public class Helicopter: MonoBehaviour
     }
   }
 
-  private void ChangeRotorSpeed(float targetVelocity, float rampTime)
+  public void ChangeRotorSpeed(float targetVelocity, float rampTime)
   {
     if (rotor == null)
       return;
@@ -72,79 +83,6 @@ public class Helicopter: MonoBehaviour
       StopCoroutine(m_rotorSpeedCoroutine);
     m_rotorSpeedCoroutine = RotorSpeedCoroutine(targetVelocity, rampTime);
     StartCoroutine(m_rotorSpeedCoroutine);
-  }
-
-  private void UpdateControls(Vector3 aim)
-  {  
-    // Determine angle between user gaze vector and helicopter forward, in xz
-    // plane
-    Vector3 view = new Vector3(Camera.main.transform.forward.x, 0, Camera.main.transform.forward.z);
-    Vector3 forward = new Vector3(transform.forward.x, 0, transform.forward.z);
-    float angle = Vector3.Angle(view, forward);
-
-    // Get current joypad axis values
-#if UNITY_EDITOR
-    float hor = Input.GetAxis("Horizontal");
-    float ver = Input.GetAxis("Vertical");
-    float hor2 = Input.GetAxis("Horizontal2");
-    float ver2 = -Input.GetAxis("Vertical2");
-    float lt = Input.GetAxis("Axis9");
-    float rt = Input.GetAxis("Axis10");
-    bool buttonA = Input.GetKey(KeyCode.Joystick1Button0);
-    bool buttonB = Input.GetKey(KeyCode.Joystick1Button1);
-    bool fire = rt > 0.5f || buttonA;
-#else
-    m_xboxController.Update();
-    float hor = m_xboxController.GetAxisLeftThumbstickX();
-    float ver = m_xboxController.GetAxisLeftThumbstickY();
-    float hor2 = m_xboxController.GetAxisRightThumbstickX();
-    float ver2 = m_xboxController.GetAxisRightThumbstickY();
-    float lt = m_xboxController.GetAxisLeftTrigger();
-    float rt = m_xboxController.GetAxisRightTrigger();
-    bool fire = rt > 0.5f;
-    bool buttonA = m_xboxController.GetButton(ControllerButton.A);
-    bool buttonB = m_xboxController.GetButton(ControllerButton.B);
-    /*
-    float hor = Input.GetAxis("Horizontal");
-    float ver = Input.GetAxis("Vertical");
-    float axis3 = Input.GetAxis("Axis3");
-    float lt = Mathf.Max(axis3, 0);
-    float rt = -Mathf.Min(axis3, 0);
-    */
-#endif
-
-    // Any of the main axes (which are relative to orientation) pressed?
-    bool movingThisFrame = (hor != 0) || (ver != 0);
-    if (movingThisFrame && !m_movingLastFrame)
-    {
-      // Joypad was not pressed last frame, reorient based on current view position
-      m_joypadLateralAxis = Vector3.Normalize(Camera.main.transform.right);
-      m_joypadLongitudinalAxis = Vector3.Normalize(Camera.main.transform.forward);
-    }
-    m_movingLastFrame = movingThisFrame;
-
-    // Apply longitudinal and lateral controls. Compute projection of joypad
-    // lateral/longitudinal axes onto helicopter's.
-    float joypadLongitudinalToHeliLongitudinal = Vector3.Dot(m_joypadLongitudinalAxis, transform.forward);
-    float joypadLongitudinalToHeliLateral = Vector3.Dot(m_joypadLongitudinalAxis, transform.right);
-    float joypadLateralToHeliLongitudinal = Vector3.Dot(m_joypadLateralAxis, transform.forward);
-    float joypadLateralToHeliLateral = Vector3.Dot(m_joypadLateralAxis, transform.right);
-    m_playerControls.longitudinal = joypadLongitudinalToHeliLongitudinal * ver + joypadLateralToHeliLongitudinal * hor;
-    m_playerControls.lateral = joypadLongitudinalToHeliLateral * ver + joypadLateralToHeliLateral * hor;
-
-    // Helicopter rotation
-    m_playerControls.rotational = hor2;
-
-    // Altitude control (trigger axes each range from 0 to 1)
-    m_playerControls.altitude = ver2;
-
-    // Gun
-    /*
-    if (fire && (Time.time - m_gunLastFired >= GUN_FIRE_PERIOD))
-    {
-      FireGun(aim);
-    }
-    */
   }
 
   private void UpdateDynamics()
@@ -216,84 +154,74 @@ public class Helicopter: MonoBehaviour
      * helicopter is angled, the rotor force has to be larger, which also adds
      * additional translational force beyond the translational inputs, e.g.
      * causing the helicopter to travel faster forwards as it climbs.
+     * 
+     * Note on torque calculation
+     * --------------------------
+     * This might be completely wrong -- I need to review my basic physics :) I
+     * gleaned this from a cursory glance at the PhysX docs while trying to 
+     * convert torque values I had specified as actual torques (N*m) into
+     * angular acceleration values suitable for use with ForceMode.Acceleration.
+     *
+     * When adding torque in the default force mode (in units of N*m), the
+     * value is multiplied by the inverse inertia in order to get acceleration.
+     * Therfore, the adjustment from torque -> acceleration here multiplies by
+     * the moment of inertia of a box: (m/12) * (x^2 + y^2), where x and y are
+     * the dimensions along the two axes perpendicular to the rotation axis.
+     *
+     * For yaw, given a torque, it seems we can eliminate mass by converting to
+     * acceleration using this approximate formula:
+     *
+     *  Acceleration = Torque / Inertia
+     *  Inertia = (Mass / 12) * (Width^2 + Depth^2)
+     *
+     * The masses can then by canceled from torque and inertia.
      */
 
-    Controls controls = m_playerControls;
+    Controls controls = m_controls;
     Rigidbody rb = m_rb;
     Vector3 torque = Vector3.zero;
 
+    // Translational motion
     float currentHeadingDeg = heading;
     Vector3 translationalInput = new Vector3(controls.lateral, 0, controls.longitudinal);
-    Vector3 translationalForce = Quaternion.Euler(new Vector3(0, currentHeadingDeg, 0)) * translationalInput * 0.5886f;// SCALE * rb.mass * Mathf.Abs(Physics.gravity.y);
-    Debug.Log("input=" + translationalInput + ", force=" + translationalForce);
+    Vector3 translationalForce = Quaternion.Euler(new Vector3(0, currentHeadingDeg, 0)) * translationalInput * TRANSLATIONAL_ACCELERATION;
 
+    // Pitch, roll, and yaw
     float targetPitchDeg = Mathf.Sign(controls.longitudinal) * Mathf.Lerp(0, MAX_TILT_DEGREES, Mathf.Abs(controls.longitudinal));
     float currentPitchDeg = Mathf.Sign(-transform.forward.y) * Vector3.Angle(transform.forward, MathHelpers.Azimuthal(transform.forward));
     float targetRollDeg = Mathf.Sign(-controls.lateral) * Mathf.Lerp(0, MAX_TILT_DEGREES, Mathf.Abs(controls.lateral));
-    float currentRollDeg = Mathf.Sign(transform.right.y) * Vector3.Angle(transform.right, MathHelpers.Azimuthal(transform.right));
-
+    float currentRollDeg = Mathf.Sign(transform.right.y) * Vector3.Angle(transform.right, MathHelpers.Azimuthal(transform.right));    
     float pitchErrorDeg = targetPitchDeg - currentPitchDeg;
     float rollErrorDeg = targetRollDeg - currentRollDeg;
-    torque += SCALE * PITCH_ROLL_CORRECTIVE_TORQUE * new Vector3(pitchErrorDeg, 0, rollErrorDeg);
-    torque += SCALE * YAW_CORRECTIVE_TORQUE * controls.rotational * Vector3.up;
+    torque += PITCH_ROLL_CORRECTIVE_TORQUE * new Vector3(pitchErrorDeg, 0, rollErrorDeg);
+    torque += YAW_CORRECTIVE_TORQUE * controls.rotational * Vector3.up;
 
-    float upWorldLocalDeg = Vector3.Angle(Vector3.up, transform.up); // angle between world and local up
-    float hoverForce = Mathf.Abs(rb.mass * Physics.gravity.y / Mathf.Cos(upWorldLocalDeg * Mathf.Deg2Rad));
-    float rotorForce = (controls.altitude + 1) * hoverForce;
-
-    hoverForce = Mathf.Abs(rb.mass * Physics.gravity.y);
-    rotorForce = SCALE * controls.altitude * rb.mass * Mathf.Abs(Physics.gravity.y);
+    // Acceleration from force exerted by rotors
+    float hoverAcceleration = Mathf.Abs(Physics.gravity.y);
+    float rotorAcceleration = ALTITUDE_ACCELERATION * controls.altitude;
 
     // Apply all forces
-    rb.AddRelativeForce(Vector3.up * rotorForce);
-    rb.AddForce(Vector3.up * hoverForce);
+    rb.AddRelativeForce(Vector3.up * rotorAcceleration, ForceMode.Acceleration);
+    rb.AddForce(Vector3.up * hoverAcceleration, ForceMode.Acceleration);
     rb.AddForce(translationalForce, ForceMode.Acceleration);
-    rb.AddRelativeTorque(torque);
+    rb.AddRelativeTorque(torque, ForceMode.Acceleration);
 
-    // Pitch of engine is based on tilt
+    // Pitch of engine sound is based on tilt, which is based on desired speed
     //float engineOutput = Mathf.Max(Mathf.Abs(controls.longitudinal), Mathf.Abs(controls.lateral));
     //m_rotorAudioSource.pitch = Mathf.Lerp(1.0f, 1.3f, engineOutput);
+
+    //TODO: variable rotor speed
+    rotor.angularVelocity = new Vector3(0, 5 * 360, 0);
   }
 
   private void FixedUpdate()
   {
-    UnityEditorUpdate();
-    UpdateControls(transform.forward);
     UpdateDynamics();
   }
 
   private void Start()
   {
-#if !UNITY_EDITOR
-    m_xboxController = new ControllerInput(0, 0.19f);
-#endif
     ChangeRotorSpeed(3, 0);
-    m_targetForward = transform.forward;
-  }
-
-  private void UnityEditorUpdate()
-  {
-#if UNITY_EDITOR
-    if (Input.GetKey("1"))
-      ChangeRotorSpeed(3, 5);
-    if (Input.GetKey("2"))
-      ChangeRotorSpeed(0, 5);
-    if (Input.GetKey(KeyCode.Z))
-      m_playerControls.Clear();
-    if (Input.GetKey(KeyCode.Comma))
-      m_playerControls.longitudinal = Mathf.Clamp(m_playerControls.longitudinal - 0.1F, -1.0F, 1.0F);
-    if (Input.GetKey(KeyCode.Period))
-      m_playerControls.longitudinal = Mathf.Clamp(m_playerControls.longitudinal + 0.1F, -1.0F, 1.0F);
-    if (Input.GetKey(KeyCode.Semicolon))
-      m_playerControls.lateral = Mathf.Clamp(m_playerControls.lateral - 0.1F, -1.0F, 1.0F);
-    if (Input.GetKey(KeyCode.Quote))
-      m_playerControls.lateral = Mathf.Clamp(m_playerControls.lateral + 0.1F, -1.0F, 1.0F);
-    if (Input.GetKey(KeyCode.LeftBracket))
-      m_playerControls.rotational = Mathf.Clamp(m_playerControls.rotational - 0.1F, -1, 1);
-    if (Input.GetKey(KeyCode.RightBracket))
-      m_playerControls.rotational = Mathf.Clamp(m_playerControls.rotational + 0.1F, -1, 1);
-    m_playerControls.altitude = Mathf.Clamp(m_playerControls.altitude + Input.GetAxis("Mouse ScrollWheel"), -1, 1);
-#endif
   }
 
   private void Awake()
