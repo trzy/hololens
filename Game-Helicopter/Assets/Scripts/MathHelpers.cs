@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class MathHelpers
 {
+  public static int RandomSign()
+  {
+    return (UnityEngine.Random.Range(0, 255) & 1) == 0 ? -1 : 1;
+  }
+
   public static Vector3 RandomAzimuth()
   {
     float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
