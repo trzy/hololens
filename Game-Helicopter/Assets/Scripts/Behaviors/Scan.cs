@@ -34,12 +34,6 @@ public class Scan: MonoBehaviour
   private const float MAX_ERROR_DEGREES = 2;
   private float m_sinMaxErrorDegrees;
 
-  private Vector3 RandomOrientation()
-  {
-    float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-    return new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
-  }
-
   private void Update()
   {
     if (mode == ScanningMode.Continuous)
@@ -67,7 +61,7 @@ public class Scan: MonoBehaviour
       {
         // Select new target orientation
         m_lingering = false;
-        m_targetOrientation = RandomOrientation();
+        m_targetOrientation = MathHelpers.RandomAzimuth();
       }
     }
   }
@@ -75,6 +69,6 @@ public class Scan: MonoBehaviour
   private void Awake()
   {
     m_sinMaxErrorDegrees = Mathf.Sin(Mathf.Abs(MAX_ERROR_DEGREES) * Mathf.Deg2Rad);
-    m_targetOrientation = RandomOrientation();
+    m_targetOrientation = MathHelpers.RandomAzimuth();
   }
 }

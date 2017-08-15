@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class MathHelpers
 {
+  public static Vector3 RandomAzimuth()
+  {
+    float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+    return new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+  }
+
   // Angles must be normalized to [0,359] already. Result may be outside this
   // range.
   public static float ShortestAngleLerp(float fromDegrees, float toDegrees, float t)
