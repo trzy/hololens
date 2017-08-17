@@ -23,6 +23,7 @@ public class HelicopterAutopilot: MonoBehaviour
     if (m_movementCoroutine != null)
     {
       StopCoroutine(m_movementCoroutine);
+      m_movementCoroutine = null;
       m_controls.longitudinal = 0;
       m_controls.lateral = 0;
       m_helicopter.controls = m_controls;
@@ -40,6 +41,7 @@ public class HelicopterAutopilot: MonoBehaviour
     if (m_directionCoroutine != null)
     {
       StopCoroutine(m_directionCoroutine);
+      m_directionCoroutine = null;
       m_controls.rotational = 0;
       m_helicopter.controls = m_controls;
     }
@@ -49,6 +51,12 @@ public class HelicopterAutopilot: MonoBehaviour
       m_directionCoroutine = coroutine;
       StartCoroutine(m_directionCoroutine);
     }
+  }
+
+  private void HaltCoroutines()
+  {
+    LaunchMovementCoroutine(null);
+    LaunchDirectionCoroutine(null);
   }
 
   private float HeadingErrorTo(Vector3 lookAtPoint)
@@ -83,8 +91,16 @@ public class HelicopterAutopilot: MonoBehaviour
       m_helicopter.controls = m_controls;
       yield return null;
     }
-    //m_controls.Clear();
-    //m_movementCoroutine = null;
+  }
+
+  private IEnumerator LookAtCoroutine(Transform lookAtTarget)
+  {
+    while (true)
+    {
+      LookAt(lookAtTarget.position);
+      m_helicopter.controls = m_controls;
+      yield return null;
+    }
   }
 
   private bool GoTo(Vector3 targetPosition)
@@ -115,6 +131,20 @@ public class HelicopterAutopilot: MonoBehaviour
     m_movementCoroutine = null;
   }
 
+  private IEnumerator FollowCoroutine(Transform target, float distance, float timeout, System.Action OnComplete)
+  {
+    float startTime = Time.time;
+    while (GoTo(target.position))
+    {
+      m_helicopter.controls = m_controls;
+      yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
+    }
+    HaltCoroutines();
+    OnComplete();
+  }
+
   private IEnumerator OrbitPositionCoroutine(Vector3 orbitCenter, float orbitAltitude, float orbitRadius)
   {
     float step = 20;
@@ -141,6 +171,8 @@ public class HelicopterAutopilot: MonoBehaviour
       // Move to that position
       while (GoTo(nextPosition))
       {
+        //m_controls.longitudinal = Mathf.Clamp(m_controls.longitudinal, -0.25f, 0.25f);
+        //m_controls.lateral = Mathf.Clamp(m_controls.lateral, -0.25f, 0.25f);
         m_helicopter.controls = m_controls;
         yield return null;
       }
@@ -169,6 +201,12 @@ public class HelicopterAutopilot: MonoBehaviour
   {
     LaunchMovementCoroutine(OrbitPositionCoroutine(orbitCenter, orbitAltitude, orbitRadius));
     LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
+  }
+
+  public void Follow(Transform target, float distance, float timeout, System.Action OnComplete)
+  {
+    LaunchMovementCoroutine(FollowCoroutine(target, distance, timeout, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
 
   private void Start()
