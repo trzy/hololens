@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 5cffd35a266a027459d28379d6ba0a7d
+timeCreated: 1501375463
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Chrome Italic
+  fontNames:
+  - Armed Lightning Chrome Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

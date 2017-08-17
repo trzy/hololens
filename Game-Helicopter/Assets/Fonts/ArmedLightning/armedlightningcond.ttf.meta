@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: d45932010efc81347804cfc9e00b1d5b
+timeCreated: 1501375464
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Condensed
+  fontNames:
+  - Armed Lightning Condensed
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 7e4d18dced2af5643a1b91dd3c1ddd80
+timeCreated: 1501375463
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Squared
+  fontNames:
+  - Armed Lightning Squared
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

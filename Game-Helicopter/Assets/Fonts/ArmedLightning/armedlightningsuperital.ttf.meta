@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: c0868d3385cf861479e8990c54f2df1d
+timeCreated: 1501375464
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Super-Italic
+  fontNames:
+  - Armed Lightning Super-Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

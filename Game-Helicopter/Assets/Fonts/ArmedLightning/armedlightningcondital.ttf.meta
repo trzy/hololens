@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: d49c7f90d5694274abda491548f85ad9
+timeCreated: 1501375464
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Condensed Italic
+  fontNames:
+  - Armed Lightning Condensed Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

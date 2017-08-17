@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: d37a28b08ad25b9409f1e577996c5a8b
+timeCreated: 1501375464
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Title Italic
+  fontNames:
+  - Armed Lightning Title Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

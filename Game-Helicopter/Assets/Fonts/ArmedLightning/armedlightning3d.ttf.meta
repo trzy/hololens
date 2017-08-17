@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: bc21f69b9894a49479aac95d016e95c1
+timeCreated: 1501375464
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning 3D
+  fontNames:
+  - Armed Lightning 3D
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

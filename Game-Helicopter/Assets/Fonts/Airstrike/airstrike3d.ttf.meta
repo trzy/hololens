@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: fd486184b1bd1d9429cacca774e2c6fd
+timeCreated: 1501358983
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Airstrike 3D
+  fontNames:
+  - Airstrike 3D
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

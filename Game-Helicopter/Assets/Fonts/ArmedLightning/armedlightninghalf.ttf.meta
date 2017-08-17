@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 01548954f6c947d4eb9f041e0630a22a
+timeCreated: 1501375463
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Halftone
+  fontNames:
+  - Armed Lightning Halftone
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

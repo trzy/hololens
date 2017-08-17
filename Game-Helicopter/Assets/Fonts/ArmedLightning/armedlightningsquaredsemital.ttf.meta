@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 33ee267f184c5324887699e653f81253
+timeCreated: 1501375463
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Armed Lightning Squared Semi-Italic
+  fontNames:
+  - Armed Lightning Squared Semi-Italic
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
