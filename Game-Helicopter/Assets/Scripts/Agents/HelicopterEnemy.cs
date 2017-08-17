@@ -12,7 +12,8 @@ public class HelicopterEnemy: MonoBehaviour
   private enum State
   {
     Thinking,
-    Busy
+    FlyingTowards,
+    BackingAway
   }
 
   private State m_state = State.Thinking;
@@ -27,13 +28,31 @@ public class HelicopterEnemy: MonoBehaviour
     switch (m_state)
     {
       case State.Thinking:
-        if (distanceToTarget > 1)
+        if (distanceToTarget > 2)
         {
-          m_autopilot.Follow(target, 0.5f, 60 * 2, () => { Debug.Log("Caught target!"); });
-          m_state = State.Busy;
+          m_autopilot.Follow(target, 2f, 60 * 2, 
+            () =>
+            {
+              Debug.Log("Caught target!");
+              m_state = State.Thinking;
+            });
+          m_state = State.FlyingTowards;
+        }
+        else if (distanceToTarget < 1.5f)
+        {
+          // Keep our distance!
+          Vector3 awayFromTarget = (transform.position - target.position).normalized;
+          m_autopilot.FlyTo(target.position + 2 * awayFromTarget, target, 10, 
+            () =>
+            {
+              Debug.Log("Backed off");
+            });
+          m_state = State.BackingAway;
         }
         break;
-      case State.Busy:
+      case State.FlyingTowards:
+
+        break;
       default:
         break;
     }

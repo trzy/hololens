@@ -1,5 +1,4 @@
-﻿//TODO: separate coroutines for translational motion and rotation? 
-//TODO: introduce the concept of a throttle by capping the magnitude of the control vector that
+﻿//TODO: introduce the concept of a throttle by capping the magnitude of the control vector that
 // can be produced. +1,+1 (lateral and longitudinal) would be 100%. Maybe also consider altitude.
 // Should just be a public var we set.
 
@@ -120,15 +119,18 @@ public class HelicopterAutopilot: MonoBehaviour
     return true;
   }
 
-  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition)
+  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, float timeout, System.Action OnComplete)
   {
+    float startTime = Time.time;
     while (GoTo(targetPosition))
     {
       m_helicopter.controls = m_controls;
       yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
     }
-    m_controls.Clear();
-    m_movementCoroutine = null;
+    HaltCoroutines();
+    OnComplete(); 
   }
 
   private IEnumerator FollowCoroutine(Transform target, float distance, float timeout, System.Action OnComplete)
@@ -191,9 +193,16 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
-  public void FlyTo(Transform target)
+  public void FlyTo(Transform target, float timeout, System.Action OnComplete)
   {
-    LaunchMovementCoroutine(FlyToPositionCoroutine(target.position));
+    LaunchMovementCoroutine(FlyToPositionCoroutine(target.position, timeout, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(target));
+  }
+
+  public void FlyTo(Vector3 position, Transform lookAtTarget, float timeout, System.Action OnComplete)
+  {
+    LaunchMovementCoroutine(FlyToPositionCoroutine(position, timeout, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 
   //TODO: make this take a Tranform
