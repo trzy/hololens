@@ -27,7 +27,7 @@ public class HelicopterEnemy: MonoBehaviour
     switch (m_state)
     {
       case State.Thinking:
-        if (distanceToTarget > 2)
+        if (distanceToTarget > 1)
         {
           m_autopilot.Follow(target, 0.5f, 60 * 2, () => { Debug.Log("Caught target!"); });
           m_state = State.Busy;
