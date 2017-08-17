@@ -11,18 +11,44 @@ using UnityEngine;
 public class HelicopterAutopilot: MonoBehaviour
 {
   private Helicopter m_helicopter;
-  private IEnumerator m_controlCoroutine = null;
+  private IEnumerator m_movementCoroutine = null;
+  private IEnumerator m_directionCoroutine = null;
   private Helicopter.Controls m_controls = new Helicopter.Controls();
 
   private const float ACCEPTABLE_DISTANCE = 5 * .06f;
   private const float ACCEPTABLE_HEADING_ERROR = 10; // in degrees
 
-  private void LaunchCoroutine(IEnumerator coroutine)
+  private void LaunchMovementCoroutine(IEnumerator coroutine)
   {
-    if (m_controlCoroutine != null)
-      StopCoroutine(m_controlCoroutine);
-    m_controlCoroutine = coroutine;
-    StartCoroutine(m_controlCoroutine);
+    if (m_movementCoroutine != null)
+    {
+      StopCoroutine(m_movementCoroutine);
+      m_controls.longitudinal = 0;
+      m_controls.lateral = 0;
+      m_helicopter.controls = m_controls;
+    }
+
+    if (coroutine != null)
+    {
+      m_movementCoroutine = coroutine;
+      StartCoroutine(m_movementCoroutine);
+    }
+  }
+
+  private void LaunchDirectionCoroutine(IEnumerator coroutine)
+  {
+    if (m_directionCoroutine != null)
+    {
+      StopCoroutine(m_directionCoroutine);
+      m_controls.rotational = 0;
+      m_helicopter.controls = m_controls;
+    }
+
+    if (coroutine != null)
+    {
+      m_directionCoroutine = coroutine;
+      StartCoroutine(m_directionCoroutine);
+    }
   }
 
   private float HeadingErrorTo(Vector3 lookAtPoint)
@@ -33,16 +59,38 @@ public class HelicopterAutopilot: MonoBehaviour
     return Mathf.Sign(MathHelpers.CrossY(forward, target)) * Vector3.Angle(forward, target);
   }
 
-  private bool GoTo(Vector3 targetPosition, Vector3 lookAtPoint)
+  private bool LookAt(Vector3 lookAtPoint)
   {
-    Vector3 toTarget = targetPosition - transform.position;
-    float distance = Vector3.Magnitude(toTarget);
     float headingError = HeadingErrorTo(lookAtPoint);
     float absHeadingError = Mathf.Abs(headingError);
     if (absHeadingError > ACCEPTABLE_HEADING_ERROR)
+    {
       m_controls.rotational = -Mathf.Sign(headingError) * Mathf.Lerp(0.5F, 1.0F, Mathf.Abs(headingError) / 360.0F);
+      return true;
+    }
     else
+    {
       m_controls.rotational = 0;
+      return false;
+    }
+  }
+
+  private IEnumerator LookAtCoroutine(Vector3 lookAtPoint)
+  {
+    while (true)
+    {
+      LookAt(lookAtPoint);
+      m_helicopter.controls = m_controls;
+      yield return null;
+    }
+    //m_controls.Clear();
+    //m_movementCoroutine = null;
+  }
+
+  private bool GoTo(Vector3 targetPosition)
+  {
+    Vector3 toTarget = targetPosition - transform.position;
+    float distance = Vector3.Magnitude(toTarget);
     if (distance > ACCEPTABLE_DISTANCE)
     {
       //TODO: reduce intensity once closer? Gradual roll-off within some event horizon.
@@ -56,15 +104,15 @@ public class HelicopterAutopilot: MonoBehaviour
     return true;
   }
 
-  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, Vector3 lookAtPoint)
+  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition)
   {
-    while (GoTo(targetPosition, lookAtPoint))
+    while (GoTo(targetPosition))
     {
       m_helicopter.controls = m_controls;
       yield return null;
     }
     m_controls.Clear();
-    m_controlCoroutine = null;
+    m_movementCoroutine = null;
   }
 
   private IEnumerator OrbitPositionCoroutine(Vector3 orbitCenter, float orbitAltitude, float orbitRadius)
@@ -91,7 +139,7 @@ public class HelicopterAutopilot: MonoBehaviour
       Vector3 nextPosition = currentRadius * new Vector3(Mathf.Cos(nextRadians), currentAltitude, Mathf.Sin(nextRadians));
 
       // Move to that position
-      while (GoTo(nextPosition, orbitCenter))
+      while (GoTo(nextPosition))
       {
         m_helicopter.controls = m_controls;
         yield return null;
@@ -113,13 +161,14 @@ public class HelicopterAutopilot: MonoBehaviour
 
   public void FlyTo(Transform target)
   {
-    LaunchCoroutine(FlyToPositionCoroutine(target.position, target.position));
+    LaunchMovementCoroutine(FlyToPositionCoroutine(target.position));
   }
 
   //TODO: make this take a Tranform
   public void Orbit(Vector3 orbitCenter, float orbitAltitude, float orbitRadius = 1)
   {
-    LaunchCoroutine(OrbitPositionCoroutine(orbitCenter, orbitAltitude, orbitRadius));
+    LaunchMovementCoroutine(OrbitPositionCoroutine(orbitCenter, orbitAltitude, orbitRadius));
+    LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
   }
 
   private void Start()
