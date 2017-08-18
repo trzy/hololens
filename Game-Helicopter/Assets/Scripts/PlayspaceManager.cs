@@ -182,6 +182,21 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     return false;
   }
 
+  public bool TryPlaceInAir(out Vector3 position, out Quaternion rotation, Vector3 size, List<Rule> rules = null)
+  {
+    position = Vector3.zero;
+    rotation = Quaternion.identity;
+    string token = "InAir-" + m_uniquePlacementID++;
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition placementDefinition = SpatialUnderstandingDllObjectPlacement.ObjectPlacementDefinition.Create_InMidAir(0.5f * size);
+    SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult;
+    if (TryPlaceObject(out placementResult, token, placementDefinition, rules))
+    {
+      position = placementResult.Position;
+      return true;
+    }
+    return false;
+  }
+
   // We only crudely check overlap in xz plane
   private bool Overlaps(SpatialUnderstandingDllTopology.TopologyResult result, float width)
   {
