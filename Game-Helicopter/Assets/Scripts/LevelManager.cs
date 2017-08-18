@@ -9,6 +9,7 @@ using HoloToolkit.Unity;
 
 public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 {
+  public GameObject playerHelicopter;
   public GuidanceArrow guidanceArrowPrefab;
   public HUDIndicator hudIndicatorPrefab;
   public NarrationBox narrationObject;
@@ -38,8 +39,15 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public GameObject agentPrefab2;
   public GameObject agentPrefab3;
 
+  public HelicopterEnemy enemyHelicopterPrefab1;
+
   private GameObject m_besiegedBuilding;
   private GameObject m_homeBase;
+
+  // We cannot access transforms in other thread, so when buildings are placed,
+  // their positions are recorded here
+  private Vector3 m_besiegedBuildingPosition = Vector3.zero;
+  private Vector3 m_homeBasePosition = Vector3.zero;
 
   private enum State
   {
@@ -88,6 +96,11 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
               bool placed2 = PlayspaceManager.Instance.TryPlaceOnFloor(out name2, out position2, out rotation2, homeBaseSizes[j], rules);
               if (placed1 && placed2)
               {
+                // Record positions so that subsequent dependent placement queries can use them
+                m_besiegedBuildingPosition = position1;
+                m_homeBasePosition = position2;
+
+                // Instantiate the buildings later on main thread
                 return () =>
                 {
                   Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart);
@@ -109,7 +122,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     //TODO: failed -- try placing anywhere and then if that also fails, need to re-scan.
   }
 
-  private void PlaceAgents()
+  private void PlaceEnemies()
   {
     PlayspaceManager pm = PlayspaceManager.Instance;
 
@@ -180,6 +193,28 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
           return null;
         });
     }
+
+    Vector3 enemyHelicopter1Size = Footprint.Measure(enemyHelicopterPrefab1.gameObject);
+    for (int i = 0; i < 1; i++)
+    {
+      TaskManager.Instance.Schedule(
+        () =>
+        {
+          Vector3 position;
+          Quaternion rotation;
+          List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>() { PlayspaceManager.Rule.Nearby(m_besiegedBuildingPosition, 0f, 0.25f) };
+          if (pm.TryPlaceInAir(out position, out rotation, enemyHelicopter1Size, rules))
+          {
+            return () =>
+            {
+              HelicopterEnemy enemyHelicopter = Instantiate(enemyHelicopterPrefab1, position, rotation);
+              //enemyHelicopter.target = playerHelicopter.transform;
+              Debug.Log("Placement distance: " + (enemyHelicopter.transform.position - m_besiegedBuilding.transform.position).magnitude);
+            };
+          }
+          return () => { Debug.Log("Failed to place enemy helicopter"); };
+        });
+    }
   }
 
   private void PlaceTunnels()
@@ -203,7 +238,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     m_state = State.GenerateLevel;
 
     PlaceBuildings();
-    PlaceAgents();
+    PlaceEnemies();
     //PlaceTunnels();
 
     TaskManager.Instance.Schedule(
