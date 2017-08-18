@@ -9,13 +9,26 @@ using UnityEngine;
 [RequireComponent(typeof(Helicopter))]
 public class HelicopterAutopilot: MonoBehaviour
 {
+  public float throttle
+  {
+    get { return m_throttle; }
+    set { m_throttle = Mathf.Clamp(value, 0, 1); }
+  }
+
   private Helicopter m_helicopter;
   private IEnumerator m_movementCoroutine = null;
   private IEnumerator m_directionCoroutine = null;
   private Helicopter.Controls m_controls = new Helicopter.Controls();
+  private float m_throttle = 1;
 
   private const float ACCEPTABLE_DISTANCE = 5 * .06f;
   private const float ACCEPTABLE_HEADING_ERROR = 10; // in degrees
+
+  private void UpdateControls()
+  {
+    m_controls.ClampAzimuthal(throttle);
+    m_helicopter.controls = m_controls;
+  }
 
   private void LaunchMovementCoroutine(IEnumerator coroutine)
   {
@@ -25,7 +38,7 @@ public class HelicopterAutopilot: MonoBehaviour
       m_movementCoroutine = null;
       m_controls.longitudinal = 0;
       m_controls.lateral = 0;
-      m_helicopter.controls = m_controls;
+      UpdateControls();
     }
 
     if (coroutine != null)
@@ -42,7 +55,7 @@ public class HelicopterAutopilot: MonoBehaviour
       StopCoroutine(m_directionCoroutine);
       m_directionCoroutine = null;
       m_controls.rotational = 0;
-      m_helicopter.controls = m_controls;
+      UpdateControls();
     }
 
     if (coroutine != null)
@@ -87,7 +100,7 @@ public class HelicopterAutopilot: MonoBehaviour
     while (true)
     {
       LookAt(lookAtPoint);
-      m_helicopter.controls = m_controls;
+      UpdateControls();
       yield return null;
     }
   }
@@ -97,7 +110,19 @@ public class HelicopterAutopilot: MonoBehaviour
     while (true)
     {
       LookAt(lookAtTarget.position);
-      m_helicopter.controls = m_controls;
+      UpdateControls();
+      yield return null;
+    }
+  }
+
+  private IEnumerator LookFlightDirectionCoroutine()
+  {
+    Rigidbody rb = GetComponent<Rigidbody>();
+    while (true)
+    {
+      Vector3 directionOfTravel = MathHelpers.Azimuthal(rb.velocity);
+      LookAt(transform.position + directionOfTravel);
+      UpdateControls();
       yield return null;
     }
   }
@@ -124,7 +149,7 @@ public class HelicopterAutopilot: MonoBehaviour
     float startTime = Time.time;
     while (GoTo(targetPosition))
     {
-      m_helicopter.controls = m_controls;
+      UpdateControls();
       yield return null;
       if (Time.time - startTime >= timeout)
         break;
@@ -138,7 +163,7 @@ public class HelicopterAutopilot: MonoBehaviour
     float startTime = Time.time;
     while (GoTo(target.position))
     {
-      m_helicopter.controls = m_controls;
+      UpdateControls();
       yield return null;
       if (Time.time - startTime >= timeout)
         break;
@@ -168,14 +193,13 @@ public class HelicopterAutopilot: MonoBehaviour
       toHelicopter = MathHelpers.Azimuthal(toHelicopter);
       float nextAngle = currentAngle + direction * step;
       float nextRadians = Mathf.Deg2Rad * nextAngle;
-      Vector3 nextPosition = currentRadius * new Vector3(Mathf.Cos(nextRadians), currentAltitude, Mathf.Sin(nextRadians));
+      Vector3 nextPosition = orbitCenter + currentRadius * new Vector3(Mathf.Cos(nextRadians), currentAltitude, Mathf.Sin(nextRadians));
+      Debug.Log("Go to: " + nextPosition);
 
       // Move to that position
       while (GoTo(nextPosition))
       {
-        //m_controls.longitudinal = Mathf.Clamp(m_controls.longitudinal, -0.25f, 0.25f);
-        //m_controls.lateral = Mathf.Clamp(m_controls.lateral, -0.25f, 0.25f);
-        m_helicopter.controls = m_controls;
+        UpdateControls();
         yield return null;
       }
 
@@ -205,11 +229,13 @@ public class HelicopterAutopilot: MonoBehaviour
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 
-  //TODO: make this take a Tranform
+  // Orbit a position while always facing straight ahead
   public void Orbit(Vector3 orbitCenter, float orbitAltitude, float orbitRadius = 1)
   {
+    Debug.Log("Orbiting: " + orbitCenter + ", height=" + orbitAltitude + ", radius=" + orbitRadius);
     LaunchMovementCoroutine(OrbitPositionCoroutine(orbitCenter, orbitAltitude, orbitRadius));
-    LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
+    //LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
+    LaunchDirectionCoroutine(LookFlightDirectionCoroutine());
   }
 
   public void Follow(Transform target, float distance, float timeout, System.Action OnComplete)

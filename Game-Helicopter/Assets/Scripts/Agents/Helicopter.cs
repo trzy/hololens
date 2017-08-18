@@ -12,6 +12,18 @@ public class Helicopter: MonoBehaviour
     public float rotational;    // [-1,1] counter/clockwise rotation in xz plane
     public float altitude;      // [-1,1] rotor force along local up (-1=free-fall, 0=hover)
 
+    // Throttle can range from [0,1]
+    public void ClampAzimuthal(float throttle)
+    {
+      // Apply throttle to translational controls. Note that because each of the
+      // two axes has a range of [-1,+1], the maximum magnitude of the vector is
+      // sqrt(2).
+      float sqrt2 = 1.414213562373f;
+      Vector2 xzControls = Vector2.ClampMagnitude(new Vector2(lateral, longitudinal), sqrt2 * throttle);
+      lateral = xzControls.x;
+      longitudinal = xzControls.y;
+    }
+
     public void Clear()
     {
       longitudinal = 0;
@@ -181,7 +193,7 @@ public class Helicopter: MonoBehaviour
     Rigidbody rb = m_rb;
     Vector3 torque = Vector3.zero;
 
-    // Translational motion
+    // Translational motion, rotated into absolute (world) coordinate space
     float currentHeadingDeg = heading;
     Vector3 translationalInput = new Vector3(controls.lateral, 0, controls.longitudinal);
     Vector3 translationalForce = Quaternion.Euler(new Vector3(0, currentHeadingDeg, 0)) * translationalInput * TRANSLATIONAL_ACCELERATION;

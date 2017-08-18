@@ -28,6 +28,7 @@ public class HelicopterEnemy: MonoBehaviour
     switch (m_state)
     {
       case State.Thinking:
+        /*
         if (distanceToTarget > 2)
         {
           m_autopilot.Follow(target, 2f, 60 * 2, 
@@ -49,6 +50,10 @@ public class HelicopterEnemy: MonoBehaviour
             });
           m_state = State.BackingAway;
         }
+        */
+
+        m_autopilot.Orbit(transform.position, transform.position.y + 0.5f, 1f);
+        m_state = State.FlyingTowards;
         break;
       case State.FlyingTowards:
 
