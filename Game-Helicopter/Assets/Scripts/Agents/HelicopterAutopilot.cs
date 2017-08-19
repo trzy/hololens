@@ -220,7 +220,6 @@ public class HelicopterAutopilot: MonoBehaviour
       // Adjust the radius so that it converges to the desired radius within
       // one revolution
       currentRadius = Mathf.Lerp(startRadius, orbitRadius, revolutionCompleted);
-      Debug.Log(startRadius + " -> " + orbitRadius + " @ " + revolutionCompleted + " = " + currentRadius);
 
       // Altitude convergence
       currentAltitude = Mathf.Lerp(startAltitude, GetOrbitAltitude(Time.deltaTime), revolutionCompleted);
