@@ -7,10 +7,49 @@ public class HelicopterPlayer: MonoBehaviour
 {
   private Helicopter m_helicopter;
   private HoloLensXboxController.ControllerInput m_xboxController = null;
-  private Vector3 m_joypadLateralAxis;
-  private Vector3 m_joypadLongitudinalAxis;
+  private Vector3 m_joypadLateralAxis = Vector3.zero;
+  private Vector3 m_joypadLongitudinalAxis = Vector3.zero;
   private bool m_movingLastFrame = false;
   private Helicopter.Controls m_controls = new Helicopter.Controls();
+
+  // Minimum angle that either the lateral or longitudinal camera axis must
+  // move from current joypad axis orientation to update joypad axes
+  private const float JOYPAD_ORIENTATION_CHANGE_THRESHOLD = 30;
+
+  // Normalize (0 to 1) joypad axis value below which axes re-orientation takes
+  // place
+  private const float JOYPAD_ORIENTATION_RELEASE_THRESHOLD = 0.3f;
+
+  private void ReorientAxes(float hor, float ver)
+  {
+    /*
+     * When the joystick is first pressed, we want to lock in the user's
+     * current view position and use them until the joystick is released.
+     * Unfortunately, some joysticks are very noisy and there is no easy way to
+     * detect when it has been released.
+     * 
+     * Therefore, we update the axes when the following conditions are met:
+     * 
+     *  1. The current camera orientation has changed since the last axis 
+     *     update by some relatively small threshold amount.
+     *  2. Both translational axes are at less than some generous threshold
+     *     (e.g., 0.3 or 0.5).
+     */
+
+    Vector3 currentLateralAxis = Vector3.Normalize(Camera.main.transform.right);
+    Vector3 currentLongitudinalAxis = Vector3.Normalize(Camera.main.transform.forward);
+
+    bool firstUpdate = m_joypadLateralAxis == Vector3.zero;
+    bool lateralAxisChanged = Vector3.Angle(currentLateralAxis, m_joypadLateralAxis) > JOYPAD_ORIENTATION_CHANGE_THRESHOLD;
+    bool longitudinalAxisChanged = Vector3.Angle(currentLongitudinalAxis, m_joypadLongitudinalAxis) > JOYPAD_ORIENTATION_CHANGE_THRESHOLD;
+    bool joypadReleased = hor < JOYPAD_ORIENTATION_RELEASE_THRESHOLD && ver < JOYPAD_ORIENTATION_RELEASE_THRESHOLD;
+
+    if (((lateralAxisChanged || longitudinalAxisChanged) && joypadReleased) || firstUpdate)
+    {
+      m_joypadLateralAxis = Vector3.Normalize(Camera.main.transform.right);
+      m_joypadLongitudinalAxis = Vector3.Normalize(Camera.main.transform.forward);
+    }
+  }
 
   private void UpdateControls(Vector3 aim)
   {
@@ -51,15 +90,8 @@ public class HelicopterPlayer: MonoBehaviour
     */
 #endif
 
-    // Any of the main axes (which are relative to orientation) pressed?
-    bool movingThisFrame = (hor != 0) || (ver != 0);
-    if (movingThisFrame && !m_movingLastFrame)
-    {
-      // Joypad was not pressed last frame, reorient based on current view position
-      m_joypadLateralAxis = Vector3.Normalize(Camera.main.transform.right);
-      m_joypadLongitudinalAxis = Vector3.Normalize(Camera.main.transform.forward);
-    }
-    m_movingLastFrame = movingThisFrame;
+    // Update our control axes
+    ReorientAxes(hor, ver);
 
     // Apply longitudinal and lateral controls. Compute projection of joypad
     // lateral/longitudinal axes onto helicopter's.
