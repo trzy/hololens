@@ -17,6 +17,7 @@ public class HelicopterEnemy: MonoBehaviour
   }
 
   private State m_state = State.Thinking;
+  bool m_engagingTarget = false;
 
   private void FixedUpdate()
   {
@@ -25,9 +26,44 @@ public class HelicopterEnemy: MonoBehaviour
 
     float distanceToTarget = (target.position - transform.position).magnitude;
 
+    if (!m_engagingTarget)
+    {
+      if (distanceToTarget < 1.5f)
+      {
+        m_engagingTarget = true;
+        m_autopilot.Halt();
+      }
+      else if (!m_autopilot.flying)
+      {
+        // Doing nothing, start circling in place
+        m_autopilot.Orbit(transform.position, transform.position.y + 0.5f, 1f);
+        m_autopilot.throttle = 0.25f;
+      }
+    }
+    else
+    {
+      if (distanceToTarget < 1.5f && !m_autopilot.flying)
+      {
+        // Circle the target when it is up close
+        //TODO: callback should take number of revolutions completed
+        m_autopilot.OrbitAndLookAt(target.transform, 0, 1.5f);
+        m_autopilot.throttle = 1;
+      }
+    }
+
+
+
+
     switch (m_state)
     {
       case State.Thinking:
+        
+        
+        
+        
+        
+        
+        
         /*
         if (distanceToTarget > 2)
         {
@@ -52,7 +88,7 @@ public class HelicopterEnemy: MonoBehaviour
         }
         */
 
-        m_autopilot.Orbit(transform.position, transform.position.y + 0.5f, 1f);
+        
         m_state = State.FlyingTowards;
         break;
       case State.FlyingTowards:

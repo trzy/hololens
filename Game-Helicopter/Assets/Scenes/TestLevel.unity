@@ -942,6 +942,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5dbf794307975a428eaea27f6232f95, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerHelicopter: {fileID: 1824258760}
   guidanceArrowPrefab: {fileID: 114983517091128554, guid: 906e590c88bc94b4ba5e5e25ce692a88,
     type: 2}
   hudIndicatorPrefab: {fileID: 114624693255623682, guid: 71ddf077bf806ad40be339ab564fccce,

@@ -1,7 +1,4 @@
-﻿//TODO: introduce the concept of a throttle by capping the magnitude of the control vector that
-// can be produced. +1,+1 (lateral and longitudinal) would be 100%. Maybe also consider altitude.
-// Should just be a public var we set.
-
+﻿//TODO: error thresholds (ACCEPTABLE_DISTANCE and ACCEPTABLE_HEADING_ERROR) probably need to be made configurable
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,13 +12,18 @@ public class HelicopterAutopilot: MonoBehaviour
     set { m_throttle = Mathf.Clamp(value, 0, 1); }
   }
 
+  public bool flying
+  {
+    get { return m_movementCoroutine != null; }
+  }
+
   private Helicopter m_helicopter;
   private IEnumerator m_movementCoroutine = null;
   private IEnumerator m_directionCoroutine = null;
   private Helicopter.Controls m_controls = new Helicopter.Controls();
   private float m_throttle = 1;
 
-  private const float ACCEPTABLE_DISTANCE = 5 * .06f;
+  private const float ACCEPTABLE_DISTANCE = .2f; //5 * .06f;
   private const float ACCEPTABLE_HEADING_ERROR = 10; // in degrees
 
   private void UpdateControls()
@@ -65,7 +67,7 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
-  private void HaltCoroutines()
+  public void Halt()
   {
     LaunchMovementCoroutine(null);
     LaunchDirectionCoroutine(null);
@@ -154,7 +156,7 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
-    HaltCoroutines();
+    Halt();
     OnComplete(); 
   }
 
@@ -168,15 +170,19 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
-    HaltCoroutines();
+    Halt();
     OnComplete();
   }
 
-  private IEnumerator OrbitPositionCoroutine(Vector3 orbitCenter, float orbitAltitude, float orbitRadius)
+  public delegate Vector3 UpdateVectorCallback(float deltaTime);
+  public delegate float UpdateScalarCallback(float deltaTime);
+
+  private IEnumerator OrbitPositionCoroutine(UpdateVectorCallback GetOrbitCenter, UpdateScalarCallback GetOrbitAltitude, float orbitRadius)
+    //Vector3 orbitCenter, float orbitAltitude, float orbitRadius)
   {
     float step = 20;
     float direction = MathHelpers.RandomSign();
-    Vector3 toHelicopter = MathHelpers.Azimuthal(transform.position - orbitCenter);
+    Vector3 toHelicopter = MathHelpers.Azimuthal(transform.position - GetOrbitCenter(Time.deltaTime));
     float startRadius = toHelicopter.magnitude;
     float currentRadius = startRadius;
     float startAngle = currentRadius == 0 ? 0 : Mathf.Rad2Deg * Mathf.Acos(toHelicopter.x / currentRadius);
@@ -190,18 +196,21 @@ public class HelicopterAutopilot: MonoBehaviour
     while (true)
     {
       // Compute the next position along the circle
-      toHelicopter = MathHelpers.Azimuthal(toHelicopter);
       float nextAngle = currentAngle + direction * step;
       float nextRadians = Mathf.Deg2Rad * nextAngle;
-      Vector3 nextPosition = orbitCenter + currentRadius * new Vector3(Mathf.Cos(nextRadians), currentAltitude, Mathf.Sin(nextRadians));
-      Debug.Log("Go to: " + nextPosition);
 
       // Move to that position
-      while (GoTo(nextPosition))
+      bool flying = true;
+      do
       {
+        // In case orbit center is a moving target, continually update the next
+        // position
+        Vector3 nextPosition = GetOrbitCenter(Time.deltaTime) + currentRadius * new Vector3(Mathf.Cos(nextRadians), 0, Mathf.Sin(nextRadians));
+        nextPosition.y = currentAltitude;
+        flying = GoTo(nextPosition);
         UpdateControls();
         yield return null;
-      }
+      } while (flying);
 
       // Advance the angle
       degreesElapsed += step;
@@ -211,9 +220,10 @@ public class HelicopterAutopilot: MonoBehaviour
       // Adjust the radius so that it converges to the desired radius within
       // one revolution
       currentRadius = Mathf.Lerp(startRadius, orbitRadius, revolutionCompleted);
+      Debug.Log(startRadius + " -> " + orbitRadius + " @ " + revolutionCompleted + " = " + currentRadius);
 
       // Altitude convergence
-      currentAltitude = Mathf.Lerp(startAltitude, orbitAltitude, revolutionCompleted);
+      currentAltitude = Mathf.Lerp(startAltitude, GetOrbitAltitude(Time.deltaTime), revolutionCompleted);
     }
   }
 
@@ -232,10 +242,19 @@ public class HelicopterAutopilot: MonoBehaviour
   // Orbit a position while always facing straight ahead
   public void Orbit(Vector3 orbitCenter, float orbitAltitude, float orbitRadius = 1)
   {
-    Debug.Log("Orbiting: " + orbitCenter + ", height=" + orbitAltitude + ", radius=" + orbitRadius);
-    LaunchMovementCoroutine(OrbitPositionCoroutine(orbitCenter, orbitAltitude, orbitRadius));
-    //LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
+    UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter; };
+    UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitAltitude; };
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius));
     LaunchDirectionCoroutine(LookFlightDirectionCoroutine());
+  }
+
+  // Orbit a target while always facing it
+  public void OrbitAndLookAt(Transform orbitCenter, float relativeOrbitAltitude, float orbitRadius = 1)
+  {
+    UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter.position; };
+    UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitCenter.position.y + relativeOrbitAltitude; };
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius));
+    LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
   }
 
   public void Follow(Transform target, float distance, float timeout, System.Action OnComplete)
