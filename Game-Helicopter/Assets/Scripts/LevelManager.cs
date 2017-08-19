@@ -208,9 +208,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
             return () =>
             {
               HelicopterEnemy enemyHelicopter = Instantiate(enemyHelicopterPrefab1, position, rotation);
-              enemyHelicopter.target = m_besiegedBuilding.transform;//playerHelicopter.transform;
-              Debug.Log("Placement distance: " + (enemyHelicopter.transform.position - m_besiegedBuilding.transform.position).magnitude);
-              Debug.Log("Placed at: " + enemyHelicopter.transform.position);
+              enemyHelicopter.target = playerHelicopter.transform;
             };
           }
           return () => { Debug.Log("Failed to place enemy helicopter"); };
