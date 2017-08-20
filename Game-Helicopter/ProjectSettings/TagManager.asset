@@ -35,7 +35,7 @@ TagManager:
   - 
   - 
   - 
-  - 
+  - Projectile
   - SpatialMesh
   m_SortingLayers:
   - name: Default
