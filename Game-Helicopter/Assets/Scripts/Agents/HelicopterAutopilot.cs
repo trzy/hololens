@@ -1,4 +1,10 @@
-﻿//TODO: error thresholds (ACCEPTABLE_DISTANCE and ACCEPTABLE_HEADING_ERROR) probably need to be made configurable
+﻿//TODO: helicopters should bounce off of any non-projectile they collide with forcefully. Need to determine
+//      direction. Make it similar to Jungle Strike, with rotation.
+//TODO: collision avoidance in the orbit code is whack. Sometimes, even if there is a path to the next
+//      waypoint, the collider gets stuck. Simple solution proposed above. See if it works...
+//TODO: raycasts should probably be emitted from the muzzle point or something, which should eventually be
+//      set here.
+//TODO: error thresholds (ACCEPTABLE_DISTANCE and ACCEPTABLE_HEADING_ERROR) probably need to be made configurable
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,6 +12,12 @@ using UnityEngine;
 [RequireComponent(typeof(Helicopter))]
 public class HelicopterAutopilot: MonoBehaviour
 {
+  [Tooltip("Layers to treat as obstacles. Autopilot will adjust its behavior in response to colliders in these layers.")]
+  public LayerMask avoidanceLayers;
+
+  [Tooltip("Amount of time (seconds) to spend attempting to move to an obstructed waypoint before giving up and selecting the next one.")]
+  public float obstructionRetryTime = 1;
+
   public float throttle
   {
     get { return m_throttle; }
@@ -22,7 +34,7 @@ public class HelicopterAutopilot: MonoBehaviour
   private IEnumerator m_directionCoroutine = null;
   private Helicopter.Controls m_controls = new Helicopter.Controls();
   private float m_throttle = 1;
-
+  
   private const float ACCEPTABLE_DISTANCE = .2f; //5 * .06f;
   private const float ACCEPTABLE_HEADING_ERROR = 10; // in degrees
 
@@ -71,6 +83,13 @@ public class HelicopterAutopilot: MonoBehaviour
   {
     LaunchMovementCoroutine(null);
     LaunchDirectionCoroutine(null);
+  }
+
+  private bool PathObstructed(Vector3 targetPosition)
+  {
+    Vector3 toTarget = targetPosition - transform.position;
+    Vector3 origin = transform.position + 0.25f * toTarget.normalized;  // TODO: replace with muzzle point or some characteristic radius?
+    return Physics.Raycast(origin, toTarget, toTarget.magnitude);
   }
 
   private float HeadingErrorTo(Vector3 lookAtPoint)
@@ -193,6 +212,9 @@ public class HelicopterAutopilot: MonoBehaviour
     float startAltitude = transform.position.y;
     float currentAltitude = startAltitude;
 
+    int maxObstructionRetries = (int) (360 / step);
+    int numObstructionRetries = maxObstructionRetries;
+    float nextObstructionCheckTime = 0;
     while (true)
     {
       // Compute the next position along the circle
@@ -203,14 +225,40 @@ public class HelicopterAutopilot: MonoBehaviour
       bool flying = true;
       do
       {
+        float now = Time.time;
+
         // In case orbit center is a moving target, continually update the next
         // position
         Vector3 nextPosition = GetOrbitCenter(Time.deltaTime) + currentRadius * new Vector3(Mathf.Cos(nextRadians), 0, Mathf.Sin(nextRadians));
         nextPosition.y = currentAltitude;
+
+        // This doesn't work very well but the idea is to check for 
+        // obstructions and move on to subsequent waypoints. If no point seems
+        // reachable, we simply abort. For each attempt, we allow some time to
+        // pass in case we were stuck.
+        if (now > nextObstructionCheckTime && PathObstructed(nextPosition))
+        {
+          if (numObstructionRetries > 0)
+          {
+            nextObstructionCheckTime = now + obstructionRetryTime;
+            numObstructionRetries--;
+            break;
+          }
+
+          // Need to abort
+          Halt();
+          //TODO: callback?
+          yield break;
+        }
+
         flying = GoTo(nextPosition);
         UpdateControls();
         yield return null;
       } while (flying);
+
+      // Restore number of avoidance attempts if we finally reached a waypoint
+      if (flying == false)
+        numObstructionRetries = maxObstructionRetries;
 
       // Advance the angle
       degreesElapsed += step;
@@ -261,6 +309,20 @@ public class HelicopterAutopilot: MonoBehaviour
     LaunchMovementCoroutine(FollowCoroutine(target, distance, timeout, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
+
+  /*
+  private void OnCollisionEnter(Collision collision)
+  {
+    if ((avoidanceLayers.value & (1 << collision.collider.gameObject.layer)) != 0)
+      m_colliding = true;
+  }
+
+  private void OnCollisionExit(Collision collision)
+  {
+    if ((avoidanceLayers.value & (1 << collision.collider.gameObject.layer)) != 0)
+      m_colliding = false;
+  }
+  */
 
   private void Start()
   {
