@@ -56,6 +56,8 @@ public class Helicopter: MonoBehaviour
   }
 
   private Rigidbody m_rb;
+  private Vector3 m_collisionForce = Vector3.zero;
+  private float m_collisionReactionFinished = 0;
 
   private IEnumerator m_rotorSpeedCoroutine = null;
   private Controls m_controls = new Controls(0, 0, 0, 0);
@@ -190,7 +192,6 @@ public class Helicopter: MonoBehaviour
      */
 
     Controls controls = m_controls;
-    Rigidbody rb = m_rb;
     Vector3 torque = Vector3.zero;
 
     // Translational motion, rotated into absolute (world) coordinate space
@@ -213,10 +214,10 @@ public class Helicopter: MonoBehaviour
     float rotorAcceleration = ALTITUDE_ACCELERATION * controls.altitude;
 
     // Apply all forces
-    rb.AddRelativeForce(Vector3.up * rotorAcceleration, ForceMode.Acceleration);
-    rb.AddForce(Vector3.up * hoverAcceleration, ForceMode.Acceleration);
-    rb.AddForce(translationalForce, ForceMode.Acceleration);
-    rb.AddRelativeTorque(torque, ForceMode.Acceleration);
+    m_rb.AddRelativeForce(Vector3.up * rotorAcceleration, ForceMode.Acceleration);
+    m_rb.AddForce(Vector3.up * hoverAcceleration, ForceMode.Acceleration);
+    m_rb.AddForce(translationalForce, ForceMode.Acceleration);
+    m_rb.AddRelativeTorque(torque, ForceMode.Acceleration);
 
     // Pitch of engine sound is based on tilt, which is based on desired speed
     //float engineOutput = Mathf.Max(Mathf.Abs(controls.longitudinal), Mathf.Abs(controls.lateral));
@@ -229,6 +230,24 @@ public class Helicopter: MonoBehaviour
   private void FixedUpdate()
   {
     UpdateDynamics();
+  }
+
+  private void OnCollisionEnter(Collision collision)
+  {
+    /*
+    Debug.Log("COLLIDED");
+    Vector3 normal = collision.contacts[0].normal;
+    m_rb.AddForce(normal * 0.75f, ForceMode.VelocityChange);
+    Debug.Log("impulse=" + collision.impulse.magnitude);
+
+    m_collisionForce = normal * 0.5f;
+
+    LineRenderer lr = GetComponent<LineRenderer>();
+    lr.positionCount = 2;
+    lr.SetPosition(0, collision.contacts[0].point);
+    lr.SetPosition(1, collision.contacts[0].point + normal);
+    lr.useWorldSpace = true;
+    */
   }
 
   private void Start()
