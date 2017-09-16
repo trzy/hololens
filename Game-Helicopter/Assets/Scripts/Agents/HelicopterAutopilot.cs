@@ -24,7 +24,7 @@ public class HelicopterAutopilot: MonoBehaviour
   public float throttle
   {
     get { return m_throttle; }
-    set { m_throttle = Mathf.Clamp(value, 0, 1); }
+    set { m_throttle = value; }
   }
 
   public bool flying

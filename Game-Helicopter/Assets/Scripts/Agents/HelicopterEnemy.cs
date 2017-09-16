@@ -194,7 +194,7 @@ public class HelicopterEnemy : MonoBehaviour
           //m_autopilot.throttle = 3;
 
           if (TryAttackPatternAboveAndBehind(toTarget))
-            m_autopilot.throttle = 3f;
+            m_autopilot.throttle = 1.5f;
           else
             m_autopilot.throttle = 1;
 
