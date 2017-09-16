@@ -12,14 +12,18 @@ public class Helicopter: MonoBehaviour
     public float rotational;    // [-1,1] counter/clockwise rotation in xz plane
     public float altitude;      // [-1,1] rotor force along local up (-1=free-fall, 0=hover)
 
-    // Throttle can range from [0,1]
-    public void ClampAzimuthal(float throttle)
+    // Throttle can range from [0,Infinite]. Controls are normalized and then
+    // scaled by the throttle.
+    public void ApplyThrottle(float throttle)
     {
+      // Throttle cannot be less than 0
+      throttle = Mathf.Max(0, throttle);
+
       // Apply throttle to translational controls. Note that because each of the
       // two axes has a range of [-1,+1], the maximum magnitude of the vector is
       // sqrt(2).
       float sqrt2 = 1.414213562373f;
-      Vector2 xzControls = Vector2.ClampMagnitude(new Vector2(lateral, longitudinal), sqrt2 * throttle);
+      Vector2 xzControls = Vector2.ClampMagnitude(new Vector2(lateral, longitudinal), 1) * (sqrt2 * throttle);
       lateral = xzControls.x;
       longitudinal = xzControls.y;
     }
@@ -227,9 +231,58 @@ public class Helicopter: MonoBehaviour
     rotor.angularVelocity = new Vector3(0, 5 * 360, 0);
   }
 
+  //private List<Collider> 
   private void FixedUpdate()
   {
     UpdateDynamics();
+
+
+    BoxCollider box = GetComponent<BoxCollider>();
+    Vector3 halfExtents = 0.5f * Footprint.Measure(gameObject);
+    Collider[] overlapping = Physics.OverlapBox(transform.TransformPoint(box.center), halfExtents, transform.rotation, PlayspaceManager.spatialLayerMask);
+    if (overlapping.Length > 0)
+    {
+      Vector3 resolution = Vector3.zero;
+      foreach (Collider c in overlapping)
+      {
+        Vector3 direction = Vector3.zero;
+        float distance = 0;
+        Physics.ComputePenetration(box, transform.position, transform.rotation, c, c.transform.position, c.transform.rotation, out direction, out distance);
+        resolution += distance * direction;
+      }
+
+      Vector3 reactionDirection = resolution.normalized;
+      Vector3 velocity = m_rb.velocity;
+      m_rb.velocity = Vector3.zero;
+      m_rb.angularVelocity = Vector3.zero;
+      m_rb.AddForce(reactionDirection * 1.5f, ForceMode.VelocityChange);
+      Debug.Log("Velocity " + velocity + " -> " + m_rb.velocity);
+    }
+
+      return;
+
+      // Layers must be set up such that helicopter cannot collide with itself
+
+      /*
+      BoxCollider box = GetComponent<BoxCollider>();
+    Vector3 halfExtents = 0.5f * Footprint.Measure(gameObject);
+    Collider[] overlapping = Physics.OverlapBox(transform.TransformPoint(box.center), halfExtents, transform.rotation, PlayspaceManager.spatialLayerMask);
+    Vector3 reactionDirection = Vector3.zero;
+    foreach (Collider c in overlapping)
+    {
+      //Debug.Log("overlapping " + c.name);
+      //Debug.Log("closest point: " + c.ClosestPoint(transform.position));
+      //reactionDirection += (transform.position - c.ClosestPoint(transform.position)).normalized;
+    }
+    if (overlapping.Length > 0)
+      reactionDirection = -m_rb.velocity;
+    m_rb.AddForce(reactionDirection.normalized * 0.5f, ForceMode.VelocityChange);
+    LineRenderer lr = GetComponent<LineRenderer>();
+    lr.positionCount = 2;
+    lr.SetPosition(0, transform.position);
+    lr.SetPosition(1, reactionDirection.normalized + transform.position);
+    lr.useWorldSpace = true;
+    */
   }
 
   private void OnCollisionEnter(Collision collision)
@@ -237,10 +290,11 @@ public class Helicopter: MonoBehaviour
     /*
     Debug.Log("COLLIDED");
     Vector3 normal = collision.contacts[0].normal;
+    m_rb.velocity = Vector3.zero;
+    m_rb.angularVelocity = Vector3.zero;
     m_rb.AddForce(normal * 0.75f, ForceMode.VelocityChange);
-    Debug.Log("impulse=" + collision.impulse.magnitude);
 
-    m_collisionForce = normal * 0.5f;
+    //m_collisionForce = normal * 0.5f;
 
     LineRenderer lr = GetComponent<LineRenderer>();
     lr.positionCount = 2;

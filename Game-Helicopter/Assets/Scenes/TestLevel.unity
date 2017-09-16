@@ -202,7 +202,7 @@ GameObject:
   - component: {fileID: 68940591}
   - component: {fileID: 68940590}
   - component: {fileID: 68940589}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RotorAxle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -285,7 +285,7 @@ GameObject:
   - component: {fileID: 236845844}
   - component: {fileID: 236845843}
   - component: {fileID: 236845842}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Tail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -367,7 +367,7 @@ GameObject:
   - component: {fileID: 239136244}
   - component: {fileID: 239136243}
   - component: {fileID: 239136242}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RightWing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1010,7 +1010,7 @@ GameObject:
   - component: {fileID: 1025387342}
   - component: {fileID: 1025387341}
   - component: {fileID: 1025387340}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: LeftWing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1428,7 +1428,7 @@ GameObject:
   - component: {fileID: 1824258766}
   - component: {fileID: 1824258765}
   - component: {fileID: 1824258769}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PlayerHelicopter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1846,7 +1846,7 @@ GameObject:
   - component: {fileID: 1997047570}
   - component: {fileID: 1997047569}
   - component: {fileID: 1997047568}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RotorBlade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
