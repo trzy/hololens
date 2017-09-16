@@ -1,4 +1,7 @@
-﻿//TODO: helicopters should bounce off of any non-projectile they collide with forcefully. Need to determine
+﻿//TODO: on any kind of collision, next waypoint should be chosen or current path aborted. Need to detect
+//      collisions based on some sort of flag from helicopter base class
+//TODO: make timeout a global property?
+//TODO: helicopters should bounce off of any non-projectile they collide with forcefully. Need to determine
 //      direction. Make it similar to Jungle Strike, with rotation.
 //TODO: collision avoidance in the orbit code is whack. Sometimes, even if there is a path to the next
 //      waypoint, the collider gets stuck. Simple solution proposed above. See if it works...
@@ -40,7 +43,7 @@ public class HelicopterAutopilot: MonoBehaviour
 
   private void UpdateControls()
   {
-    m_controls.ClampAzimuthal(throttle);
+    m_controls.ApplyThrottle(throttle);
     m_helicopter.controls = m_controls;
   }
 
@@ -176,7 +179,8 @@ public class HelicopterAutopilot: MonoBehaviour
         break;
     }
     Halt();
-    OnComplete(); 
+    if (OnComplete != null)
+      OnComplete(); 
   }
 
   private IEnumerator FollowCoroutine(Transform target, float distance, float timeout, System.Action OnComplete)
@@ -190,14 +194,32 @@ public class HelicopterAutopilot: MonoBehaviour
         break;
     }
     Halt();
-    OnComplete();
+    if (OnComplete != null)
+      OnComplete();
+  }
+
+  private IEnumerator FollowPathCoroutine(Vector3[] waypoints, float timeout, System.Action OnComplete)
+  {
+    float startTime = Time.time;
+    foreach (Vector3 waypoint in waypoints)
+    {
+      while (GoTo(waypoint))
+      {
+        UpdateControls();
+        yield return null;
+        if (Time.time - startTime >= timeout)
+          break;
+      }
+    }
+    Halt();    
+    if (OnComplete != null)
+      OnComplete();
   }
 
   public delegate Vector3 UpdateVectorCallback(float deltaTime);
   public delegate float UpdateScalarCallback(float deltaTime);
 
-  private IEnumerator OrbitPositionCoroutine(UpdateVectorCallback GetOrbitCenter, UpdateScalarCallback GetOrbitAltitude, float orbitRadius)
-    //Vector3 orbitCenter, float orbitAltitude, float orbitRadius)
+  private IEnumerator OrbitPositionCoroutine(UpdateVectorCallback GetOrbitCenter, UpdateScalarCallback GetOrbitAltitude, float orbitRadius, float timeout)
   {
     float step = 20;
     float direction = MathHelpers.RandomSign();
@@ -215,6 +237,7 @@ public class HelicopterAutopilot: MonoBehaviour
     int maxObstructionRetries = (int) (360 / step);
     int numObstructionRetries = maxObstructionRetries;
     float nextObstructionCheckTime = 0;
+    float timeoutTime = Time.time + timeout;
     while (true)
     {
       // Compute the next position along the circle
@@ -226,6 +249,12 @@ public class HelicopterAutopilot: MonoBehaviour
       do
       {
         float now = Time.time;
+
+        if (now >= timeoutTime)
+        {
+          Halt();
+          yield break;
+        }
 
         // In case orbit center is a moving target, continually update the next
         // position
@@ -274,33 +303,33 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
-  public void FlyTo(Transform target, float timeout, System.Action OnComplete)
+  public void FlyTo(Transform target, float timeout, System.Action OnComplete = null)
   {
     LaunchMovementCoroutine(FlyToPositionCoroutine(target.position, timeout, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
 
-  public void FlyTo(Vector3 position, Transform lookAtTarget, float timeout, System.Action OnComplete)
+  public void FlyTo(Vector3 position, Transform lookAtTarget, float timeout, System.Action OnComplete = null)
   {
     LaunchMovementCoroutine(FlyToPositionCoroutine(position, timeout, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 
   // Orbit a position while always facing straight ahead
-  public void Orbit(Vector3 orbitCenter, float orbitAltitude, float orbitRadius = 1)
+  public void Orbit(Vector3 orbitCenter, float orbitAltitude, float orbitRadius = 1, float timeout = float.PositiveInfinity)
   {
     UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter; };
     UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitAltitude; };
-    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius));
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout));
     LaunchDirectionCoroutine(LookFlightDirectionCoroutine());
   }
 
   // Orbit a target while always facing it
-  public void OrbitAndLookAt(Transform orbitCenter, float relativeOrbitAltitude, float orbitRadius = 1)
+  public void OrbitAndLookAt(Transform orbitCenter, float relativeOrbitAltitude, float orbitRadius = 1, float timeout = float.PositiveInfinity)
   {
     UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter.position; };
     UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitCenter.position.y + relativeOrbitAltitude; };
-    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius));
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout));
     LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
   }
 
@@ -308,6 +337,12 @@ public class HelicopterAutopilot: MonoBehaviour
   {
     LaunchMovementCoroutine(FollowCoroutine(target, distance, timeout, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(target));
+  }
+
+  public void FollowPathAndLookAt(Vector3[] waypoints, Transform lookAtTarget, float timeout = float.PositiveInfinity, System.Action OnComplete = null)
+  {
+    LaunchMovementCoroutine(FollowPathCoroutine(waypoints, timeout, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 
   /*
