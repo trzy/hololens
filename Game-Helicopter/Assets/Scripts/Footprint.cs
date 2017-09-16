@@ -67,4 +67,11 @@ public static class Footprint
 
     return Vector3.zero;
   }
+
+  public static float BoundingRadius(GameObject obj)
+  {
+    Vector3 box = Measure(obj);
+    float radius = 0.5f * Mathf.Sqrt(box.x * box.x + box.y * box.y + box.z * box.z);
+    return radius;
+  }
 }
