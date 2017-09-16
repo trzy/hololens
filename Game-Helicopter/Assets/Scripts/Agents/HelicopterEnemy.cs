@@ -12,12 +12,15 @@ public class HelicopterEnemy : MonoBehaviour
 
   private enum State
   {
-    Thinking,
-    FlyingTowards,
-    BackingAway
+    Invalid,
+    IdleDecide,
+    IdleOrbit,
+    Idle
   }
 
-  private State m_state = State.Thinking;
+  private State m_state = State.IdleDecide;
+  private State m_prevState = State.Invalid;
+  private float m_idleStartTime = 0;
   bool m_engagingTarget = false;
 
   private void DrawLine(Vector3[] points)
@@ -167,6 +170,38 @@ public class HelicopterEnemy : MonoBehaviour
     Vector3 toTarget = target.position - transform.position;
     float distanceToTarget = toTarget.magnitude;
 
+    State currentState = m_state;
+    bool enteredState = currentState != m_prevState;
+    switch (currentState)
+    {
+      default:
+      case State.IdleDecide:
+        m_autopilot.Halt();
+        m_state = Random.Range(0, 2) == 0 ? State.IdleOrbit : State.Idle;
+        break;
+      case State.IdleOrbit:
+        m_autopilot.Orbit(transform.position, transform.position.y + 0, 1f);
+        m_autopilot.throttle = 0.25f;
+        m_state = State.Idle;
+        break;
+      case State.Idle:
+        if (enteredState)
+          m_idleStartTime = Time.time;
+        else if (Time.time - m_idleStartTime > 10)
+          m_state = State.IdleDecide;
+        break;
+    }
+    m_prevState = currentState;
+  }
+
+  private void OldFixedUpdate()
+  {
+    if (target == null)
+      return;
+
+    Vector3 toTarget = target.position - transform.position;
+    float distanceToTarget = toTarget.magnitude;
+
     if (!m_engagingTarget)
     {
       if (distanceToTarget < 1.5f)
@@ -214,45 +249,6 @@ public class HelicopterEnemy : MonoBehaviour
         // Currently flying. Attack target and change flight patterns
         // periodically.
       }
-    }
-
-    switch (m_state)
-    {
-      case State.Thinking:
-
-
-        /*
-        if (distanceToTarget > 2)
-        {
-          m_autopilot.Follow(target, 2f, 60 * 2, 
-            () =>
-            {
-              Debug.Log("Caught target!");
-              m_state = State.Thinking;
-            });
-          m_state = State.FlyingTowards;
-        }
-        else if (distanceToTarget < 1.5f)
-        {
-          // Keep our distance!
-          Vector3 awayFromTarget = (transform.position - target.position).normalized;
-          m_autopilot.FlyTo(target.position + 2 * awayFromTarget, target, 10, 
-            () =>
-            {
-              Debug.Log("Backed off");
-            });
-          m_state = State.BackingAway;
-        }
-        */
-
-
-        m_state = State.FlyingTowards;
-        break;
-      case State.FlyingTowards:
-
-        break;
-      default:
-        break;
     }
   }
 
