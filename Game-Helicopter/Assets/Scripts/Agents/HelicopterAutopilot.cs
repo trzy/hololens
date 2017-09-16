@@ -85,10 +85,35 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
+  // This coroutine runs until it detects that a movement or directional
+  // coroutine has started, and will then terminate itself. Also obeys the
+  // global timeout.
+  private IEnumerator StopMovementCoroutine()
+  {
+    // Crudely slow down to a halt by reversing the controls until the velocity
+    // is almost zero, then clear all inputs
+    float startTime = Time.time;
+    Rigidbody rb = GetComponent<Rigidbody>();
+    while (rb.velocity.magnitude > 0.01f && m_movementCoroutine == null && m_directionCoroutine == null)
+    {
+      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
+      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
+      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
+      yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
+    }
+    m_controls.Clear();
+  }
+
   public void Halt()
   {
     LaunchMovementCoroutine(null);
     LaunchDirectionCoroutine(null);
+
+    // Run special, self-terminating coroutine to bring helicopter to stop
+    StopAllCoroutines();
+    StartCoroutine(StopMovementCoroutine());
   }
 
   private bool PathObstructed(Vector3 targetPosition)
@@ -181,21 +206,6 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
-
-    // Crudely slow down to a halt by reversing the controls until the velocity
-    // is almost zero, then clear all inputs
-    Rigidbody rb = GetComponent<Rigidbody>();
-    while (rb.velocity.magnitude > 0.01f)
-    {
-      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
-      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
-      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
-      yield return null;
-      if (Time.time - startTime >= timeout)
-        break;
-    }
-    m_controls.Clear();
-
     Halt();
     if (OnComplete != null)
       OnComplete(); 
@@ -211,21 +221,6 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
-
-    // Crudely slow down to a halt by reversing the controls until the velocity
-    // is almost zero, then clear all inputs
-    Rigidbody rb = GetComponent<Rigidbody>();
-    while (rb.velocity.magnitude > 0.01f)
-    {
-      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
-      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
-      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
-      yield return null;
-      if (Time.time - startTime >= timeout)
-        break;
-    }
-    m_controls.Clear();
-
     Halt();
     if (OnComplete != null)
       OnComplete();
@@ -244,21 +239,6 @@ public class HelicopterAutopilot: MonoBehaviour
           break;
       }
     }
-
-    // Crudely slow down to a halt by reversing the controls until the velocity
-    // is almost zero, then clear all inputs
-    Rigidbody rb = GetComponent<Rigidbody>();
-    while (rb.velocity.magnitude > 0.01f)
-    {
-      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
-      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
-      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
-      yield return null;
-      if (Time.time - startTime >= timeout)
-        break;
-    }
-    m_controls.Clear();
-
     Halt();    
     if (OnComplete != null)
       OnComplete();
