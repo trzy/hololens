@@ -1,6 +1,5 @@
 ﻿//TODO: on any kind of collision, next waypoint should be chosen or current path aborted. Need to detect
 //      collisions based on some sort of flag from helicopter base class
-//TODO: make timeout a global property?
 //TODO: helicopters should bounce off of any non-projectile they collide with forcefully. Need to determine
 //      direction. Make it similar to Jungle Strike, with rotation.
 //TODO: collision avoidance in the orbit code is whack. Sometimes, even if there is a path to the next
