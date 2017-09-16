@@ -15,7 +15,9 @@ public class HelicopterEnemy : MonoBehaviour
     Invalid,
     IdleDecide,
     IdleOrbit,
-    Idle
+    Idle,
+    EngageDecide,
+    WaitForCompletion
   }
 
   private State m_state = State.IdleDecide;
@@ -55,7 +57,7 @@ public class HelicopterEnemy : MonoBehaviour
     return maxDistance;
   }
 
-  private bool TryAttackPatternVerticalAndBehind(Vector3 toTarget, Vector3 verticalDirection)
+  private bool TryAttackPatternVerticalAndBehind(Vector3 toTarget, Vector3 verticalDirection, System.Action OnComplete)
   {
     float minDistanceVertical = 2 * m_boundingRadius; // minimum distance above/beneath target that must be clear
     float minDistanceBehind = 2* m_boundingRadius;    // minimum distance behind the target that must be clear
@@ -113,18 +115,18 @@ public class HelicopterEnemy : MonoBehaviour
 
     Debug.Log("LAUNCHING ATTACK PATTERN");
     DrawLine(new Vector3[] { transform.position, positions[0], positions[1] });
-    m_autopilot.FollowPathAndLookAt(positions, target);
+    m_autopilot.FollowPathAndLookAt(positions, target, OnComplete);
     return true;
   }
 
-  bool TryAttackPatternUnderAndBehind(Vector3 toTarget)
+  bool TryAttackPatternUnderAndBehind(Vector3 toTarget, System.Action OnComplete = null)
   {
-    return TryAttackPatternVerticalAndBehind(toTarget, -Vector3.up);
+    return TryAttackPatternVerticalAndBehind(toTarget, -Vector3.up, OnComplete);
   }
 
-  bool TryAttackPatternAboveAndBehind(Vector3 toTarget)
+  bool TryAttackPatternAboveAndBehind(Vector3 toTarget, System.Action OnComplete = null)
   {
-    return TryAttackPatternVerticalAndBehind(toTarget, Vector3.up);
+    return TryAttackPatternVerticalAndBehind(toTarget, Vector3.up, OnComplete);
   }
 
   bool TryBackOffPattern(Vector3 toTarget)
@@ -189,6 +191,39 @@ public class HelicopterEnemy : MonoBehaviour
           m_idleStartTime = Time.time;
         else if (Time.time - m_idleStartTime > 10)
           m_state = State.IdleDecide;
+        else
+        {
+          // Do we need to engage the target?
+          if (distanceToTarget < 1.5f)
+            m_state = State.EngageDecide;
+        }
+        break;
+      case State.EngageDecide:
+        //TODO: after finished engaging, don't go idle. Keep engaging until enemy has remained away from
+        // its initial engagement spot for a given amount of time.
+        int decision = Random.Range(0, 3);
+        switch (decision)
+        {
+          case 1:
+            if (TryAttackPatternAboveAndBehind(toTarget, () => m_state = State.IdleDecide))
+            {
+              m_autopilot.throttle = 1.5f;
+              m_state = State.WaitForCompletion;
+              return;
+            }
+            break;
+          case 2:
+            if (TryAttackPatternUnderAndBehind(toTarget, () => m_state = State.IdleDecide))
+            {
+              m_autopilot.throttle = 1.5f;
+              m_state = State.WaitForCompletion;
+              return;
+            }
+            break;
+        }
+        m_state = State.IdleDecide;
+        break;
+      case State.WaitForCompletion:
         break;
     }
     m_prevState = currentState;
