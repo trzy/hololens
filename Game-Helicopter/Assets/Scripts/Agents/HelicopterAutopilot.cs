@@ -21,6 +21,9 @@ public class HelicopterAutopilot: MonoBehaviour
   [Tooltip("Amount of time (seconds) to spend attempting to move to an obstructed waypoint before giving up and selecting the next one.")]
   public float obstructionRetryTime = 1;
 
+  [Tooltip("Timeout (seconds) used to abort flight patterns with a fixed destination or route. Persistent patterns, like orbiting, have their own timeout.")]
+  public float timeout = 10;
+
   public float throttle
   {
     get { return m_throttle; }
@@ -168,7 +171,7 @@ public class HelicopterAutopilot: MonoBehaviour
     return true;
   }
 
-  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, float timeout, System.Action OnComplete)
+  private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, System.Action OnComplete)
   {
     float startTime = Time.time;
     while (GoTo(targetPosition))
@@ -198,7 +201,7 @@ public class HelicopterAutopilot: MonoBehaviour
       OnComplete(); 
   }
 
-  private IEnumerator FollowCoroutine(Transform target, float distance, float timeout, System.Action OnComplete)
+  private IEnumerator FollowCoroutine(Transform target, float distance, System.Action OnComplete)
   {
     float startTime = Time.time;
     while (GoTo(target.position))
@@ -228,7 +231,7 @@ public class HelicopterAutopilot: MonoBehaviour
       OnComplete();
   }
 
-  private IEnumerator FollowPathCoroutine(Vector3[] waypoints, float timeout, System.Action OnComplete)
+  private IEnumerator FollowPathCoroutine(Vector3[] waypoints, System.Action OnComplete)
   {
     float startTime = Time.time;
     foreach (Vector3 waypoint in waypoints)
@@ -348,15 +351,15 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
-  public void FlyTo(Transform target, float timeout, System.Action OnComplete = null)
+  public void FlyTo(Transform target, System.Action OnComplete = null)
   {
-    LaunchMovementCoroutine(FlyToPositionCoroutine(target.position, timeout, OnComplete));
+    LaunchMovementCoroutine(FlyToPositionCoroutine(target.position, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
 
-  public void FlyTo(Vector3 position, Transform lookAtTarget, float timeout, System.Action OnComplete = null)
+  public void FlyTo(Vector3 position, Transform lookAtTarget, System.Action OnComplete = null)
   {
-    LaunchMovementCoroutine(FlyToPositionCoroutine(position, timeout, OnComplete));
+    LaunchMovementCoroutine(FlyToPositionCoroutine(position, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 
@@ -378,15 +381,15 @@ public class HelicopterAutopilot: MonoBehaviour
     LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
   }
 
-  public void Follow(Transform target, float distance, float timeout, System.Action OnComplete)
+  public void Follow(Transform target, float distance, System.Action OnComplete)
   {
-    LaunchMovementCoroutine(FollowCoroutine(target, distance, timeout, OnComplete));
+    LaunchMovementCoroutine(FollowCoroutine(target, distance, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
 
   public void FollowPathAndLookAt(Vector3[] waypoints, Transform lookAtTarget, float timeout = float.PositiveInfinity, System.Action OnComplete = null)
   {
-    LaunchMovementCoroutine(FollowPathCoroutine(waypoints, timeout, OnComplete));
+    LaunchMovementCoroutine(FollowPathCoroutine(waypoints, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 

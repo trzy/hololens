@@ -110,7 +110,7 @@ public class HelicopterEnemy : MonoBehaviour
 
     Debug.Log("LAUNCHING ATTACK PATTERN");
     DrawLine(new Vector3[] { transform.position, positions[0], positions[1] });
-    m_autopilot.FollowPathAndLookAt(positions, target, 15);
+    m_autopilot.FollowPathAndLookAt(positions, target);
     return true;
   }
 
@@ -149,7 +149,7 @@ public class HelicopterEnemy : MonoBehaviour
     float minDistance = 0.5f * (margin + (clearance - margin));
     float maxDistance = clearance - margin;
     float distance = UnityEngine.Random.Range(minDistance, maxDistance);
-    m_autopilot.FlyTo(transform.position + distance * back, target, 5);
+    m_autopilot.FlyTo(transform.position + distance * back, target);
     DrawLine(new Vector3[] { transform.position, transform.position + distance * back });
     return true;
   }
