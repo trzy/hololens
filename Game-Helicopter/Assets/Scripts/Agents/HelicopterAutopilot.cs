@@ -366,7 +366,7 @@ public class HelicopterAutopilot: MonoBehaviour
     LaunchDirectionCoroutine(LookAtCoroutine(target));
   }
 
-  public void FollowPathAndLookAt(Vector3[] waypoints, Transform lookAtTarget, float timeout = float.PositiveInfinity, System.Action OnComplete = null)
+  public void FollowPathAndLookAt(Vector3[] waypoints, Transform lookAtTarget, System.Action OnComplete = null)
   {
     LaunchMovementCoroutine(FollowPathCoroutine(waypoints, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
