@@ -178,6 +178,21 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
+
+    // Crudely slow down to a halt by reversing the controls until the velocity
+    // is almost zero, then clear all inputs
+    Rigidbody rb = GetComponent<Rigidbody>();
+    while (rb.velocity.magnitude > 0.01f)
+    {
+      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
+      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
+      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
+      yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
+    }
+    m_controls.Clear();
+
     Halt();
     if (OnComplete != null)
       OnComplete(); 
@@ -193,6 +208,21 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
+
+    // Crudely slow down to a halt by reversing the controls until the velocity
+    // is almost zero, then clear all inputs
+    Rigidbody rb = GetComponent<Rigidbody>();
+    while (rb.velocity.magnitude > 0.01f)
+    {
+      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
+      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
+      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
+      yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
+    }
+    m_controls.Clear();
+
     Halt();
     if (OnComplete != null)
       OnComplete();
@@ -211,6 +241,21 @@ public class HelicopterAutopilot: MonoBehaviour
           break;
       }
     }
+
+    // Crudely slow down to a halt by reversing the controls until the velocity
+    // is almost zero, then clear all inputs
+    Rigidbody rb = GetComponent<Rigidbody>();
+    while (rb.velocity.magnitude > 0.01f)
+    {
+      m_controls.longitudinal = -Vector3.Dot(rb.velocity.normalized, transform.forward);
+      m_controls.lateral = -Vector3.Dot(rb.velocity.normalized, transform.right);
+      m_controls.altitude = -Mathf.Sign(rb.velocity.y);
+      yield return null;
+      if (Time.time - startTime >= timeout)
+        break;
+    }
+    m_controls.Clear();
+
     Halt();    
     if (OnComplete != null)
       OnComplete();
