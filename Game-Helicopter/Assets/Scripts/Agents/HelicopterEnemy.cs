@@ -20,6 +20,16 @@ public class HelicopterEnemy : MonoBehaviour
   private State m_state = State.Thinking;
   bool m_engagingTarget = false;
 
+  private void DrawLine(Vector3[] points)
+  {
+    LineRenderer lr = GetComponent<LineRenderer>();
+    lr.positionCount = points.Length;
+    for (int i = 0; i < points.Length; i++)
+    {
+      lr.SetPosition(i, points[i]);
+    }
+  }
+
   private bool IsPathBlocked(Vector3 destination)
   {
     Vector3 toDestination = destination - transform.position;
@@ -90,7 +100,7 @@ public class HelicopterEnemy : MonoBehaviour
     }
 
     // Determine point, ideally in between the min and max distance
-    mid = 0.5f * (minDistanceBehind + clearance);
+    mid = 0.5f * (minDistanceBehind + bestClearance);
     positions[1] = target.position + bestDirection * mid;
     if (IsPathBlocked(positions[1]))
     {
@@ -99,7 +109,8 @@ public class HelicopterEnemy : MonoBehaviour
     }
 
     Debug.Log("LAUNCHING ATTACK PATTERN");
-    m_autopilot.FollowPathAndLookAt(positions, target, 5);
+    DrawLine(new Vector3[] { transform.position, positions[0], positions[1] });
+    m_autopilot.FollowPathAndLookAt(positions, target, 15);
     return true;
   }
 
@@ -139,6 +150,7 @@ public class HelicopterEnemy : MonoBehaviour
     float maxDistance = clearance - margin;
     float distance = UnityEngine.Random.Range(minDistance, maxDistance);
     m_autopilot.FlyTo(transform.position + distance * back, target, 5);
+    DrawLine(new Vector3[] { transform.position, transform.position + distance * back });
     return true;
   }
 
@@ -181,8 +193,10 @@ public class HelicopterEnemy : MonoBehaviour
           //m_autopilot.OrbitAndLookAt(target.transform, 0, 1.5f, 10);
           //m_autopilot.throttle = 3;
 
-          TryAttackPatternAboveAndBehind(toTarget);
-          m_autopilot.throttle = 3f;
+          if (TryAttackPatternAboveAndBehind(toTarget))
+            m_autopilot.throttle = 3f;
+          else
+            m_autopilot.throttle = 1;
 
           //TODO: additional attack patterns: strafe left/right (up/down?), circle about a point that is in front of target, random points  in front hemisphere of target
           //TODO: If altitude mismatch, attempt correction by selecting a point on the semicircle directly in front of target (actually, on the side of the target closest
@@ -191,7 +205,8 @@ public class HelicopterEnemy : MonoBehaviour
         else
         {
           // Attack patterns: back off, strafe
-          TryBackOffPattern(toTarget);
+          //TryBackOffPattern(toTarget);
+          m_autopilot.throttle = 1;
         }
       }
       else
