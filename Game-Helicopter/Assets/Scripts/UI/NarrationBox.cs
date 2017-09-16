@@ -9,9 +9,7 @@ public class NarrationBox: MonoBehaviour
   private IEnumerator Wait(float seconds, System.Action OnTimeReached)
   {
     float start = Time.time;
-    Debug.Log("Starting Wait coroutine...");
     yield return new WaitForSeconds(seconds);
-    Debug.Log("Finished Wait coroutine!");
     OnTimeReached();
   }
 
