@@ -178,6 +178,20 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
+  private IEnumerator HoverCoroutine(System.Action OnComplete)
+  {
+    m_controls.Clear();
+    UpdateControls();
+    float startTime = Time.time;
+    while (Time.time - startTime < timeout)
+    {
+      yield return null;
+    }
+    Halt();
+    if (OnComplete != null)
+      OnComplete();
+  }
+
   private bool GoTo(Vector3 targetPosition)
   {
     Vector3 toTarget = targetPosition - transform.position;
@@ -369,6 +383,12 @@ public class HelicopterAutopilot: MonoBehaviour
   public void FollowPathAndLookAt(Vector3[] waypoints, Transform lookAtTarget, System.Action OnComplete = null)
   {
     LaunchMovementCoroutine(FollowPathCoroutine(waypoints, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
+  }
+
+  public void HoverAndLookAt(Transform lookAtTarget, System.Action OnComplete = null)
+  {
+    LaunchMovementCoroutine(HoverCoroutine(OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 

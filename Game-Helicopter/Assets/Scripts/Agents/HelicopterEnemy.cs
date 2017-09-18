@@ -199,13 +199,17 @@ public class HelicopterEnemy : MonoBehaviour
         }
         break;
       case State.EngageDecide:
-        //TODO: after finished engaging, don't go idle. Keep engaging until enemy has remained away from
-        // its initial engagement spot for a given amount of time.
         int decision = Random.Range(0, 3);
         switch (decision)
         {
+          default:
+          case 0:
+            m_autopilot.HoverAndLookAt(target, () => m_state = State.EngageDecide);
+            m_autopilot.throttle = 1;
+            m_state = State.WaitForCompletion;
+            break;
           case 1:
-            if (TryAttackPatternAboveAndBehind(toTarget, () => m_state = State.IdleDecide))
+            if (TryAttackPatternAboveAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
               m_autopilot.throttle = 1.5f;
               m_state = State.WaitForCompletion;
@@ -213,7 +217,7 @@ public class HelicopterEnemy : MonoBehaviour
             }
             break;
           case 2:
-            if (TryAttackPatternUnderAndBehind(toTarget, () => m_state = State.IdleDecide))
+            if (TryAttackPatternUnderAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
               m_autopilot.throttle = 1.5f;
               m_state = State.WaitForCompletion;
@@ -221,7 +225,6 @@ public class HelicopterEnemy : MonoBehaviour
             }
             break;
         }
-        m_state = State.IdleDecide;
         break;
       case State.WaitForCompletion:
         break;
