@@ -265,7 +265,7 @@ public class HelicopterAutopilot: MonoBehaviour
   public delegate Vector3 UpdateVectorCallback(float deltaTime);
   public delegate float UpdateScalarCallback(float deltaTime);
 
-  private IEnumerator OrbitPositionCoroutine(UpdateVectorCallback GetOrbitCenter, UpdateScalarCallback GetOrbitAltitude, float orbitRadius, float timeout)
+  private IEnumerator OrbitPositionCoroutine(UpdateVectorCallback GetOrbitCenter, UpdateScalarCallback GetOrbitAltitude, float orbitRadius, float timeout, System.Action OnComplete)
   {
     float step = 20;
     float direction = MathHelpers.RandomSign();
@@ -299,6 +299,8 @@ public class HelicopterAutopilot: MonoBehaviour
         if (now >= timeoutTime)
         {
           Halt();
+          if (OnComplete != null)
+            OnComplete();
           yield break;
         }
 
@@ -322,7 +324,8 @@ public class HelicopterAutopilot: MonoBehaviour
 
           // Need to abort
           Halt();
-          //TODO: callback?
+          if (OnComplete != null)
+            OnComplete();
           yield break;
         }
 
@@ -366,16 +369,16 @@ public class HelicopterAutopilot: MonoBehaviour
   {
     UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter; };
     UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitAltitude; };
-    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout));
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout, null));
     LaunchDirectionCoroutine(LookFlightDirectionCoroutine());
   }
 
   // Orbit a target while always facing it
-  public void OrbitAndLookAt(Transform orbitCenter, float relativeOrbitAltitude, float orbitRadius = 1, float timeout = float.PositiveInfinity)
+  public void OrbitAndLookAt(Transform orbitCenter, float relativeOrbitAltitude, float orbitRadius = 1, float timeout = float.PositiveInfinity, System.Action OnComplete = null)
   {
     UpdateVectorCallback GetOrbitCenter = (float deltaTime) => { return orbitCenter.position; };
     UpdateScalarCallback GetOrbitAltitude = (float deltaTime) => { return orbitCenter.position.y + relativeOrbitAltitude; };
-    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout));
+    LaunchMovementCoroutine(OrbitPositionCoroutine(GetOrbitCenter, GetOrbitAltitude, orbitRadius, timeout, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(orbitCenter));
   }
 
