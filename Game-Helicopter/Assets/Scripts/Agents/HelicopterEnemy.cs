@@ -119,17 +119,33 @@ public class HelicopterEnemy : MonoBehaviour
     return true;
   }
 
-  bool TryAttackPatternUnderAndBehind(Vector3 toTarget, System.Action OnComplete = null)
+  private bool TryAttackPatternUnderAndBehind(Vector3 toTarget, System.Action OnComplete = null)
   {
     return TryAttackPatternVerticalAndBehind(toTarget, -Vector3.up, OnComplete);
   }
 
-  bool TryAttackPatternAboveAndBehind(Vector3 toTarget, System.Action OnComplete = null)
+  private bool TryAttackPatternAboveAndBehind(Vector3 toTarget, System.Action OnComplete = null)
   {
     return TryAttackPatternVerticalAndBehind(toTarget, Vector3.up, OnComplete);
   }
 
-  bool TryBackOffPattern(Vector3 toTarget)
+  private bool TryAttackPatternStrafe(float altitude, System.Action OnComplete = null)
+  {
+    Vector3 position = transform.position;
+    position.y = altitude;
+    Vector3 right = MathHelpers.Azimuthal(transform.right);
+    float d1 = FindClearance(transform.position, right, 2) - 2 * m_boundingRadius;
+    float d2 = FindClearance(transform.position, -right, 2) - 2 * m_boundingRadius;
+    Vector3[] waypoints = new Vector3[2];
+    int firstIdx = Random.Range(0, 2) == 0 ? 0 : 1;
+    waypoints[firstIdx ^ 0] = position + right * d1;
+    waypoints[firstIdx ^ 1] = position - right * d2;
+    m_autopilot.FollowPathAndLookAt(waypoints, target, OnComplete);
+    DrawLine(waypoints);
+    return true;
+  }
+
+  private bool TryBackOffPattern(Vector3 toTarget)
   {
     //TODO: margin represents, roughly, the diameter of a bounding sphere
     // around us. This should probably be computed at start up from the 
@@ -156,11 +172,6 @@ public class HelicopterEnemy : MonoBehaviour
     float distance = UnityEngine.Random.Range(minDistance, maxDistance);
     m_autopilot.FlyTo(transform.position + distance * back, target);
     DrawLine(new Vector3[] { transform.position, transform.position + distance * back });
-    return true;
-  }
-
-  bool TryMatchAltitudePattern(Vector3 toTarget)
-  {
     return true;
   }
 
@@ -199,7 +210,7 @@ public class HelicopterEnemy : MonoBehaviour
         }
         break;
       case State.EngageDecide:
-        int decision = Random.Range(0, 3);
+        int decision = Random.Range(0, 5);
         //TODO next: strafe left/right pattern, attack multiple points pattern (fly to left of target, then front, then right),
         // attack single point, orbit once
         //TODO next: collisions should finish autopilot behavior
@@ -209,24 +220,43 @@ public class HelicopterEnemy : MonoBehaviour
         {
           default:
           case 0:
+            Debug.Log("ENGAGE: Hover");
             m_autopilot.HoverAndLookAt(target, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 1;
             m_state = State.WaitForCompletion;
             break;
           case 1:
+            Debug.Log("ENGAGE: Above-and-behind");
             if (TryAttackPatternAboveAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
-              m_autopilot.throttle = 1.5f;
+              m_autopilot.throttle = 0.75f;
               m_state = State.WaitForCompletion;
               return;
             }
             break;
           case 2:
+            Debug.Log("ENGAGE: Under-and-behind");
             if (TryAttackPatternUnderAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
-              m_autopilot.throttle = 1.5f;
+              m_autopilot.throttle = 0.75f;
               m_state = State.WaitForCompletion;
               return;
+            }
+            break;
+          case 3:
+            Debug.Log("ENGAGE: Strafe Player Altitude");
+            if (TryAttackPatternStrafe(target.position.y, () => m_state = State.EngageDecide))
+            {
+              m_autopilot.throttle = 0.75f;
+              m_state = State.WaitForCompletion;
+            }
+            break;
+          case 4:
+            Debug.Log("ENGAGE: Strafe Self Altitude");
+            if (TryAttackPatternStrafe(transform.position.y, () => m_state = State.EngageDecide))
+            {
+              m_autopilot.throttle = 0.75f;
+              m_state = State.WaitForCompletion;
             }
             break;
         }
