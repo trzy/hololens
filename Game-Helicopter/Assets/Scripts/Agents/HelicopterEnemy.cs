@@ -210,7 +210,7 @@ public class HelicopterEnemy : MonoBehaviour
         }
         break;
       case State.EngageDecide:
-        int decision = 0;// Random.Range(0, 7);
+        int decision = Random.Range(0, 8);
         //TODO next: strafe left/right pattern, attack multiple points pattern (fly to left of target, then front, then right),
         // attack single point, orbit once
         //TODO next: collisions should finish autopilot behavior
@@ -270,6 +270,12 @@ public class HelicopterEnemy : MonoBehaviour
               m_autopilot.throttle = 0.75f;
               m_state = State.WaitForCompletion;
             }
+            break;
+          case 7:
+            Debug.Log("ENGAGE: Orbit");
+            m_autopilot.OrbitAndLookAt(target, 0, 1.85f, 10, () => m_state = State.EngageDecide);
+            m_autopilot.throttle = 0.75f;
+            m_state = State.WaitForCompletion;
             break;
         }
         break;
