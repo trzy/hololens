@@ -178,20 +178,6 @@ public class HelicopterAutopilot: MonoBehaviour
     }
   }
 
-  private IEnumerator HoverCoroutine(System.Action OnComplete)
-  {
-    m_controls.Clear();
-    UpdateControls();
-    float startTime = Time.time;
-    while (Time.time - startTime < timeout)
-    {
-      yield return null;
-    }
-    Halt();
-    if (OnComplete != null)
-      OnComplete();
-  }
-
   private bool GoTo(Vector3 targetPosition)
   {
     Vector3 toTarget = targetPosition - transform.position;
@@ -207,6 +193,24 @@ public class HelicopterAutopilot: MonoBehaviour
     else
       return false;
     return true;
+  }
+
+  private IEnumerator HoverCoroutine(bool matchAltitude, Transform target, System.Action OnComplete)
+  {
+    m_controls.Clear();
+    UpdateControls();
+    float startTime = Time.time;
+    while (Time.time - startTime < timeout)
+    {
+      Vector3 position = transform.position;
+      if (matchAltitude)
+        position.y = target.position.y;
+      GoTo(position);
+      yield return null;
+    }
+    Halt();
+    if (OnComplete != null)
+      OnComplete();
   }
 
   private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, System.Action OnComplete)
@@ -226,13 +230,14 @@ public class HelicopterAutopilot: MonoBehaviour
 
   private IEnumerator FollowCoroutine(Transform target, float distance, System.Action OnComplete)
   {
+    // Follow at same altitude and maintain distance until timeout
     float startTime = Time.time;
-    while (GoTo(target.position))
+    while (Time.time - startTime < timeout)
     {
+      Vector3 position = target.position + MathHelpers.Azimuthal(transform.position - target.position).normalized * distance;
+      GoTo(position);
       UpdateControls();
       yield return null;
-      if (Time.time - startTime >= timeout)
-        break;
     }
     Halt();
     if (OnComplete != null)
@@ -388,7 +393,13 @@ public class HelicopterAutopilot: MonoBehaviour
 
   public void HoverAndLookAt(Transform lookAtTarget, System.Action OnComplete = null)
   {
-    LaunchMovementCoroutine(HoverCoroutine(OnComplete));
+    LaunchMovementCoroutine(HoverCoroutine(false, null, OnComplete));
+    LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
+  }
+
+  public void MatchAltitudeAndLookAt(Transform lookAtTarget, System.Action OnComplete = null)
+  {
+    LaunchMovementCoroutine(HoverCoroutine(true, lookAtTarget, OnComplete));
     LaunchDirectionCoroutine(LookAtCoroutine(lookAtTarget));
   }
 

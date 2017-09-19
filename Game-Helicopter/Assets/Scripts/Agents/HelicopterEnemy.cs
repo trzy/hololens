@@ -210,7 +210,7 @@ public class HelicopterEnemy : MonoBehaviour
         }
         break;
       case State.EngageDecide:
-        int decision = Random.Range(0, 5);
+        int decision = 0;// Random.Range(0, 7);
         //TODO next: strafe left/right pattern, attack multiple points pattern (fly to left of target, then front, then right),
         // attack single point, orbit once
         //TODO next: collisions should finish autopilot behavior
@@ -220,12 +220,24 @@ public class HelicopterEnemy : MonoBehaviour
         {
           default:
           case 0:
+            Debug.Log("ENGAGE: Follow");
+            m_autopilot.Follow(target, 1.75f, () => m_state = State.EngageDecide);
+            m_autopilot.throttle = 0.6f;
+            m_state = State.WaitForCompletion;
+            break;
+          case 1:
+            Debug.Log("ENGAGE: Hover-and-match-altitude");
+            m_autopilot.MatchAltitudeAndLookAt(target, () => m_state = State.EngageDecide);
+            m_autopilot.throttle = 0.35f;
+            m_state = State.WaitForCompletion;
+            break;
+          case 2:
             Debug.Log("ENGAGE: Hover");
             m_autopilot.HoverAndLookAt(target, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 1;
             m_state = State.WaitForCompletion;
             break;
-          case 1:
+          case 3:
             Debug.Log("ENGAGE: Above-and-behind");
             if (TryAttackPatternAboveAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
@@ -234,7 +246,7 @@ public class HelicopterEnemy : MonoBehaviour
               return;
             }
             break;
-          case 2:
+          case 4:
             Debug.Log("ENGAGE: Under-and-behind");
             if (TryAttackPatternUnderAndBehind(toTarget, () => m_state = State.EngageDecide))
             {
@@ -243,7 +255,7 @@ public class HelicopterEnemy : MonoBehaviour
               return;
             }
             break;
-          case 3:
+          case 5:
             Debug.Log("ENGAGE: Strafe Player Altitude");
             if (TryAttackPatternStrafe(target.position.y, () => m_state = State.EngageDecide))
             {
@@ -251,7 +263,7 @@ public class HelicopterEnemy : MonoBehaviour
               m_state = State.WaitForCompletion;
             }
             break;
-          case 4:
+          case 6:
             Debug.Log("ENGAGE: Strafe Self Altitude");
             if (TryAttackPatternStrafe(transform.position.y, () => m_state = State.EngageDecide))
             {
