@@ -50,10 +50,10 @@ public class HelicopterEnemy : MonoBehaviour
 
   private float FindClearance(Vector3 position, Vector3 direction, float maxDistance = 4)
   {
-    Ray ray = new Ray(target.position, direction);
+    Ray ray = new Ray(position, direction);
     RaycastHit hit;
     if (Physics.Raycast(ray, out hit, maxDistance))
-      return (hit.point - target.position).magnitude;
+      return (hit.point - position).magnitude;
     return maxDistance;
   }
 
@@ -65,7 +65,7 @@ public class HelicopterEnemy : MonoBehaviour
     Vector3[] positions = new Vector3[2];
 
     // Do we have enough clearance directly above/below to fly through?
-    float clearance = FindClearance(transform.position, verticalDirection);
+    float clearance = FindClearance(target.position, verticalDirection);
     if (clearance < minDistanceVertical)
     {
       Debug.Log("VERTICAL: NO CLEARANCE: " + clearance);
@@ -200,6 +200,11 @@ public class HelicopterEnemy : MonoBehaviour
         break;
       case State.EngageDecide:
         int decision = Random.Range(0, 3);
+        //TODO next: strafe left/right pattern, attack multiple points pattern (fly to left of target, then front, then right),
+        // attack single point, orbit once
+        //TODO next: collisions should finish autopilot behavior
+        //TODO next: collisions with spatial mesh should produce Jungle Strike-like bounce effect
+        //TODO next: add gun firing and missiles -- may need to make helicopter pitch and roll less for accurate firing
         switch (decision)
         {
           default:
