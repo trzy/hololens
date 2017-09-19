@@ -119,17 +119,17 @@ public class HelicopterEnemy : MonoBehaviour
     return true;
   }
 
-  private bool TryAttackPatternUnderAndBehind(Vector3 toTarget, System.Action OnComplete = null)
+  private bool TryAttackPatternUnderAndBehind(Vector3 toTarget, System.Action OnComplete)
   {
     return TryAttackPatternVerticalAndBehind(toTarget, -Vector3.up, OnComplete);
   }
 
-  private bool TryAttackPatternAboveAndBehind(Vector3 toTarget, System.Action OnComplete = null)
+  private bool TryAttackPatternAboveAndBehind(Vector3 toTarget, System.Action OnComplete)
   {
     return TryAttackPatternVerticalAndBehind(toTarget, Vector3.up, OnComplete);
   }
 
-  private bool TryAttackPatternStrafe(float altitude, System.Action OnComplete = null)
+  private bool TryAttackPatternStrafe(float altitude, System.Action OnComplete)
   {
     Vector3 position = transform.position;
     position.y = altitude;
@@ -143,6 +143,51 @@ public class HelicopterEnemy : MonoBehaviour
     m_autopilot.FollowPathAndLookAt(waypoints, target, OnComplete);
     DrawLine(waypoints);
     return true;
+  }
+
+  private bool TryAttackPatternFlyToPoint(Vector3 toTarget, float distanceToTarget, System.Action OnComplete)
+  {
+    // Define an arc-like region within which we will select a random vector
+    float horizontalAngleRange = 90;
+    float verticalAngleRange = 45;
+    float minDistance = 2 * m_boundingRadius;
+    float maxDistance = distanceToTarget - minDistance;
+    toTarget.Normalize();
+
+    // Try a few times until something works
+    for (int i = 0; i < 8; i++)
+    {
+      // Determine whether to move forward or back depending on how close we
+      // are to target
+      float front = 1;
+      if (distanceToTarget < 1.5f)
+      {
+        // We will move backwards
+        front = -1;
+        maxDistance = 2.5f;
+      }
+      
+      // Create the direction vector in a local space where +z is the central
+      // axis, then rotate toward target
+      float horizontalAngle = horizontalAngleRange * (Random.Range(0f, 1f) - 0.5f);
+      float verticalAngle = verticalAngleRange * (Random.Range(0f, 1f) - 0.5f);
+      Vector3 direction = Quaternion.Euler(new Vector3(verticalAngle, horizontalAngle, 0)) * Vector3.forward;
+      direction = front * (Quaternion.FromToRotation(Vector3.forward, toTarget) * direction);
+
+      // Random distance between min and max
+      float distance = Random.Range(0f, 1f) * (maxDistance - minDistance) + minDistance;
+
+      // If we can move there, do it
+      Vector3 destination = transform.position + direction * distance;
+      if (!IsPathBlocked(destination))
+      {
+        m_autopilot.FlyTo(destination, target, OnComplete);
+        DrawLine(new Vector3[] { transform.position, destination });
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private bool TryBackOffPattern(Vector3 toTarget)
@@ -210,9 +255,7 @@ public class HelicopterEnemy : MonoBehaviour
         }
         break;
       case State.EngageDecide:
-        int decision = Random.Range(0, 8);
-        //TODO next: strafe left/right pattern, attack multiple points pattern (fly to left of target, then front, then right),
-        // attack single point, orbit once
+        int decision = Random.Range(0, 9);
         //TODO next: collisions should finish autopilot behavior
         //TODO next: collisions with spatial mesh should produce Jungle Strike-like bounce effect
         //TODO next: add gun firing and missiles -- may need to make helicopter pitch and roll less for accurate firing
@@ -277,6 +320,15 @@ public class HelicopterEnemy : MonoBehaviour
             m_autopilot.throttle = 0.75f;
             m_state = State.WaitForCompletion;
             break;
+          case 8:
+            Debug.Log("ENGAGE: Fly to point");
+            //TODO: this really needs to be re-thought. It oscillates too much between forward and back.
+            if (TryAttackPatternFlyToPoint(toTarget, distanceToTarget, () => m_state = State.EngageDecide))
+            {
+              m_autopilot.throttle = 0.75f;
+              m_state = State.WaitForCompletion;
+            }
+            break;
         }
         break;
       case State.WaitForCompletion:
@@ -319,7 +371,7 @@ public class HelicopterEnemy : MonoBehaviour
           //m_autopilot.OrbitAndLookAt(target.transform, 0, 1.5f, 10);
           //m_autopilot.throttle = 3;
 
-          if (TryAttackPatternAboveAndBehind(toTarget))
+          if (TryAttackPatternAboveAndBehind(toTarget, () => { }))
             m_autopilot.throttle = 1.5f;
           else
             m_autopilot.throttle = 1;
