@@ -208,9 +208,12 @@ public class HelicopterAutopilot: MonoBehaviour
       GoTo(position);
       yield return null;
     }
-    Halt();
     if (OnComplete != null)
+    {
+      yield return null;  // always ensure one frame elapsed before callback
       OnComplete();
+    }
+    Halt();
   }
 
   private IEnumerator FlyToPositionCoroutine(Vector3 targetPosition, System.Action OnComplete)
@@ -223,9 +226,12 @@ public class HelicopterAutopilot: MonoBehaviour
       if (Time.time - startTime >= timeout)
         break;
     }
-    Halt();
     if (OnComplete != null)
-      OnComplete(); 
+    {
+      yield return null;  // always ensure one frame elapsed before callback
+      OnComplete();
+    }
+    Halt();
   }
 
   private IEnumerator FollowCoroutine(Transform target, float distance, System.Action OnComplete)
@@ -239,9 +245,12 @@ public class HelicopterAutopilot: MonoBehaviour
       UpdateControls();
       yield return null;
     }
-    Halt();
     if (OnComplete != null)
+    {
+      yield return null;  // always ensure one frame elapsed before callback
       OnComplete();
+    }
+    Halt();
   }
 
   private IEnumerator FollowPathCoroutine(Vector3[] waypoints, System.Action OnComplete)
@@ -257,9 +266,12 @@ public class HelicopterAutopilot: MonoBehaviour
           break;
       }
     }
-    Halt();    
     if (OnComplete != null)
+    {
+      yield return null;  // always ensure one frame elapsed before callback
       OnComplete();
+    }
+    Halt();
   }
 
   public delegate Vector3 UpdateVectorCallback(float deltaTime);
@@ -298,9 +310,12 @@ public class HelicopterAutopilot: MonoBehaviour
 
         if (now >= timeoutTime)
         {
-          Halt();
           if (OnComplete != null)
+          {
+            yield return null;  // always ensure one frame elapsed before callback
             OnComplete();
+          }
+          Halt();
           yield break;
         }
 
@@ -323,9 +338,12 @@ public class HelicopterAutopilot: MonoBehaviour
           }
 
           // Need to abort
-          Halt();
           if (OnComplete != null)
+          {
+            yield return null;  // always ensure one frame elapsed before callback
             OnComplete();
+          }
+          Halt();
           yield break;
         }
 
