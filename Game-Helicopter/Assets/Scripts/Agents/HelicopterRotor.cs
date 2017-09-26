@@ -5,13 +5,16 @@ using UnityEngine;
 public class HelicopterRotor: MonoBehaviour
 {
   [Tooltip("Angular velocity in degrees/sec along each Euler axis.")]
-  public Vector3 angularVelocity = 360 * Vector3.up;
+  public float angularVelocity = 360;
 
-  [Tooltip("Object to rotate about Y axis.")]
+  [Tooltip("Axis of rotation.")]
+  public Vector3 rotationAxis = Vector3.up;
+
+  [Tooltip("Object to rotate.")]
   public Transform rotor;
 
   private void Update()
   {
-    rotor.Rotate(Time.deltaTime * angularVelocity);
+    rotor.Rotate(Time.deltaTime * angularVelocity * rotationAxis);
   }
 }
