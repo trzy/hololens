@@ -186,7 +186,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: b505ee2f71ef7ba42b12b476fd6c2bd9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -218,7 +218,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: b505ee2f71ef7ba42b12b476fd6c2bd9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -250,7 +250,7 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: b505ee2f71ef7ba42b12b476fd6c2bd9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -311,7 +311,7 @@ BoxCollider:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1562602078146906}
-  m_Material: {fileID: 13400000, guid: f9b420b3410980a419d92c9256de2124, type: 2}
+  m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -442,9 +442,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   azimuthalTrackingObject: {fileID: 4595108739386136}
-  altitudeTrackingObject: {fileID: 4792489349794648}
-  azimuthalTrackingSpeed: 18
+  verticalTrackingObject: {fileID: 0}
+  azimuthalSpeed: 18
+  verticalSpeed: 18
+  maxVerticalAngle: 60
+  minVerticalAngle: 30
   maxErrorDegrees: 2
+  lockDegrees: 10
+  perfectLock: 0
+  lockedOn: 0
 --- !u!195 &195488062139165166
 NavMeshAgent:
   m_ObjectHideFlags: 1
