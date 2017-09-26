@@ -118,6 +118,14 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
     SpatialUnderstandingDllObjectPlacement.Solver_RemoveObject(placementName);
   }
 
+  private Vector3 ClampToMinSize(Vector3 size)
+  {
+    // I don't know why, but there seems to be a minimum size in each dimension
+    // below which the solver will fail
+    float epsilon = 1e-3f;
+    return new Vector3(Mathf.Max(0.5f + epsilon, size.x), Mathf.Max(0.1f + epsilon, size.y), Mathf.Max(0.5f + epsilon, size.z));
+  }
+
   private bool TryPlaceObject(
     out SpatialUnderstandingDllObjectPlacement.ObjectPlacementResult placementResult,
     string placementName,
@@ -153,6 +161,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   public bool TryPlaceOnFloor(out string placementName, out Vector3 position, out Quaternion rotation, Vector3 size, List<Rule> rules = null)
   {
+    size = ClampToMinSize(size);
     position = Vector3.zero;
     rotation = Quaternion.identity;
     placementName = "Floor-" + m_uniquePlacementID++;
@@ -169,6 +178,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   public bool TryPlaceOnPlatformEdge(out Vector3 position, Vector3 size, List<Rule> rules = null)
   {
+    size = ClampToMinSize(size);
     position = Vector3.zero;
     string token = "Edge-" + m_uniquePlacementID++;
     //TODO: unsure of what halfDimsBottom really means
@@ -184,6 +194,7 @@ public class PlayspaceManager: HoloToolkit.Unity.Singleton<PlayspaceManager>
 
   public bool TryPlaceInAir(out Vector3 position, out Quaternion rotation, Vector3 size, List<Rule> rules = null)
   {
+    size = ClampToMinSize(size);
     position = Vector3.zero;
     rotation = Quaternion.identity;
     string token = "InAir-" + m_uniquePlacementID++;
