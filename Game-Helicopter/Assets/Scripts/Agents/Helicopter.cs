@@ -1,4 +1,11 @@
-﻿using System.Collections;
+﻿/*
+ * TODO:
+ * -----
+ * - Throttle clamping logic really makes no sense. Probably should just
+ *   multiply Vector2(lateral,longitudinal) directly by throttle value.
+ */
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,6 +35,21 @@ public class Helicopter: MonoBehaviour
       longitudinal = xzControls.y;
     }
 
+    // Three axes for main engine, each ranging from [-1,1]. This computes the
+    // engine power from [0,1] multipled by throttle ([0,throttle], 
+    // effectively).
+    public float EngineMagnitude()
+    {
+      // Altitude is special because -1 is basically freefall (no force),
+      // whereas in other directions, -1 and 1 both indicate full power
+      float altitudeMagnitude = (altitude + 1) * 0.5f;  // [-1,1] -> [0,1]
+
+      // Maximum magnitude of vector is sqrt(3), so we divide by that to scale
+      // to [0,1] (in the case of throttle=1).
+      float invSqrt3 = 1 / 1.7320508075688772935274463415059f;
+      return invSqrt3 * new Vector3(altitudeMagnitude, longitudinal, lateral).magnitude;
+    }
+
     public void Clear()
     {
       longitudinal = 0;
@@ -45,8 +67,11 @@ public class Helicopter: MonoBehaviour
     }
   }
 
-  [Tooltip("Helicopter rotor part.")]
-  public HelicopterRotor rotor;
+  [Tooltip("Helicopter main rotor.")]
+  public HelicopterRotor mainRotor;
+
+  [Tooltip("Helicopter tail rotor.")]
+  public HelicopterRotor tailRotor;
 
   public float heading
   {
@@ -79,27 +104,27 @@ public class Helicopter: MonoBehaviour
 
   private const float GUN_FIRE_PERIOD = 1f / 8f;//1f / 5f;
 
-  private IEnumerator RotorSpeedCoroutine(float targetVelocity, float rampTime)
+  private IEnumerator RotorSpeedCoroutine(HelicopterRotor rotor, float targetVelocity, float rampTime)
   {
-    float startVelocity = rotor.angularVelocity.y;
+    float startVelocity = rotor.angularVelocity;
     float currentVelocity = startVelocity;
     float timeElapsed = 0;
     while (Mathf.Abs(currentVelocity - targetVelocity) > 0)
     {
       currentVelocity = startVelocity + (targetVelocity - startVelocity) * Mathf.Min(timeElapsed / rampTime, 1);
-      rotor.angularVelocity = new Vector3(0, currentVelocity, 0);
+      rotor.angularVelocity = currentVelocity;
       timeElapsed += Time.deltaTime;
       yield return null;
     }
   }
 
-  public void ChangeRotorSpeed(float targetVelocity, float rampTime)
+  public void ChangeRotorSpeed(HelicopterRotor rotor, float targetVelocity, float rampTime)
   {
     if (rotor == null)
       return;
     if (m_rotorSpeedCoroutine != null)
       StopCoroutine(m_rotorSpeedCoroutine);
-    m_rotorSpeedCoroutine = RotorSpeedCoroutine(targetVelocity, rampTime);
+    m_rotorSpeedCoroutine = RotorSpeedCoroutine(rotor, targetVelocity, rampTime);
     StartCoroutine(m_rotorSpeedCoroutine);
   }
 
@@ -227,8 +252,14 @@ public class Helicopter: MonoBehaviour
     //float engineOutput = Mathf.Max(Mathf.Abs(controls.longitudinal), Mathf.Abs(controls.lateral));
     //m_rotorAudioSource.pitch = Mathf.Lerp(1.0f, 1.3f, engineOutput);
 
-    //TODO: variable rotor speed
-    rotor.angularVelocity = new Vector3(0, 5 * 360, 0);
+    // Rotor speed
+    float mainRevolutionsPerSecond = Mathf.Lerp(2.5f, 6, Mathf.Clamp01(controls.EngineMagnitude()));
+    float tailRevolutionsPerSecond = Mathf.Lerp(2.5f, 6, (Mathf.Clamp(controls.rotational, -1, 1) + 1) * 0.5f);
+    if (mainRotor != null)
+      mainRotor.angularVelocity = mainRevolutionsPerSecond * 360;
+    if (tailRotor != null)
+      tailRotor.angularVelocity = tailRevolutionsPerSecond * 360;
+
   }
 
   //private List<Collider> 
@@ -306,7 +337,6 @@ public class Helicopter: MonoBehaviour
 
   private void Start()
   {
-    ChangeRotorSpeed(3, 0);
   }
 
   private void Awake()
