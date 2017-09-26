@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if !UNITY_EDITOR
+using HoloLensXboxController;
+#endif
 
 [RequireComponent(typeof(Helicopter))]
 public class HelicopterPlayer: MonoBehaviour
@@ -120,10 +123,10 @@ public class HelicopterPlayer: MonoBehaviour
   private void UnityEditorUpdate()
   {
 #if UNITY_EDITOR
-    if (Input.GetKey("1"))
-      m_helicopter.ChangeRotorSpeed(3, 5);
-    if (Input.GetKey("2"))
-      m_helicopter.ChangeRotorSpeed(0, 5);
+    //if (Input.GetKey("1"))
+    //  m_helicopter.ChangeRotorSpeed(3, 5);
+    //if (Input.GetKey("2"))
+    //  m_helicopter.ChangeRotorSpeed(0, 5);
     if (Input.GetKey(KeyCode.Z))
       m_controls.Clear();
     if (Input.GetKey(KeyCode.Comma))
