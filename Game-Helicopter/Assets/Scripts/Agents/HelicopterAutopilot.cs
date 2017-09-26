@@ -127,7 +127,7 @@ public class HelicopterAutopilot: MonoBehaviour
     Vector3 targetForward = lookAtPoint - transform.position;
     Vector3 target = MathHelpers.Azimuthal(targetForward);
     Vector3 forward = MathHelpers.Azimuthal(transform.forward);
-    return Mathf.Sign(MathHelpers.CrossY(forward, target)) * Vector3.Angle(forward, target);
+    return Mathf.Sign(-MathHelpers.CrossY(forward, target)) * Vector3.Angle(forward, target);
   }
 
   private bool LookAt(Vector3 lookAtPoint)
