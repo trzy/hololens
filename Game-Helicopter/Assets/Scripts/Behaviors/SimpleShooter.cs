@@ -79,12 +79,9 @@ public class SimpleShooter: MonoBehaviour
   {
     for (int i = 0; i < m_bulletPool.Length; i++)
     {
-      m_bulletPool[i] = Instantiate(bulletPrefab, transform) as Bullet;
-      Vector3 bulletScale = m_bulletPool[i].transform.localScale;
-      Vector3 parentScale = transform.localScale;
-      Vector3 undoScale = new Vector3(bulletScale.x / parentScale.x, bulletScale.y / parentScale.y, bulletScale.z / parentScale.z);
-      m_bulletPool[i].transform.localScale = undoScale;
+      m_bulletPool[i] = Instantiate(bulletPrefab) as Bullet;
       m_bulletPool[i].gameObject.SetActive(false);
+      m_bulletPool[i].GetComponent<IProjectile>().IgnoreCollisions(gameObject);
     }
   }
 }

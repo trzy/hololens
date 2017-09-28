@@ -1013,6 +1013,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainRotor: {fileID: 114289600677843886}
   tailRotor: {fileID: 114427603136284930}
+  muzzle: {fileID: 4534416981674558}
+  gunAudioSource: {fileID: 0}
+  rotorAudioSource: {fileID: 0}
+  bulletPrefab: {fileID: 1745552106899796, guid: 21ba27f13c15c02409b6bf133532e502,
+    type: 2}
 --- !u!114 &114289600677843886
 MonoBehaviour:
   m_ObjectHideFlags: 1

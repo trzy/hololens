@@ -20,6 +20,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4694063801241948}
   - component: {fileID: 64754755362479942}
+  - component: {fileID: 114485038535253816}
   m_Layer: 0
   m_Name: hull_col
   m_TagString: Untagged
@@ -155,6 +156,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4915582251917402}
   - component: {fileID: 64823025810243844}
+  - component: {fileID: 114865348033895256}
   m_Layer: 0
   m_Name: turret_col
   m_TagString: Untagged
@@ -243,6 +245,7 @@ GameObject:
   - component: {fileID: 54756957258020302}
   - component: {fileID: 195226279451331464}
   - component: {fileID: 114068789160768522}
+  - component: {fileID: 114932502506609648}
   - component: {fileID: 114576822808323556}
   - component: {fileID: 114108414265968380}
   - component: {fileID: 114021363519458810}
@@ -1041,7 +1044,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 044db5287edebc248ae329b82902de45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bulletPrefab: {fileID: 114757586292346114, guid: 49179d83737e3fd4ba057949c28b438e,
+  bulletPrefab: {fileID: 114806115041537170, guid: 21ba27f13c15c02409b6bf133532e502,
     type: 2}
   muzzle: {fileID: 4816971595377070}
   timeDelayToFirstFire: 2
@@ -1050,6 +1053,18 @@ MonoBehaviour:
   firingRateHz: 5
   minBurstSize: 1
   maxBurstSize: 5
+--- !u!114 &114485038535253816
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1079043542846290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionHandler: {fileID: 114068789160768522}
 --- !u!114 &114576822808323556
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1079,6 +1094,18 @@ MonoBehaviour:
   target: {fileID: 0}
   targetDistance: 0.5
   secondsBetweenPathChanges: 0
+--- !u!114 &114865348033895256
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1586959713337504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionHandler: {fileID: 114068789160768522}
 --- !u!114 &114896003572882170
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1090,6 +1117,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 576f8b5bdd4553d44a10637d2324c6ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &114932502506609648
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1973914778359626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2c6ffbf7fd3f5a4397366e6878c55c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthPoints: 10
+  projectileLayer:
+    serializedVersion: 2
+    m_Bits: 1073741824
 --- !u!114 &114966746937688640
 MonoBehaviour:
   m_ObjectHideFlags: 1

@@ -83,7 +83,7 @@ public class Helicopter: MonoBehaviour
   public AudioSource rotorAudioSource;
 
   [Tooltip("Bullet prefab to spawn.")]
-  public Bullet bulletPrefab; 
+  public GameObject bulletPrefab; 
 
   public float heading
   {
@@ -103,7 +103,7 @@ public class Helicopter: MonoBehaviour
   private IEnumerator m_rotorSpeedCoroutine = null;
   private Controls m_controls = new Controls(0, 0, 0, 0);
 
-  private Bullet[] m_bulletPool;
+  private GameObject[] m_bulletPool;
   private int m_nextBulletIdx = 0;
   private float m_gunLastFired;
 
@@ -126,15 +126,15 @@ public class Helicopter: MonoBehaviour
       return;
 
     // Reuse a bullet from the pool
-    Bullet bullet = m_bulletPool[m_nextBulletIdx];
-    if (bullet.gameObject.activeSelf)
+    GameObject bullet = m_bulletPool[m_nextBulletIdx];
+    if (bullet.activeSelf)
       return; // no free bullets currently
     m_nextBulletIdx = (m_nextBulletIdx + 1) % m_bulletPool.Length;
 
     // Sets its position and direction and fire
     bullet.transform.position = muzzle.position;
     bullet.transform.rotation = muzzle.rotation;
-    bullet.gameObject.SetActive(true);
+    bullet.SetActive(true);
     m_gunLastFired = Time.time;
     //m_gunAudioSource.Play();
   }
@@ -377,15 +377,12 @@ public class Helicopter: MonoBehaviour
   private void Awake()
   {
     m_rb = GetComponent<Rigidbody>();
-    m_bulletPool = new Bullet[(int)Mathf.Ceil(bulletPrefab.lifeTime / GUN_FIRE_PERIOD) + 1];
+    m_bulletPool = new GameObject[(int)Mathf.Ceil(bulletPrefab.GetComponent<IProjectile>().Lifetime / GUN_FIRE_PERIOD) + 1];
     for (int i = 0; i < m_bulletPool.Length; i++)
     {
-      m_bulletPool[i] = Instantiate(bulletPrefab, transform) as Bullet;
-      Vector3 bulletScale = m_bulletPool[i].transform.localScale;
-      Vector3 parentScale = transform.localScale;
-      Vector3 undoScale = new Vector3(bulletScale.x / parentScale.x, bulletScale.y / parentScale.y, bulletScale.z / parentScale.z);
-      m_bulletPool[i].transform.localScale = undoScale;
-      m_bulletPool[i].gameObject.SetActive(false);
+      m_bulletPool[i] = Instantiate(bulletPrefab);
+      m_bulletPool[i].SetActive(false);
+      m_bulletPool[i].GetComponent<IProjectile>().IgnoreCollisions(gameObject);
     }
     m_gunLastFired = Time.time;
   }
