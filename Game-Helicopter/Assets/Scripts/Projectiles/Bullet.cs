@@ -1,4 +1,15 @@
-﻿using System;
+﻿/*
+ * Requirements:
+ * -------------
+ * - Layer: Projectile
+ * - surfaceHitFXLayers: Set to layers against which collisions will be handled
+ *   here. This will probably only be the spatial mapping layer, for which we
+ *   can generate hit effects.
+ * - Collision Detection: Should be Continuous Dynamic, otherwise bullets will
+ *   pass through surfaces if moving too quickly.
+ */
+
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
