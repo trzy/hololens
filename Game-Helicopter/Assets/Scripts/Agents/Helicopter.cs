@@ -73,6 +73,18 @@ public class Helicopter: MonoBehaviour
   [Tooltip("Helicopter tail rotor.")]
   public HelicopterRotor tailRotor;
 
+  [Tooltip("Muzzle (bullet spawn point).")]
+  public Transform muzzle;
+
+  [Tooltip("Gun audio source.")]
+  public AudioSource gunAudioSource;
+
+  [Tooltip("Rotor audio source.")]
+  public AudioSource rotorAudioSource;
+
+  [Tooltip("Bullet prefab to spawn.")]
+  public Bullet bulletPrefab; 
+
   public float heading
   {
     get { return transform.eulerAngles.y; } // Euler angle is safe here; equivalent to manual projection of forward onto xz plane
@@ -91,6 +103,10 @@ public class Helicopter: MonoBehaviour
   private IEnumerator m_rotorSpeedCoroutine = null;
   private Controls m_controls = new Controls(0, 0, 0, 0);
 
+  private Bullet[] m_bulletPool;
+  private int m_nextBulletIdx = 0;
+  private float m_gunLastFired;
+
   private const float TRANSLATIONAL_ACCELERATION = .06f * 9.81f;
   private const float ALTITUDE_ACCELERATION = .06f * 9.81f;
 
@@ -103,6 +119,25 @@ public class Helicopter: MonoBehaviour
   private const float YAW_CORRECTIVE_TORQUE = MAX_YAW_TORQUE * 4;
 
   private const float GUN_FIRE_PERIOD = 1f / 8f;//1f / 5f;
+
+  public void FireGun()
+  {
+    if (Time.time - m_gunLastFired < GUN_FIRE_PERIOD)
+      return;
+
+    // Reuse a bullet from the pool
+    Bullet bullet = m_bulletPool[m_nextBulletIdx];
+    if (bullet.gameObject.activeSelf)
+      return; // no free bullets currently
+    m_nextBulletIdx = (m_nextBulletIdx + 1) % m_bulletPool.Length;
+
+    // Sets its position and direction and fire
+    bullet.transform.position = muzzle.position;
+    bullet.transform.rotation = muzzle.rotation;
+    bullet.gameObject.SetActive(true);
+    m_gunLastFired = Time.time;
+    //m_gunAudioSource.Play();
+  }
 
   private IEnumerator RotorSpeedCoroutine(HelicopterRotor rotor, float targetVelocity, float rampTime)
   {
@@ -342,5 +377,16 @@ public class Helicopter: MonoBehaviour
   private void Awake()
   {
     m_rb = GetComponent<Rigidbody>();
+    m_bulletPool = new Bullet[(int)Mathf.Ceil(bulletPrefab.lifeTime / GUN_FIRE_PERIOD) + 1];
+    for (int i = 0; i < m_bulletPool.Length; i++)
+    {
+      m_bulletPool[i] = Instantiate(bulletPrefab, transform) as Bullet;
+      Vector3 bulletScale = m_bulletPool[i].transform.localScale;
+      Vector3 parentScale = transform.localScale;
+      Vector3 undoScale = new Vector3(bulletScale.x / parentScale.x, bulletScale.y / parentScale.y, bulletScale.z / parentScale.z);
+      m_bulletPool[i].transform.localScale = undoScale;
+      m_bulletPool[i].gameObject.SetActive(false);
+    }
+    m_gunLastFired = Time.time;
   }
 }

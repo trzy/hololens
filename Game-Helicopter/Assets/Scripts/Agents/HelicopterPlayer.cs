@@ -112,6 +112,8 @@ public class HelicopterPlayer: MonoBehaviour
     m_controls.altitude = ver2;
 
     // Gun
+    if (fire)
+      m_helicopter.FireGun();
     /*
     if (fire && (Time.time - m_gunLastFired >= GUN_FIRE_PERIOD))
     {
