@@ -30,6 +30,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
   public GameObject[] besiegedBuildingPrefab;
+  public GameObject transportHelicopterPrefab;
 
   public float idealDistanceApart = 4;
   public float minDistanceApart = 2;
@@ -72,6 +73,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     for (int i = 0; i < homeBasePrefab.Length; i++)
     {
       homeBaseSizes[i] = Footprint.Measure(homeBasePrefab[i]);
+      Debug.Log("home base " + i + " size: " + homeBaseSizes[i].ToString("F2"));
     }
     for (int i = 0; i < besiegedBuildingPrefab.Length; i++)
     {
@@ -108,9 +110,13 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
                 // Instantiate the buildings later on main thread
                 return () =>
                 {
+                  // Place buildings
                   Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart);
                   m_besiegedBuilding = Instantiate(besiegedBuildingPrefab[i], position1, rotation1);
-                  m_homeBase = Instantiate(homeBasePrefab[j], position2, rotation2);
+                  m_homeBase = Instantiate(homeBasePrefab[j], position2 - Vector3.up * homeBaseSizes[j].y * 0.5f, rotation2);
+
+                  // Place transport helicopter
+                  Instantiate(transportHelicopterPrefab, m_homeBase.transform.Find("LandingPoint").position, rotation2);
                 };
               }
               else if (placed1)

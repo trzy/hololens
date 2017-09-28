@@ -230,6 +230,12 @@ Prefab:
       propertyPath: m_RootOrder
       value: 7
       objectReference: {fileID: 0}
+    - target: {fileID: 114138422416279778, guid: 660ab9a1a4773114c9f7896d3e44bedf,
+        type: 2}
+      propertyPath: bulletPrefab
+      value: 
+      objectReference: {fileID: 1745552106899796, guid: 21ba27f13c15c02409b6bf133532e502,
+        type: 2}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 660ab9a1a4773114c9f7896d3e44bedf, type: 2}
   m_IsPrefabParent: 0
@@ -472,7 +478,7 @@ Prefab:
     - target: {fileID: 114104542529742446, guid: 5748bd6759d77d8409df5d42be6ef349,
         type: 2}
       propertyPath: visualizationMode
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 114104542529742446, guid: 5748bd6759d77d8409df5d42be6ef349,
         type: 2}
@@ -786,13 +792,16 @@ MonoBehaviour:
   tunnelPrefab: {fileID: 114891703950916172, guid: c0fcfdfc09d70384ca973711fc01eb8b,
     type: 2}
   homeBasePrefab:
-  - {fileID: 1898659249554414, guid: 9bd6ef65660f45e44b5146f72815fa87, type: 2}
-  - {fileID: 1451633366844476, guid: ded74ce861c191946ac6b38ac9500eff, type: 2}
-  - {fileID: 1036948162601298, guid: 39131dc114d673d4dae4d3b2246cc815, type: 2}
+  - {fileID: 1255975333679796, guid: deea04d4ed5446d41be5d8bd8a24a314, type: 2}
+  - {fileID: 1176597987587804, guid: dc1a423f0f9532f4b8171134308146e2, type: 2}
+  - {fileID: 1658335370379164, guid: a39bdf94d3ea30447bdb10fd780248d5, type: 2}
+  - {fileID: 1017151667570852, guid: 2a369ed5dbd6a024985864035eaafdac, type: 2}
   besiegedBuildingPrefab:
   - {fileID: 1491877365881328, guid: 5c826ab45dc364748831ff90d22eaf9e, type: 2}
   - {fileID: 1361636558563896, guid: 1788b96cb2ded454bbbfbffdc07e1815, type: 2}
   - {fileID: 1567150736236286, guid: 796cc15ba7c338548ab2fb0f7a5c8d9f, type: 2}
+  transportHelicopterPrefab: {fileID: 1739600185753284, guid: 7ab9283bc14e749499967394e2b18fba,
+    type: 2}
   idealDistanceApart: 4
   minDistanceApart: 2
   distanceStepSize: 0.25
