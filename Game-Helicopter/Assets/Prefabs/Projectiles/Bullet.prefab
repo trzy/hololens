@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4873644960601560}
   - component: {fileID: 33950057971287750}
   - component: {fileID: 23483737873646648}
-  m_Layer: 0
+  m_Layer: 30
   m_Name: QuadVert
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39,7 +39,7 @@ GameObject:
   - component: {fileID: 33716607955546950}
   - component: {fileID: 23180165113056234}
   - component: {fileID: 114580974575048860}
-  m_Layer: 0
+  m_Layer: 30
   m_Name: QuadFront
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -56,7 +56,8 @@ GameObject:
   - component: {fileID: 4049205619376356}
   - component: {fileID: 54369698296150124}
   - component: {fileID: 114806115041537170}
-  m_Layer: 0
+  - component: {fileID: 136179762000241086}
+  m_Layer: 30
   m_Name: Bullet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -73,7 +74,7 @@ GameObject:
   - component: {fileID: 4204408671818658}
   - component: {fileID: 33965732427999598}
   - component: {fileID: 23452506921147804}
-  m_Layer: 0
+  m_Layer: 30
   m_Name: QuadHor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -265,7 +266,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 2
 --- !u!114 &114580974575048860
 MonoBehaviour:
@@ -290,8 +291,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ff8f909c5648604cbe898650984853c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitPoints: 1
   velocity: 6
-  lifeTime: 3
+  lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
     m_Bits: 2147483648
+--- !u!136 &136179762000241086
+CapsuleCollider:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1745552106899796}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 0.25
+  m_Height: 0.25
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: 0.375}
