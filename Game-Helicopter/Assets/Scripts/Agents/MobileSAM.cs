@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MobileSAM: MonoBehaviour
+public class MobileSAM: MonoBehaviour, ITarget
 {
   public enum InitialBehavior
   {
@@ -30,6 +30,21 @@ public class MobileSAM: MonoBehaviour
   public float startTrackDistance = 2;
   public float stopTrackDistance = 3;
 
+  public Transform Target
+  {
+    get
+    {
+      return m_target;
+    }
+
+    set
+    {
+      m_target = value;
+      follow.target = m_target;
+      track.target = m_target;
+    }
+  }
+
   private MonoBehaviour[] m_allBehaviors;
   private MonoBehaviour[] m_navigationBehaviors;
   private Vector3 m_homePosition;
@@ -54,6 +69,9 @@ public class MobileSAM: MonoBehaviour
 
   private void FixedUpdate()
   {
+    if (m_target == null)
+      return;
+
     float distance = MathHelpers.Azimuthal(transform.position - m_target.position).magnitude;
 
     if (distance < startFollowDistance)
@@ -100,14 +118,6 @@ public class MobileSAM: MonoBehaviour
 
   private void Start()
   {
-    moveTo = GetComponent<MoveTo>();
-    patrol = GetComponent<Patrol>();
-    follow = GetComponent<Follow>();
-    follow.target = Camera.main.transform;
-    scan = GetComponent<Scan>();
-    track = GetComponent<Track>();
-    track.target = Camera.main.transform;
-
     m_allBehaviors = new MonoBehaviour[] { moveTo, patrol, follow, scan, track };
     m_navigationBehaviors = new MonoBehaviour[] { moveTo, patrol, follow };
     DisableAllBehaviors();
@@ -122,8 +132,5 @@ public class MobileSAM: MonoBehaviour
     }
 
     m_homePosition = transform.position;
-
-    //TODO: add a SetTarget() method
-    m_target = Camera.main.transform;
   }
 }

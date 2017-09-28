@@ -48,13 +48,16 @@ public class Track: MonoBehaviour
 
   private void Update()
   {
+    if (target == null)
+      return;
+
     bool hasVerticalObject = false;
     bool azimuthalLock = false;
     bool azimuthalPerfectLock = false;
     bool verticalLock = false;
     bool verticalPerfectLock = false;
 
-    Vector3 targetPosition = target == null ? Camera.main.transform.position : target.position;
+    Vector3 targetPosition = target.position;
 
     if (azimuthalTrackingObject != null)
     {

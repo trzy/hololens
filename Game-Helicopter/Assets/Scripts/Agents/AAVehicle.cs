@@ -8,7 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(Scan))]
 [RequireComponent(typeof(Track))]
 [RequireComponent(typeof(ResetTurret))]
-public class AAVehicle: MonoBehaviour
+public class AAVehicle: MonoBehaviour, ITarget
 {
   public enum DefaultNavigationBehavior
   {
@@ -36,13 +36,27 @@ public class AAVehicle: MonoBehaviour
   public float stopFollowingDistance = 2;
   public float startTrackDistance = 2;
   public float stopTrackDistance = 3;
+
+  public Transform Target
+  {
+    get
+    {
+      return m_target;
+    }
+
+    set
+    {
+      m_target = value;
+      follow.target = m_target;
+      track.target = m_target;
+    }
+  }
   
   private MonoBehaviour[] m_navigationBehaviors;
   private MonoBehaviour[] m_turretBehaviors;
   private Vector3 m_homePosition;
 
   private Transform m_target = null;
-
   private bool m_lockedOnTarget = false;
 
   private void DisableNavigationBehaviorsExcept(MonoBehaviour doNotDisable = null)
@@ -93,6 +107,9 @@ public class AAVehicle: MonoBehaviour
 
   private void FixedUpdate()
   {
+    if (m_target == null)
+      return;
+
     float distance = MathHelpers.Azimuthal(transform.position - m_target.position).magnitude;
 
     if (distance < startFollowingDistance)
@@ -138,18 +155,6 @@ public class AAVehicle: MonoBehaviour
 
   private void Start()
   {
-    /*
-    moveTo = GetComponent<MoveTo>();
-    patrol = GetComponent<Patrol>();
-    follow = GetComponent<Follow>();
-    */
-    follow.target = Camera.main.transform;
-    //scan = GetComponent<Scan>();
-    //track = GetComponent<Track>();
-    track.target = Camera.main.transform;
-    //resetTurret = GetComponent<ResetTurret>();
-    //fire = GetComponent<MonoBeha>();
-
     m_navigationBehaviors = new MonoBehaviour[] { moveTo, patrol, follow };
     m_turretBehaviors = new MonoBehaviour[] { scan, track, resetTurret };
     DisableNavigationBehaviorsExcept();
@@ -159,9 +164,6 @@ public class AAVehicle: MonoBehaviour
     fire.enabled = false;
 
     m_homePosition = transform.position;
-
-    //TODO: add a SetTarget() method
-    m_target = Camera.main.transform;
   }
 
   private void Awake()

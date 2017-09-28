@@ -3,10 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(HelicopterAutopilot))]
-public class HelicopterEnemy : MonoBehaviour
+public class HelicopterEnemy : MonoBehaviour, ITarget
 {
-  public Transform target;
+  public Transform Target
+  {
+    get
+    {
+      return m_target;
+    }
 
+    set
+    {
+      m_target = value;
+    }
+  }
+
+  private Transform m_target;
   private HelicopterAutopilot m_autopilot;
   private float m_boundingRadius;
 
@@ -65,7 +77,7 @@ public class HelicopterEnemy : MonoBehaviour
     Vector3[] positions = new Vector3[2];
 
     // Do we have enough clearance directly above/below to fly through?
-    float clearance = FindClearance(target.position, verticalDirection);
+    float clearance = FindClearance(m_target.position, verticalDirection);
     if (clearance < minDistanceVertical)
     {
       Debug.Log("VERTICAL: NO CLEARANCE: " + clearance);
@@ -75,7 +87,7 @@ public class HelicopterEnemy : MonoBehaviour
     // Choose a point halfway between the minimum vertical distance and
     // clearance
     float mid = 0.5f * (minDistanceVertical + clearance);
-    positions[0] = target.position + verticalDirection * mid;
+    positions[0] = m_target.position + verticalDirection * mid;
     if (IsPathBlocked(positions[0]))
     {
       Debug.Log("VERTICAL: PATH BLOCKED");
@@ -89,7 +101,7 @@ public class HelicopterEnemy : MonoBehaviour
     for (float angle = -90; angle < 90; angle += 20)
     {
       Vector3 direction = Quaternion.Euler(angle * Vector3.up) * directionBehind;
-      clearance = FindClearance(target.position, direction);
+      clearance = FindClearance(m_target.position, direction);
       if (clearance > bestClearance)
       {
         bestDirection = direction;
@@ -106,7 +118,7 @@ public class HelicopterEnemy : MonoBehaviour
 
     // Determine point, ideally in between the min and max distance
     mid = 0.5f * (minDistanceBehind + bestClearance);
-    positions[1] = target.position + bestDirection * mid;
+    positions[1] = m_target.position + bestDirection * mid;
     if (IsPathBlocked(positions[1]))
     {
       Debug.Log("REAR: PATH BLOCKED");
@@ -115,7 +127,7 @@ public class HelicopterEnemy : MonoBehaviour
 
     Debug.Log("LAUNCHING ATTACK PATTERN");
     DrawLine(new Vector3[] { transform.position, positions[0], positions[1] });
-    m_autopilot.FollowPathAndLookAt(positions, target, OnComplete);
+    m_autopilot.FollowPathAndLookAt(positions, m_target, OnComplete);
     return true;
   }
 
@@ -140,7 +152,7 @@ public class HelicopterEnemy : MonoBehaviour
     int firstIdx = Random.Range(0, 2) == 0 ? 0 : 1;
     waypoints[firstIdx ^ 0] = position + right * d1;
     waypoints[firstIdx ^ 1] = position - right * d2;
-    m_autopilot.FollowPathAndLookAt(waypoints, target, OnComplete);
+    m_autopilot.FollowPathAndLookAt(waypoints, m_target, OnComplete);
     DrawLine(waypoints);
     return true;
   }
@@ -181,7 +193,7 @@ public class HelicopterEnemy : MonoBehaviour
       Vector3 destination = transform.position + direction * distance;
       if (!IsPathBlocked(destination))
       {
-        m_autopilot.FlyTo(destination, target, OnComplete);
+        m_autopilot.FlyTo(destination, m_target, OnComplete);
         DrawLine(new Vector3[] { transform.position, destination });
         return true;
       }
@@ -215,17 +227,17 @@ public class HelicopterEnemy : MonoBehaviour
     float minDistance = 0.5f * (margin + (clearance - margin));
     float maxDistance = clearance - margin;
     float distance = UnityEngine.Random.Range(minDistance, maxDistance);
-    m_autopilot.FlyTo(transform.position + distance * back, target);
+    m_autopilot.FlyTo(transform.position + distance * back, m_target);
     DrawLine(new Vector3[] { transform.position, transform.position + distance * back });
     return true;
   }
 
   private void FixedUpdate()
   {
-    if (target == null)
+    if (m_target == null)
       return;
 
-    Vector3 toTarget = target.position - transform.position;
+    Vector3 toTarget = m_target.position - transform.position;
     float distanceToTarget = toTarget.magnitude;
 
     State currentState = m_state;
@@ -264,19 +276,19 @@ public class HelicopterEnemy : MonoBehaviour
           default:
           case 0:
             Debug.Log("ENGAGE: Follow");
-            m_autopilot.Follow(target, 1.75f, () => m_state = State.EngageDecide);
+            m_autopilot.Follow(m_target, 1.75f, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 0.6f;
             m_state = State.WaitForCompletion;
             break;
           case 1:
             Debug.Log("ENGAGE: Hover-and-match-altitude");
-            m_autopilot.MatchAltitudeAndLookAt(target, () => m_state = State.EngageDecide);
+            m_autopilot.MatchAltitudeAndLookAt(m_target, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 0.35f;
             m_state = State.WaitForCompletion;
             break;
           case 2:
             Debug.Log("ENGAGE: Hover");
-            m_autopilot.HoverAndLookAt(target, () => m_state = State.EngageDecide);
+            m_autopilot.HoverAndLookAt(m_target, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 1;
             m_state = State.WaitForCompletion;
             break;
@@ -300,7 +312,7 @@ public class HelicopterEnemy : MonoBehaviour
             break;
           case 5:
             Debug.Log("ENGAGE: Strafe Player Altitude");
-            if (TryAttackPatternStrafe(target.position.y, () => m_state = State.EngageDecide))
+            if (TryAttackPatternStrafe(m_target.position.y, () => m_state = State.EngageDecide))
             {
               m_autopilot.throttle = 0.75f;
               m_state = State.WaitForCompletion;
@@ -316,7 +328,7 @@ public class HelicopterEnemy : MonoBehaviour
             break;
           case 7:
             Debug.Log("ENGAGE: Orbit");
-            m_autopilot.OrbitAndLookAt(target, 0, 1.85f, 10, () => m_state = State.EngageDecide);
+            m_autopilot.OrbitAndLookAt(m_target, 0, 1.85f, 10, () => m_state = State.EngageDecide);
             m_autopilot.throttle = 0.75f;
             m_state = State.WaitForCompletion;
             break;
@@ -339,10 +351,10 @@ public class HelicopterEnemy : MonoBehaviour
 
   private void OldFixedUpdate()
   {
-    if (target == null)
+    if (m_target == null)
       return;
 
-    Vector3 toTarget = target.position - transform.position;
+    Vector3 toTarget = m_target.position - transform.position;
     float distanceToTarget = toTarget.magnitude;
 
     if (!m_engagingTarget)

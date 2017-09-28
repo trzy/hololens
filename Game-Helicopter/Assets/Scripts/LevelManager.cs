@@ -60,6 +60,11 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   private GuidanceArrow m_guidanceArrow;
   private HUDIndicator m_hudIndicator;
 
+  private void SetTarget(GameObject agent, GameObject target)
+  {
+    agent.GetComponent<ITarget>().Target = target.transform;
+  }
+
   private void PlaceBuildings()
   {
     Vector3[] homeBaseSizes = new Vector3[homeBasePrefab.Length];
@@ -126,6 +131,8 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   {
     PlayspaceManager pm = PlayspaceManager.Instance;
 
+    string placementName;
+
     Vector3 agent1Size = Footprint.Measure(agentPrefab1);
     float agent1Width = Mathf.Max(agent1Size.x, agent1Size.z);
     for (int i = 0; i < 3; i++)
@@ -141,7 +148,8 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
               NavMeshHit hit;
               if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
                 position = hit.position;
-              Instantiate(agentPrefab1, position, Quaternion.identity);
+              GameObject agent = Instantiate(agentPrefab1, position, Quaternion.identity);
+              SetTarget(agent, playerHelicopter);
             };
           }
           return null;
@@ -150,12 +158,13 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
 
     Vector3 agent2Size = Footprint.Measure(agentPrefab2);
     float agent2Width = Mathf.Max(agent2Size.x, agent2Size.z);
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 2; i++)
     {
       TaskManager.Instance.Schedule(
         () =>
         {
           Vector3 position;
+          Quaternion rotation;
           if (pm.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agent2Width))
           {
             return () =>
@@ -164,7 +173,18 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
               if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
                 position = hit.position;
               GameObject agent = Instantiate(agentPrefab2, position, Quaternion.identity);
-              agent.GetComponent<Follow>().target = Camera.main.transform;
+              SetTarget(agent, playerHelicopter);
+            };
+          }
+          else if (pm.TryPlaceOnFloor(out placementName, out position, out rotation, agent2Size))
+          {
+            return () =>
+            {
+              NavMeshHit hit;
+              if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+                position = hit.position;
+              GameObject agent = Instantiate(agentPrefab2, position, rotation);
+              SetTarget(agent, playerHelicopter);
             };
           }
           return null;
@@ -179,6 +199,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
         () =>
         {
           Vector3 position;
+          Quaternion rotation;
           if (pm.TryPlaceOnPlatform(out position, 0.25f, 1.5f, 1.5f * agent3Width))
           {
             return () =>
@@ -187,7 +208,18 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
               if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
                 position = hit.position;
               GameObject agent = Instantiate(agentPrefab3, position, Quaternion.identity);
-              agent.GetComponent<Follow>().target = Camera.main.transform;
+              SetTarget(agent, playerHelicopter);
+            };
+          }
+          else if (pm.TryPlaceOnFloor(out placementName, out position, out rotation, agent3Size))
+          {
+            return () =>
+            {
+              NavMeshHit hit;
+              if (NavMesh.SamplePosition(position, out hit, 2, NavMesh.AllAreas))
+                position = hit.position;
+              GameObject agent = Instantiate(agentPrefab3, position, rotation);
+              SetTarget(agent, playerHelicopter);
             };
           }
           return null;
@@ -208,7 +240,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
             return () =>
             {
               HelicopterEnemy enemyHelicopter = Instantiate(enemyHelicopterPrefab1, position, rotation);
-              enemyHelicopter.target = playerHelicopter.transform;
+              SetTarget(enemyHelicopter.gameObject, playerHelicopter);
             };
           }
           return () => { Debug.Log("Failed to place enemy helicopter"); };
