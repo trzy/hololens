@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4525607294291896}
   - component: {fileID: 33060259213365916}
   - component: {fileID: 23860789463091132}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GunTurret
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ GameObject:
   - component: {fileID: 114898481972802842}
   - component: {fileID: 114289600677843886}
   - component: {fileID: 114427603136284930}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: PlayerHelicopter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -62,7 +62,7 @@ GameObject:
   - component: {fileID: 4944366519310914}
   - component: {fileID: 33744316713357678}
   - component: {fileID: 23233655285223026}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_R_BL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -79,7 +79,7 @@ GameObject:
   - component: {fileID: 4258614246599190}
   - component: {fileID: 33220865766686338}
   - component: {fileID: 23427345729748100}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_L_TL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -96,8 +96,23 @@ GameObject:
   - component: {fileID: 4229672467891476}
   - component: {fileID: 33348181077176712}
   - component: {fileID: 23336869407811106}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_R_TL
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!1 &1517153188591904
+GameObject:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 4534416981674558}
+  m_Layer: 9
+  m_Name: Muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -113,7 +128,7 @@ GameObject:
   - component: {fileID: 4327124191880226}
   - component: {fileID: 33746054761443166}
   - component: {fileID: 23164164952154326}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: MainRotor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -130,7 +145,7 @@ GameObject:
   - component: {fileID: 4578312272213280}
   - component: {fileID: 33323865393753302}
   - component: {fileID: 23714699524025086}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -147,7 +162,7 @@ GameObject:
   - component: {fileID: 4650979903869670}
   - component: {fileID: 33723579121365522}
   - component: {fileID: 23162565969151160}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: TailRotor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -164,7 +179,7 @@ GameObject:
   - component: {fileID: 4491324502677880}
   - component: {fileID: 33607533564919164}
   - component: {fileID: 23197523189330118}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_L_BL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -181,7 +196,7 @@ GameObject:
   - component: {fileID: 4438431932219816}
   - component: {fileID: 33433928573685020}
   - component: {fileID: 23905842123320292}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_R_BR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -198,7 +213,7 @@ GameObject:
   - component: {fileID: 4215849558790858}
   - component: {fileID: 33284749844998878}
   - component: {fileID: 23467793926491538}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_R_TR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -215,7 +230,7 @@ GameObject:
   - component: {fileID: 4287320646561922}
   - component: {fileID: 33743756741726568}
   - component: {fileID: 23650884593240156}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_L_BR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -232,7 +247,7 @@ GameObject:
   - component: {fileID: 4327731524371630}
   - component: {fileID: 33666618541840782}
   - component: {fileID: 23608851754678374}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Rocket_L_TR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -357,6 +372,19 @@ Transform:
   m_Father: {fileID: 4727694676752886}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &4534416981674558
+Transform:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1517153188591904}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.029, z: 1.05}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 4578312272213280}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4578312272213280
 Transform:
   m_ObjectHideFlags: 1
@@ -366,7 +394,8 @@ Transform:
   m_LocalRotation: {x: 7.1054274e-15, y: 0, z: -0, w: 1}
   m_LocalPosition: {x: -0.0000000010165501, y: -0.29699382, z: -0.086410046}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 4534416981674558}
   m_Father: {fileID: 4525607294291896}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -391,7 +420,7 @@ Transform:
   m_GameObject: {fileID: 1126313553779980}
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 1, y: 0, z: 2}
-  m_LocalScale: {x: 0.08, y: 0.08, z: 0.08}
+  m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
   m_Children:
   - {fileID: 4525607294291896}
   - {fileID: 4327124191880226}
