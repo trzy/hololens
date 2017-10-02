@@ -136,7 +136,8 @@ public class Helicopter: MonoBehaviour
     bullet.transform.rotation = muzzle.rotation;
     bullet.SetActive(true);
     m_gunLastFired = Time.time;
-    //m_gunAudioSource.Play();
+    gunAudioSource.Stop();
+    gunAudioSource.Play();
   }
 
   private IEnumerator RotorSpeedCoroutine(HelicopterRotor rotor, float targetVelocity, float rampTime)

@@ -6,6 +6,7 @@ public class SimpleShooter: MonoBehaviour
 {
   public Bullet bulletPrefab;
   public Transform muzzle;
+  public AudioSource fireAudio;
   public float timeDelayToFirstFire = 2;
   public float minTimeDelayBetweenBursts = 1;
   public float maxTimeDelayBetweenBursts = 3;
@@ -66,6 +67,11 @@ public class SimpleShooter: MonoBehaviour
     bullet.transform.position = muzzle.position;
     bullet.transform.rotation = muzzle.rotation;
     bullet.gameObject.SetActive(true);
+    if (fireAudio != null)
+    {
+      fireAudio.Stop();
+      fireAudio.Play();
+    }
   }
   
   private void OnEnable()
