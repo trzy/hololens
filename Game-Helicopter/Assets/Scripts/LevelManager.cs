@@ -30,6 +30,7 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
   public HiddenTunnel tunnelPrefab;
   public GameObject[] homeBasePrefab;
   public GameObject[] besiegedBuildingPrefab;
+  public GameObject homeBaseControlTowerPrefab;
   public GameObject transportHelicopterPrefab;
 
   public float idealDistanceApart = 4;
@@ -66,6 +67,13 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     agent.GetComponent<ITarget>().Target = target.transform;
   }
 
+  private bool PlaceBuildingNear(out Vector3 placedPosition, out Quaternion placedRotation, Vector3 buildingSize, Vector3 nearToPosition, float radius)
+  {
+    string name;
+    List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>() { PlayspaceManager.Rule.Nearby(nearToPosition, 0, radius) };
+    return PlayspaceManager.Instance.TryPlaceOnFloor(out name, out placedPosition, out placedRotation, buildingSize, rules);
+  }
+
   private void PlaceBuildings()
   {
     Vector3[] homeBaseSizes = new Vector3[homeBasePrefab.Length];
@@ -73,13 +81,14 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
     for (int i = 0; i < homeBasePrefab.Length; i++)
     {
       homeBaseSizes[i] = Footprint.Measure(homeBasePrefab[i]);
-      Debug.Log("home base " + i + " size: " + homeBaseSizes[i].ToString("F2"));
     }
     for (int i = 0; i < besiegedBuildingPrefab.Length; i++)
     {
       besiegedBuildingSizes[i] = Footprint.Measure(besiegedBuildingPrefab[i]);
     }
-    
+
+    Vector3 homeBaseControlTowerSize = Footprint.Measure(homeBaseControlTowerPrefab);
+
     //TODO: query playspace alignment and iterate over a large radius from playspace center for first building
     //      in order to ensure that it is placed somewhere on the edge of playspace.
 
@@ -96,24 +105,34 @@ public class LevelManager: HoloToolkit.Unity.Singleton<LevelManager>
               string name2;
               Vector3 position1 = Vector3.zero;
               Vector3 position2 = Vector3.zero;
+              Vector3 homeBaseControlTowerPosition = Vector3.zero;
               Quaternion rotation1;
               Quaternion rotation2;
+              Quaternion homeBaseControlTowerRotation;
+
               bool placed1 = PlayspaceManager.Instance.TryPlaceOnFloor(out name1, out position1, out rotation1, besiegedBuildingSizes[i]);
+
               List<PlayspaceManager.Rule> rules = new List<PlayspaceManager.Rule>() { PlayspaceManager.Rule.AwayFrom(position1, distanceApart) };
               bool placed2 = PlayspaceManager.Instance.TryPlaceOnFloor(out name2, out position2, out rotation2, homeBaseSizes[j], rules);
+
               if (placed1 && placed2)
               {
                 // Record positions so that subsequent dependent placement queries can use them
                 m_besiegedBuildingPosition = position1;
                 m_homeBasePosition = position2;
 
+                // Try to place air control tower near home base
+                bool placedHomeBaseControlTower = PlaceBuildingNear(out homeBaseControlTowerPosition, out homeBaseControlTowerRotation, homeBaseControlTowerSize, m_homeBasePosition, 1);
+
                 // Instantiate the buildings later on main thread
                 return () =>
                 {
                   // Place buildings
-                  Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart);
+                  Debug.Log("Building placement results: i=" + i + ", j=" + j + ", distanceApart=" + distanceApart + (placedHomeBaseControlTower ? ", tower placed" : ", tower failed"));
                   m_besiegedBuilding = Instantiate(besiegedBuildingPrefab[i], position1, rotation1);
                   m_homeBase = Instantiate(homeBasePrefab[j], position2 - Vector3.up * homeBaseSizes[j].y * 0.5f, rotation2);
+                  if (placedHomeBaseControlTower)
+                    Instantiate(homeBaseControlTowerPrefab, homeBaseControlTowerPosition - Vector3.up * homeBaseControlTowerSize.y * 0.5f, homeBaseControlTowerRotation);
 
                   // Place transport helicopter
                   Instantiate(transportHelicopterPrefab, m_homeBase.transform.Find("LandingPoint").position, rotation2);
