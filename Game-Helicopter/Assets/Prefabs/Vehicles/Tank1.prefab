@@ -23,9 +23,12 @@ GameObject:
   - component: {fileID: 33428909427235668}
   - component: {fileID: 23539083202874042}
   - component: {fileID: 95873780412539916}
+  - component: {fileID: 82485594761964334}
   - component: {fileID: 54587999387280706}
   - component: {fileID: 195350903801760646}
   - component: {fileID: 114698607840259962}
+  - component: {fileID: 114601570597608732}
+  - component: {fileID: 114863371020533628}
   - component: {fileID: 114124971886612442}
   - component: {fileID: 114438337639509262}
   - component: {fileID: 114018692684764656}
@@ -488,6 +491,86 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 3.9611845, y: 4.0960073, z: 9.800451}
   m_Center: {x: 0, y: 2.0378752, z: 0.69988006}
+--- !u!82 &82485594761964334
+AudioSource:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1599122753788684}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 1
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    - serializedVersion: 2
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 2
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 0
 --- !u!95 &95873780412539916
 Animator:
   serializedVersion: 3
@@ -579,6 +662,31 @@ MonoBehaviour:
   scanningSpeed: 18
   clockwise: 1
   lingerTime: 1
+--- !u!114 &114601570597608732
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1599122753788684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2c6ffbf7fd3f5a4397366e6878c55c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthPoints: 10
+  projectileLayer:
+    serializedVersion: 2
+    m_Bits: 1073741824
+  bulletImpactPrefab: {fileID: 198450817143429212, guid: 1fea38d5712aa5f45b4d9d6a33ea0196,
+    type: 2}
+  bulletImpactClips:
+  - {fileID: 8300000, guid: 72eeb90c75081644caaf229818a05f02, type: 3}
+  explosionPrefabs:
+  - {fileID: 198127479680422900, guid: 831ffa62066976042848ac040dcf24ed, type: 2}
+  explosionClips:
+  - {fileID: 8300000, guid: 0ea7e3f7991d4f34781d93e7658bcb24, type: 3}
+  - {fileID: 8300000, guid: 2bb74d452989b0549ba2ca729a4242b3, type: 3}
+  - {fileID: 8300000, guid: d6ffe601e2f69b84dbcfac03cd1122cd, type: 3}
 --- !u!114 &114698607840259962
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -601,6 +709,18 @@ MonoBehaviour:
   stopFollowDistance: 2
   startTrackDistance: 2
   stopTrackDistance: 3
+--- !u!114 &114863371020533628
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1599122753788684}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 603fc7f958f7d4447990de0e9511bd4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  time: 1
 --- !u!195 &195350903801760646
 NavMeshAgent:
   m_ObjectHideFlags: 1

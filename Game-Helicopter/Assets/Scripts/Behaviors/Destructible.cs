@@ -7,6 +7,7 @@
 
 using UnityEngine;
 
+[RequireComponent(typeof(SelfDestruct))]
 public class Destructible : MonoBehaviour
 {
   [Tooltip("Health is how many hit points of damage this object can take before being destroyed.")]
@@ -15,13 +16,36 @@ public class Destructible : MonoBehaviour
   [Tooltip("Which layer projectile objects that can damage us are in. These must all implement IProjectile.")]
   public LayerMask projectileLayer;
 
-  private void SelfDestruct()
+  [Tooltip("Bullet impact particle effect.")]
+  public ParticleSystem bulletImpactPrefab;
+
+  [Tooltip("Bullet impact sound clips.")]
+  public AudioClip[] bulletImpactClips;
+
+  [Tooltip("Explosions when destroyed (a random one will be selected).")]
+  public ParticleSystem[] explosionPrefabs;
+
+  [Tooltip("Explosion sound clips.")]
+  public AudioClip[] explosionClips;
+
+  private AudioSource m_audio;
+
+  private void SelfDestruct(float delay)
   {
     foreach (MonoBehaviour behavior in gameObject.GetComponentsInChildren<MonoBehaviour>())
     {
       behavior.enabled = false;
     }
-    gameObject.SetActive(false);
+
+    foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+    {
+      renderer.enabled = false;
+    }
+
+    SelfDestruct destructor = GetComponent<SelfDestruct>();
+    destructor.time = delay;
+    destructor.enabled = true;
+    //gameObject.SetActive(false);
   }
 
   private void OnCollisionEnter(Collision collision)
@@ -39,11 +63,25 @@ public class Destructible : MonoBehaviour
     if (healthPoints <= 0)
     {
       healthPoints = 0;
-      SelfDestruct();
+      int random = Random.Range(0, explosionPrefabs.Length - 1);
+      if (explosionPrefabs.Length > 0)
+        Instantiate(explosionPrefabs[random], transform.position, transform.rotation);
+      random = Random.Range(0, explosionClips.Length - 1);
+      m_audio.Stop();
+      m_audio.PlayOneShot(explosionClips[random]);
+      SelfDestruct(explosionClips[random].length);
+    }
+    else if (bulletImpactPrefab != null)
+    {
+      Instantiate(bulletImpactPrefab, collision.contacts[0].point, Quaternion.identity);
+      int random = Random.Range(0, bulletImpactClips.Length - 1);
+      m_audio.Stop();
+      m_audio.PlayOneShot(bulletImpactClips[random]);
     }
   }
 
   private void Awake()
   {
+    m_audio = GetComponent<AudioSource>();
   }
 }
