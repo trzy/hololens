@@ -682,7 +682,7 @@ MonoBehaviour:
   bulletImpactClips:
   - {fileID: 8300000, guid: 72eeb90c75081644caaf229818a05f02, type: 3}
   explosionPrefabs:
-  - {fileID: 198127479680422900, guid: 831ffa62066976042848ac040dcf24ed, type: 2}
+  - {fileID: 1685850471855406, guid: a99af6d516e206b46ac9628662dd44ca, type: 2}
   explosionClips:
   - {fileID: 8300000, guid: 0ea7e3f7991d4f34781d93e7658bcb24, type: 3}
   - {fileID: 8300000, guid: 2bb74d452989b0549ba2ca729a4242b3, type: 3}
