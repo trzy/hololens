@@ -1457,6 +1457,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainRotor: {fileID: 114213546026043798}
   tailRotor: {fileID: 114152244203572080}
+  muzzle: {fileID: 0}
+  gunAudioSource: {fileID: 0}
+  rotorAudioSource: {fileID: 0}
+  bulletPrefab: {fileID: 1745552106899796, guid: 21ba27f13c15c02409b6bf133532e502,
+    type: 2}
 --- !u!114 &114742950058322632
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1468,7 +1473,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4514317dbf4b0244b3dd02beb368378, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 0}
 --- !u!120 &120690184458535198
 LineRenderer:
   m_ObjectHideFlags: 1
