@@ -25,6 +25,11 @@ public class MathHelpers
     return Mathf.Lerp(fromDegrees, toDegrees, t);
   }
 
+  private float ExponentialEaseOut(float from, float to, float t, float alpha = -3)
+  {
+    return from + (to - from) * (Mathf.Exp(alpha * t) - 1) / (Mathf.Exp(alpha) - 1);
+  }
+
   public static float CircularEaseOut(float from, float to, float t)
   {
     float t1 = Mathf.Clamp(t, 0, 1) - 1;  // shift curve right by 1
