@@ -101,7 +101,6 @@ public class VolumetricExplosion : MonoBehaviour
     m_material.SetFloat("_Displacement", blastDisplacement);
     m_finalSize = transform.localScale;
     m_startTime = Time.time;
-    Debug.Log("OnEnable => m_finalSize=" + m_finalSize);
   }
 
   private void Start()
