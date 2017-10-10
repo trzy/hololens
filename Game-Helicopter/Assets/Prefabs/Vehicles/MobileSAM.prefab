@@ -85,7 +85,7 @@ GameObject:
   - component: {fileID: 114458850271175942}
   - component: {fileID: 114464960012611918}
   m_Layer: 0
-  m_Name: MobileSAM1
+  m_Name: MobileSAM
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -897,9 +897,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 651bd1138af42944185a983c6efaa964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitPoints: 10
   nozzle: {fileID: 0}
   thrust: 50
-  lifeTime: 3
+  lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
     m_Bits: 2147483648
@@ -914,9 +915,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 651bd1138af42944185a983c6efaa964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitPoints: 10
   nozzle: {fileID: 0}
   thrust: 50
-  lifeTime: 3
+  lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
     m_Bits: 2147483648
@@ -1000,9 +1002,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 651bd1138af42944185a983c6efaa964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitPoints: 10
   nozzle: {fileID: 0}
   thrust: 50
-  lifeTime: 3
+  lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
     m_Bits: 2147483648
@@ -1017,9 +1020,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 651bd1138af42944185a983c6efaa964, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitPoints: 10
   nozzle: {fileID: 0}
   thrust: 50
-  lifeTime: 3
+  lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
     m_Bits: 2147483648
