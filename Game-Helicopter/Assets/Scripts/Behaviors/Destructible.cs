@@ -1,10 +1,15 @@
 ﻿/*
  * Requirements:
  * -------------
+ * - Attach this script to the top-level object.
+ * - A sub-object named "Destroyed" should contain children whose names match
+ *   other sub-objects parented to the top-level node. These are wreckage parts
+ *   that correspond to each "live" part.
  * - projectileLayer: Set this to the projectile layer and make sure all
  *   objects in that layer implement IProjectile.
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(SelfDestruct))]
@@ -31,22 +36,87 @@ public class Destructible : MonoBehaviour
   private AudioSource m_audio;
   private GameObject[] m_explosions;
   private bool m_destroyed = false;
+  private Dictionary<GameObject, GameObject> m_wreckageByPart = new Dictionary<GameObject, GameObject>();
+
+  private void InitWreckage()
+  {
+    Transform wreckageNode = transform.Find("Destroyed");
+    if (wreckageNode == null)
+    {
+      Debug.Log("ERROR: No Destroyed sub-object found.");
+      return;
+    }
+
+    // Find all wreckage parts
+    Dictionary<string, GameObject> wreckageByName = new Dictionary<string, GameObject>();
+    foreach (Transform child in wreckageNode.GetComponentsInChildren<Transform>())
+    {
+      wreckageByName[child.name] = child.gameObject;
+    }
+
+    // Associate each live component with a piece of wreckage if it exists
+    foreach (Transform child in GetComponentsInChildren<Transform>())
+    {
+      GameObject part = child.gameObject;
+      if (!wreckageByName.ContainsValue(part))
+      {
+        // Found something that is not wreckage, see if we can associate it
+        // with a piece of wreckage (which should be named identically)
+        GameObject wreckagePart;
+        if (wreckageByName.TryGetValue(part.name, out wreckagePart))
+          m_wreckageByPart[part] = wreckagePart;
+      }
+    }
+  }
 
   private void SelfDestruct(float delay)
   {
+    //TODO: disable NavMesh agent?
+
+    // Disable NavMeshAgents
+    foreach (UnityEngine.AI.NavMeshAgent agent in gameObject.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())
+    {
+      agent.enabled = false;
+    }
+
+    // Enable all Rigidbodies (make them obey gravity and not be kinematic)
+    foreach (Rigidbody rb in gameObject.GetComponentsInChildren<Rigidbody>())
+    {
+      rb.isKinematic = false;
+      rb.useGravity = true;
+    }
+    
+    // Turn off all scripts
     foreach (MonoBehaviour behavior in gameObject.GetComponentsInChildren<MonoBehaviour>())
     {
       behavior.enabled = false;
     }
 
-    foreach (Renderer renderer in GetComponentsInChildren<Renderer>())
+    // Disable all sub-objects
+    foreach (Transform child in GetComponentsInChildren<Transform>())
     {
-      renderer.enabled = false;
+      if (child.gameObject == gameObject)
+        continue; // do not disable top-level object!
+      child.gameObject.SetActive(false);
+    }
+
+    // Re-enable wreckage and position each piece the same way that the live
+    // counterpart was
+    Transform wreckageNode = transform.Find("Destroyed");
+    if (wreckageNode != null)
+      wreckageNode.gameObject.SetActive(true);
+    foreach (KeyValuePair<GameObject, GameObject> v in m_wreckageByPart)
+    {
+      GameObject part = v.Key;
+      GameObject wreckage = v.Value;
+      wreckage.transform.position = part.transform.position;
+      wreckage.transform.rotation = part.transform.rotation;
+      wreckage.SetActive(true);
     }
 
     SelfDestruct destructor = GetComponent<SelfDestruct>();
     destructor.time = delay;
-    destructor.enabled = true;
+    //destructor.enabled = true;
     //gameObject.SetActive(false);
   }
 
@@ -99,5 +169,6 @@ public class Destructible : MonoBehaviour
       m_explosions[i] = Instantiate(explosionPrefabs[i]);
       m_explosions[i].SetActive(false);
     }
+    InitWreckage();
   }
 }
