@@ -20,8 +20,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4054112437516694}
   - component: {fileID: 65455610581286894}
-  - component: {fileID: 82425797286411854}
   - component: {fileID: 54071059763405900}
+  - component: {fileID: 82425797286411854}
   - component: {fileID: 195698250488979868}
   - component: {fileID: 114761448727279948}
   - component: {fileID: 114315207702686962}
@@ -131,6 +131,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4534063682368100}
   - component: {fileID: 64859564173373790}
+  - component: {fileID: 114022347213024264}
   m_Layer: 0
   m_Name: hull_col
   m_TagString: Untagged
@@ -164,6 +165,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4137042071527528}
   - component: {fileID: 64605645045552034}
+  - component: {fileID: 114427628119204996}
   m_Layer: 0
   m_Name: turret_col
   m_TagString: Untagged
@@ -545,7 +547,7 @@ BoxCollider:
   m_GameObject: {fileID: 1113908722598174}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 3.961185, y: 4.096007, z: 9.800451}
   m_Center: {x: 0, y: 2.037875, z: 0.6998801}
@@ -646,6 +648,18 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
+--- !u!114 &114022347213024264
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1487889705972146}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionHandler: {fileID: 114761448727279948}
 --- !u!114 &114033408053578708
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -682,6 +696,18 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 0ea7e3f7991d4f34781d93e7658bcb24, type: 3}
   - {fileID: 8300000, guid: 2bb74d452989b0549ba2ca729a4242b3, type: 3}
   - {fileID: 8300000, guid: d6ffe601e2f69b84dbcfac03cd1122cd, type: 3}
+--- !u!114 &114427628119204996
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1975437817293196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionHandler: {fileID: 114761448727279948}
 --- !u!114 &114581391452885026
 MonoBehaviour:
   m_ObjectHideFlags: 1
