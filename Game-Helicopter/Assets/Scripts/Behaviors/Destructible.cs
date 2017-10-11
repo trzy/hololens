@@ -121,8 +121,8 @@ public class Destructible : MonoBehaviour
       wreckage.SetActive(true);
     }
 
-    SelfDestruct destructor = GetComponent<SelfDestruct>();
-    destructor.time = delay;
+    //SelfDestruct destructor = GetComponent<SelfDestruct>();
+    //destructor.time = delay;
     //destructor.enabled = true;
     //gameObject.SetActive(false);
   }
