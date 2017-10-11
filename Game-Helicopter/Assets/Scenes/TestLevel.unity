@@ -1119,7 +1119,7 @@ MonoBehaviour:
   idealDistanceApart: 4
   minDistanceApart: 2
   distanceStepSize: 0.25
-  agentPrefab1: {fileID: 1973914778359626, guid: 49db29fc39b81a04fb9d3da2e431db3e,
+  agentPrefab1: {fileID: 1789047959063054, guid: 1025ac15f05ea9444a26f0e617235313,
     type: 2}
   agentPrefab2: {fileID: 1113908722598174, guid: 96abbcae9c12b30469f543b9ae8f08e3,
     type: 2}
