@@ -4,6 +4,41 @@ using UnityEngine;
 
 public class MathHelpers
 {
+  public struct Cone
+  {
+    Vector3 tip;        // location of tip
+    Vector3 direction;  // normalized direction denoting axis from tip to base
+    float height;       // height of cone (distance from tip to base along direction)
+    float radius;       // base radius
+
+    public float DistanceFromAxis(Vector3 point)
+    {
+      Vector3 pointLocal = point - tip;
+      float axialDistance = Vector3.Dot(pointLocal, direction);
+      float distanceFromAxis = Vector3.Magnitude(pointLocal - axialDistance * direction);
+      return distanceFromAxis;
+    }
+
+    public bool Contains(Vector3 point)
+    {
+      Vector3 pointLocal = point - tip;
+      float axialDistance = Vector3.Dot(pointLocal, direction);
+      if (axialDistance < 0 || axialDistance > height)
+        return false;
+      float radiusAtPoint = radius * axialDistance / height;
+      float distanceFromAxis2 = Vector3.SqrMagnitude(pointLocal - axialDistance * direction);
+      return distanceFromAxis2 < (radiusAtPoint * radiusAtPoint);
+    }
+
+    public Cone(Vector3 inTip, Vector3 inDirection, float inHeight, float angleDegrees)
+    {
+      tip = inTip;
+      direction = inDirection.normalized;
+      height = inHeight;
+      radius = Mathf.Tan(angleDegrees * Mathf.Deg2Rad) * height;
+    }
+  }
+
   public static int RandomSign()
   {
     return (UnityEngine.Random.Range(0, 255) & 1) == 0 ? -1 : 1;
