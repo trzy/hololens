@@ -415,8 +415,8 @@ GameObject:
   - component: {fileID: 114603621675740344}
   - component: {fileID: 114577090499045402}
   m_Layer: 0
-  m_Name: AAVehicle1
-  m_TagString: Untagged
+  m_Name: AAVehicle
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2227,8 +2227,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  collisionHandler: {fileID: 114068789160768522, guid: 49db29fc39b81a04fb9d3da2e431db3e,
-    type: 2}
+  collisionHandler: {fileID: 0}
 --- !u!114 &114079105403279798
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2240,8 +2239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfab8fabcfae4b04db9d87c4600cba83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  collisionHandler: {fileID: 114068789160768522, guid: 49db29fc39b81a04fb9d3da2e431db3e,
-    type: 2}
+  collisionHandler: {fileID: 0}
 --- !u!114 &114241825435803566
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2271,7 +2269,7 @@ MonoBehaviour:
   bulletImpactPrefab: {fileID: 198450817143429212, guid: 1fea38d5712aa5f45b4d9d6a33ea0196,
     type: 2}
   bulletImpactClips:
-  - {fileID: 0}
+  - {fileID: 8300000, guid: 72eeb90c75081644caaf229818a05f02, type: 3}
   explosionPrefabs:
   - {fileID: 1685850471855406, guid: a99af6d516e206b46ac9628662dd44ca, type: 2}
   explosionClips:
