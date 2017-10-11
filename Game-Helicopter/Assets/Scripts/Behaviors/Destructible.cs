@@ -4,7 +4,9 @@
  * - Attach this script to the top-level object.
  * - A sub-object named "Destroyed" should contain children whose names match
  *   other sub-objects parented to the top-level node. These are wreckage parts
- *   that correspond to each "live" part.
+ *   that correspond to each "live" part. Any Rigidbodies attached to wreckage
+ *   will be enabled on destruction and the top-level Rigidbody will be
+ *   disabled.
  * - projectileLayer: Set this to the projectile layer and make sure all
  *   objects in that layer implement IProjectile.
  */
@@ -12,7 +14,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(SelfDestruct))]
 public class Destructible : MonoBehaviour
 {
   [Tooltip("Health is how many hit points of damage this object can take before being destroyed.")]
@@ -74,20 +75,26 @@ public class Destructible : MonoBehaviour
     //TODO: disable NavMesh agent?
 
     // Disable NavMeshAgents
-    foreach (UnityEngine.AI.NavMeshAgent agent in gameObject.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())
+    foreach (UnityEngine.AI.NavMeshAgent agent in GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())
     {
       agent.enabled = false;
     }
 
-    // Enable all Rigidbodies (make them obey gravity and not be kinematic)
-    foreach (Rigidbody rb in gameObject.GetComponentsInChildren<Rigidbody>())
+    // Enable all sub-object Rigidbodies (make them obey gravity and not be
+    // kinematic)
+    foreach (Rigidbody crb in GetComponentsInChildren<Rigidbody>())
     {
-      rb.isKinematic = false;
-      rb.useGravity = true;
+      crb.isKinematic = false;
+      crb.useGravity = true;
     }
+
+    // Disable top-level Rigidbody if it exists
+    Rigidbody rb = GetComponent<Rigidbody>();
+    if (rb != null)
+      rb.isKinematic = true;
     
     // Turn off all scripts
-    foreach (MonoBehaviour behavior in gameObject.GetComponentsInChildren<MonoBehaviour>())
+    foreach (MonoBehaviour behavior in GetComponentsInChildren<MonoBehaviour>())
     {
       behavior.enabled = false;
     }
