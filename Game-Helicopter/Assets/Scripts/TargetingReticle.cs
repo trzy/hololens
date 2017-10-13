@@ -29,6 +29,7 @@ public class TargetingReticle : MonoBehaviour
         m_defaultReticle.SetActive(true);
         m_lockedReticle.SetActive(false);
         m_billboard.enabled = false;
+        transform.localRotation = Quaternion.identity;  // billboard script modified rotation
       }
       m_lockedOn = value;
     }
