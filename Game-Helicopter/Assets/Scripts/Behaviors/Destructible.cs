@@ -34,10 +34,30 @@ public class Destructible : MonoBehaviour
   [Tooltip("Explosion sound clips.")]
   public AudioClip[] explosionClips;
 
+  public bool Alive
+  {
+    get
+    {
+      return m_alive;
+    }
+  }
+
   private AudioSource m_audio;
   private GameObject[] m_explosions;
   private bool m_destroyed = false;
   private Dictionary<GameObject, GameObject> m_wreckageByPart = new Dictionary<GameObject, GameObject>();
+  private bool m_alive = true;
+
+  public Vector3 GetAimPoint()
+  {
+    BoxCollider box = GetComponent<BoxCollider>();
+    if (box != null)
+      return transform.TransformPoint(box.center);
+    CapsuleCollider capsule = GetComponent<CapsuleCollider>();
+    if (capsule != null)
+      return transform.TransformPoint(capsule.center);
+    return transform.position;
+  }
 
   private void InitWreckage()
   {
@@ -73,6 +93,7 @@ public class Destructible : MonoBehaviour
   private void SelfDestruct(float delay)
   {
     //TODO: disable NavMesh agent?
+    m_alive = false;
 
     // Disable NavMeshAgents
     foreach (UnityEngine.AI.NavMeshAgent agent in GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>())
