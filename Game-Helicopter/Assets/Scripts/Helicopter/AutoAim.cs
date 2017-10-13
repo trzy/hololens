@@ -12,7 +12,7 @@ public class AutoAim: MonoBehaviour
   public Transform muzzle;
 
   [Tooltip("Targeting reticle object.")]
-  public GameObject targetingReticle;
+  public TargetingReticle targetingReticle;
 
   [Tooltip("Default distance of reticle from muzzle when not locked onto a target.")]
   public float defaultReticleDistance = 1;
@@ -83,12 +83,14 @@ public class AutoAim: MonoBehaviour
   private void Update()
   {
     Vector3 muzzlePos = muzzle.position;
+    float reticleDistance = defaultReticleDistance;
     float yawAngle = GetYawAngle();
     float pitchAngle = GetPitchAngle();
     float targetYawAngle = 0;
     float targetPitchAngle = 0;
+    Vector3 targetPoint = Vector3.zero;
 
-    if (m_target == null || !TryComputeAnglesToTarget(out targetYawAngle, out targetPitchAngle, m_target.GetAimPoint()))
+    if (m_target == null || !m_target.Alive || !TryComputeAnglesToTarget(out targetYawAngle, out targetPitchAngle, targetPoint = m_target.GetAimPoint()))
     {
       // No target or lost target -- try to acquire a new one
       m_lockedOn = false;
@@ -111,7 +113,7 @@ public class AutoAim: MonoBehaviour
       }
 
       // Try to compute aiming angles for new target
-      if (m_target != null && !TryComputeAnglesToTarget(out targetYawAngle, out targetPitchAngle, m_target.GetAimPoint()))
+      if (m_target != null && !TryComputeAnglesToTarget(out targetYawAngle, out targetPitchAngle, targetPoint = m_target.GetAimPoint()))
         m_target = null;
     }
 
@@ -131,6 +133,7 @@ public class AutoAim: MonoBehaviour
       // When locked on, instaneously track target
       yawAngle = targetYawAngle;
       pitchAngle = targetPitchAngle;
+      reticleDistance = Vector3.Distance(targetPoint, muzzlePos);
     }
 
     // Update gun orientation
@@ -142,7 +145,11 @@ public class AutoAim: MonoBehaviour
       gunPitch.localRotation = Quaternion.Euler(pitchAngle, 0, 0);
     }
 
-    targetingReticle.transform.position = muzzlePos + muzzle.forward * defaultReticleDistance;
+    if (targetingReticle != null)
+    {
+      targetingReticle.LockedOn = m_lockedOn;
+      targetingReticle.transform.position = muzzlePos + muzzle.forward * reticleDistance;
+    }
   }
 
   private void Awake()
