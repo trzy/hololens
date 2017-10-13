@@ -1262,6 +1262,7 @@ MonoBehaviour:
   muzzle: {fileID: 2061428704}
   targetingReticle: {fileID: 647892995}
   defaultReticleDistance: 1
+  angularVelocity: 180
   maxYawAngle: 60
   minPitchAngle: 0
   maxPitchAngle: 65
