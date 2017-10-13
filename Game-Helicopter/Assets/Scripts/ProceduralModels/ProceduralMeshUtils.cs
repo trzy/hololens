@@ -5,6 +5,29 @@ using System.Collections.Generic;
 
 public static class ProceduralMeshUtils
 {
+  public static void DrawQuad(List<Vector3> verts, List<int> triangles, List<Color32> colors, Color32 color, Vector3 center, float width, float height)
+  {
+    // Generate two triangles
+    int vertIdx = verts.Count;
+    verts.Add(center + 0.5f * height * Vector3.up - 0.5f * width * Vector3.right);
+    verts.Add(center + 0.5f * height * Vector3.up + 0.5f * width * Vector3.right);
+    verts.Add(center - 0.5f * height * Vector3.up + 0.5f * width * Vector3.right);
+    verts.Add(center - 0.5f * height * Vector3.up - 0.5f * width * Vector3.right);
+    triangles.Add(vertIdx + 0);
+    triangles.Add(vertIdx + 1);
+    triangles.Add(vertIdx + 2);
+    triangles.Add(vertIdx + 2);
+    triangles.Add(vertIdx + 3);
+    triangles.Add(vertIdx + 0);
+    if (colors != null)
+    {
+      for (int i = 0; i < 4; i++)
+      {
+        colors.Add(color);
+      }
+    }
+  }
+
   /*
    * Draws a triangle that is parameterized by polar angles and radial 
    * distances from the coordinate system origin point.
@@ -78,9 +101,12 @@ public static class ProceduralMeshUtils
     triangles.Add(vertIdx++);
     triangles.Add(vertIdx++);
     triangles.Add(vertIdx++);
-    colors.Add(color);
-    colors.Add(color);
-    colors.Add(color);
+    if (colors != null)
+    {
+      colors.Add(color);
+      colors.Add(color);
+      colors.Add(color);
+    }
   }
 
   public static void DrawArc(List<Vector3> verts, List<int> triangles, List<Color32> colors, Color32 fromColor, Color32 toColor, float innerRadius, float outerRadius, float fromPolarDeg, float toPolarDeg, int numSegments)
