@@ -191,7 +191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textMeshObject: {fileID: 481775371}
---- !u!1001 &286141601
+--- !u!1001 &334051265
 Prefab:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -230,20 +230,7 @@ Prefab:
       propertyPath: m_RootOrder
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4254661089046128, guid: fff140e0db70c8246a4b3c79262ea632, type: 2}
-      propertyPath: m_LocalScale.x
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 4254661089046128, guid: fff140e0db70c8246a4b3c79262ea632, type: 2}
-      propertyPath: m_LocalScale.y
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 4254661089046128, guid: fff140e0db70c8246a4b3c79262ea632, type: 2}
-      propertyPath: m_LocalScale.z
-      value: 20
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 114210654906145400, guid: fff140e0db70c8246a4b3c79262ea632, type: 2}
+    m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: fff140e0db70c8246a4b3c79262ea632, type: 2}
   m_IsPrefabParent: 0
 --- !u!1 &481775369
@@ -606,39 +593,12 @@ Prefab:
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 0992e69637ee60746869c5bf80b92194, type: 2}
   m_IsPrefabParent: 0
---- !u!1 &618577825 stripped
-GameObject:
-  m_PrefabParentObject: {fileID: 1759156514720782, guid: fff140e0db70c8246a4b3c79262ea632,
+--- !u!114 &618577827 stripped
+MonoBehaviour:
+  m_PrefabParentObject: {fileID: 114130681131972758, guid: fff140e0db70c8246a4b3c79262ea632,
     type: 2}
-  m_PrefabInternal: {fileID: 286141601}
---- !u!114 &618577826
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 618577825}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ac8d5b128a1d8204fb76c86f47b75912, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PivotAxis: 0
---- !u!114 &618577827
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 618577825}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
+  m_PrefabInternal: {fileID: 334051265}
   m_Script: {fileID: 11500000, guid: ac17ce12e6162fd4ea68762c6f01aeda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  color:
-    serializedVersion: 2
-    rgba: 4278190335
-  thickness: 0.0025
-  radius: 0.02
 --- !u!1 &661102634
 GameObject:
   m_ObjectHideFlags: 0
