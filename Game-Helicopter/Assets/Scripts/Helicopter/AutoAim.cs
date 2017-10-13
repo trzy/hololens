@@ -45,7 +45,7 @@ public class AutoAim: MonoBehaviour
     // Target is rotated into parent's local coordinate system and the angle to
     // the target in the azimuthal (xz) plane is the required yaw.
     Vector3 localPoint = gunYaw.parent.InverseTransformPoint(targetPos);
-    Vector3 toTarget = MathHelpers.Azimuthal(localPoint - gunYaw.parent.position);
+    Vector3 toTarget = MathHelpers.Azimuthal(localPoint - gunYaw.localPosition);
     float direction = Mathf.Sign(MathHelpers.CrossY(Vector3.forward, toTarget));
     return direction * Vector3.Angle(Vector3.forward, toTarget);
   }
@@ -54,7 +54,7 @@ public class AutoAim: MonoBehaviour
   {
     // Analogous to yaw, but using gunPitch and the vertical (yz) plane
     Vector3 localPoint = gunPitch.parent.InverseTransformPoint(targetPos);
-    Vector3 toTarget = MathHelpers.Vertical(localPoint - gunPitch.parent.position);
+    Vector3 toTarget = MathHelpers.Vertical(localPoint - gunPitch.localPosition);
     float direction = Mathf.Sign(MathHelpers.CrossX(Vector3.forward, toTarget));
     return direction * Vector3.Angle(Vector3.forward, toTarget);
   }
