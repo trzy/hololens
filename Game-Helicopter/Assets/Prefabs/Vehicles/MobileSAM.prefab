@@ -899,7 +899,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitPoints: 10
   nozzle: {fileID: 0}
-  thrust: 50
+  thrust: 5
   lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
@@ -917,7 +917,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitPoints: 10
   nozzle: {fileID: 0}
-  thrust: 50
+  thrust: 5
   lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
@@ -1004,7 +1004,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitPoints: 10
   nozzle: {fileID: 0}
-  thrust: 50
+  thrust: 5
   lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
@@ -1022,7 +1022,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hitPoints: 10
   nozzle: {fileID: 0}
-  thrust: 50
+  thrust: 5
   lifetime: 3
   surfaceHitFXLayers:
     serializedVersion: 2
