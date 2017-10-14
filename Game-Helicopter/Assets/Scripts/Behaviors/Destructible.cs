@@ -28,6 +28,9 @@ public class Destructible : MonoBehaviour
   [Tooltip("Bullet impact sound clips.")]
   public AudioClip[] bulletImpactClips;
 
+  [Tooltip("Explosion velocity (m/s)")]
+  public float explosionVelocity = 2.5f;
+
   [Tooltip("Explosions when destroyed (a random one will be selected).")]
   public GameObject[] explosionPrefabs;
 
@@ -129,7 +132,7 @@ public class Destructible : MonoBehaviour
     }
 
     // Re-enable wreckage and position each piece the same way that the live
-    // counterpart was
+    // counterpart was before exploding it :)
     Transform wreckageNode = transform.Find("Destroyed");
     if (wreckageNode != null)
       wreckageNode.gameObject.SetActive(true);
@@ -140,6 +143,11 @@ public class Destructible : MonoBehaviour
       wreckage.transform.position = part.transform.position;
       wreckage.transform.rotation = part.transform.rotation;
       wreckage.SetActive(true);
+
+      // Kaboom!
+      Rigidbody wrb = wreckage.GetComponent<Rigidbody>();
+      if (wrb != null)
+        wrb.AddExplosionForce(explosionVelocity, transform.position, 0, 0, ForceMode.VelocityChange);
     }
 
     //SelfDestruct destructor = GetComponent<SelfDestruct>();
@@ -147,6 +155,19 @@ public class Destructible : MonoBehaviour
     //destructor.enabled = true;
     //gameObject.SetActive(false);
   }
+
+/*
+  // Make sure to keep this script enabled after destruction for this to work
+  private void FixedUpdate()
+  {
+    List<string> s = new List<string>();
+    foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
+    {
+      s.Add(rb.name + "=" + rb.velocity.ToString("F2"));
+    }
+    Debug.Log("Velocities: " + string.Join(", ", s.ToArray()));
+  }
+*/
 
   private void OnCollisionEnter(Collision collision)
   {
