@@ -83,6 +83,7 @@ public class Missile: MonoBehaviour, IProjectile
     m_collided = false;
     m_t0 = Time.time;
     m_rb.isKinematic = false;
+    m_rb.useGravity = false;
   }
 
   private void Awake()
